@@ -5,7 +5,13 @@ import Blog from '../../../../db/models/Blog';
 // Function to generate image using the existing image generation API
 async function generateImage(prompt: string): Promise<string> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/generate-image`, {
+    // Get the base URL for the current environment
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                   'https://kavithakanchana.me' ||
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:3000';
+    
+    const response = await fetch(`${baseUrl}/api/admin/generate-image`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,6 +30,10 @@ async function generateImage(prompt: string): Promise<string> {
     return result.imageUrl || result.url || '';
   } catch (error) {
     console.error('Error generating image:', error);
+    // Return a placeholder image URL for production fallback
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://via.placeholder.com/1200x800/2563eb/ffffff?text=AI+Generated+Image';
+    }
     return '';
   }
 }
@@ -64,7 +74,7 @@ function enhanceContentStructure(originalContent: string, title: string, link: s
   
   // Add background context
   enhancedContent += `## Background & Context\n\n`;
-  enhancedContent += `This development represents a significant milestone in the intersection of artificial intelligence and economic policy. As AI continues to reshape industries and economies worldwide, strategic frameworks like this blueprint provide essential guidance for nations seeking to harness AI's transformative potential while ensuring sustainable and inclusive growth.\n\n`;
+  enhancedContent += `This development represents a significant milestone in the intersection of artificial intelligence and economic policy. As AI continues to reshape industries and economies worldwide, strategic frameworks like this blueprint provide essential guidance for nations seeking to harness AI's transformative potential while ensuring sustainable and inclusive growth. From my experience in AI/ML integration and automation solutions, I can see how these initiatives align with the broader trend of intelligent systems transforming business processes and decision-making frameworks.\n\n`;
   
   // Add main content section
   enhancedContent += `## Key Insights & Analysis\n\n`;
@@ -81,25 +91,25 @@ function enhanceContentStructure(originalContent: string, title: string, link: s
   enhancedContent += `The implementation of AI-driven economic strategies has the potential to significantly boost productivity across various sectors. By leveraging artificial intelligence for data analysis, automation, and decision-making processes, organizations can achieve unprecedented levels of efficiency and innovation.\n\n`;
   
   enhancedContent += `### Technological Considerations\n\n`;
-  enhancedContent += `Modern AI systems require robust infrastructure, skilled workforce, and ethical frameworks to ensure responsible deployment. The blueprint addresses these critical aspects, providing a comprehensive roadmap for sustainable AI integration.\n\n`;
+  enhancedContent += `Modern AI systems require robust infrastructure, skilled workforce, and ethical frameworks to ensure responsible deployment. The blueprint addresses these critical aspects, providing a comprehensive roadmap for sustainable AI integration. Drawing from my experience with n8n and Make.com automation platforms, I can see how workflow automation and intelligent systems can significantly enhance the implementation of such AI-driven strategies.\n\n`;
   
   enhancedContent += `### Implementation Strategy\n\n`;
-  enhancedContent += `Successful implementation requires collaboration between government entities, private sector organizations, and educational institutions. The blueprint outlines specific steps for fostering these partnerships and creating an ecosystem conducive to AI-driven growth.\n\n`;
+  enhancedContent += `Successful implementation requires collaboration between government entities, private sector organizations, and educational institutions. The blueprint outlines specific steps for fostering these partnerships and creating an ecosystem conducive to AI-driven growth. As a software engineer specializing in AI/ML solutions and automation, I believe the key to successful implementation lies in creating scalable, intelligent systems that can adapt to evolving requirements while maintaining efficiency and reliability.\n\n`;
   
   // Add future implications
   enhancedContent += `## Future Implications\n\n`;
   enhancedContent += `### Short-term Benefits\n\n`;
-  enhancedContent += `In the immediate future, this initiative is expected to accelerate digital transformation efforts, improve operational efficiency, and create new opportunities for innovation across various industries.\n\n`;
+  enhancedContent += `In the immediate future, this initiative is expected to accelerate digital transformation efforts, improve operational efficiency, and create new opportunities for innovation across various industries. Based on my experience with AI-powered applications and automation workflows, I can see how these technologies can immediately enhance productivity and streamline complex business processes.\n\n`;
   
   enhancedContent += `### Long-term Vision\n\n`;
-  enhancedContent += `Looking ahead, the comprehensive adoption of AI technologies promises to revolutionize how we approach economic development, problem-solving, and resource allocation. This blueprint serves as a foundational document for building a more intelligent and adaptive economic system.\n\n`;
+  enhancedContent += `Looking ahead, the comprehensive adoption of AI technologies promises to revolutionize how we approach economic development, problem-solving, and resource allocation. This blueprint serves as a foundational document for building a more intelligent and adaptive economic system. From my work on AI-powered SaaS applications and intelligent automation systems, I can envision how these technologies will continue to evolve and create new opportunities for innovation and growth.\n\n`;
   
   // Add conclusion section
   enhancedContent += `## Conclusion\n\n`;
   if (paragraphs.length > 1) {
     enhancedContent += `${paragraphs[paragraphs.length - 1]}.\n\n`;
   }
-  enhancedContent += `This initiative represents a forward-thinking approach to economic development in the AI era. By providing clear guidelines and strategic frameworks, it enables stakeholders to navigate the complexities of AI integration while maximizing its benefits for society as a whole.\n\n`;
+  enhancedContent += `This initiative represents a forward-thinking approach to economic development in the AI era. By providing clear guidelines and strategic frameworks, it enables stakeholders to navigate the complexities of AI integration while maximizing its benefits for society as a whole. As someone deeply involved in AI/ML development and automation solutions, I believe these frameworks will be crucial for building the next generation of intelligent systems and applications.\n\n`;
   
   // Add additional resources
   enhancedContent += `## Additional Resources\n\n`;
@@ -107,7 +117,9 @@ function enhanceContentStructure(originalContent: string, title: string, link: s
   enhancedContent += `- **AI Policy Guidelines**: Best practices for responsible AI deployment\n`;
   enhancedContent += `- **Economic Impact Studies**: Research on AI's influence on various sectors\n`;
   enhancedContent += `- **Implementation Case Studies**: Real-world examples of successful AI integration\n`;
-  enhancedContent += `- **Future Trends**: Emerging developments in AI technology and applications\n\n`;
+  enhancedContent += `- **Future Trends**: Emerging developments in AI technology and applications\n`;
+  enhancedContent += `- **Automation Solutions**: Workflow automation with n8n and Make.com\n`;
+  enhancedContent += `- **AI/ML Integration**: Building intelligent applications and systems\n\n`;
   
   // Add source attribution
   enhancedContent += `---\n\n`;
@@ -232,8 +244,8 @@ async function createBlogFromNews(newsData: any) {
     excerpt,
     featuredImage,
     generatedImageUrl: featuredImage,
-    tags: ['AI', 'Technology', 'News', 'OpenAI', 'Europe'],
-    author: 'Kavitha Kanchan',
+    tags: ['AI', 'Technology', 'News', 'OpenAI', 'Automation', 'Software Engineering'],
+    author: 'Kavitha Kanchana',
     publishedAt: publishedDate,
     isPublished: true,
     sourceUrl: link,

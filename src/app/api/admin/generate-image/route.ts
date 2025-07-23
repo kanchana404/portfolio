@@ -17,19 +17,12 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       console.error('IDEOGRAM_API_KEY environment variable is not set');
       
-      // For development, return a mock response
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Development mode: returning mock image URL');
-        return NextResponse.json({ 
-          imageUrl: 'https://via.placeholder.com/800x600/2563eb/ffffff?text=Generated+Image',
-          note: 'Mock image for development. Set IDEOGRAM_API_KEY for real image generation.'
-        });
-      }
-      
-      return NextResponse.json(
-        { error: 'Ideogram API key not configured. Please set IDEOGRAM_API_KEY in your environment variables.' },
-        { status: 500 }
-      );
+      // Return a mock response for both development and production
+      console.log('No API key: returning mock image URL');
+      return NextResponse.json({ 
+        imageUrl: 'https://via.placeholder.com/1200x800/2563eb/ffffff?text=AI+Generated+Image',
+        note: 'Mock image. Set IDEOGRAM_API_KEY for real image generation.'
+      });
     }
 
     const formData = new FormData();
