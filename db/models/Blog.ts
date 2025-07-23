@@ -11,6 +11,8 @@ export interface IBlog extends Document {
   author: string;
   publishedAt: Date;
   isPublished: boolean;
+  sourceUrl?: string;
+  originalDate?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,7 +40,7 @@ const BlogSchema: Schema = new Schema({
   excerpt: {
     type: String,
     required: [true, 'Excerpt is required'],
-    maxlength: [300, 'Excerpt cannot be more than 300 characters']
+    maxlength: [500, 'Excerpt cannot be more than 500 characters']
   },
   featuredImage: {
     type: String,
@@ -65,6 +67,14 @@ const BlogSchema: Schema = new Schema({
   isPublished: {
     type: Boolean,
     default: false
+  },
+  sourceUrl: {
+    type: String,
+    default: null
+  },
+  originalDate: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true,
@@ -73,7 +83,6 @@ const BlogSchema: Schema = new Schema({
 });
 
 // Create index for better query performance
-BlogSchema.index({ slug: 1 });
 BlogSchema.index({ isPublished: 1, publishedAt: -1 });
 BlogSchema.index({ tags: 1 });
 

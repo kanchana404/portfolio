@@ -178,12 +178,12 @@ export default function BlogPage() {
                     key={blog.id}
                     delay={BLUR_FADE_DELAY * 3 + id * 0.05}
                   >
-                    <Card className="overflow-hidden border hover:shadow-xl transition-all duration-500 ease-out cursor-pointer group bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-                      <div className="flex flex-col lg:flex-row">
-                        {/* Image Section */}
-                        <div className="lg:w-2/5 relative">
+                    <Card className="overflow-hidden border hover:shadow-xl transition-all duration-500 ease-out cursor-pointer group bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 h-[300px]">
+                      <div className="flex flex-row h-full">
+                        {/* Image Section - Left Side */}
+                        <div className="w-1/3 h-full relative">
                           {blog.generatedImageUrl || blog.featuredImage ? (
-                            <div className="relative h-64 lg:h-full overflow-hidden">
+                            <div className="relative h-full overflow-hidden">
                               <img
                                 src={blog.generatedImageUrl || blog.featuredImage}
                                 alt={blog.title}
@@ -213,7 +213,7 @@ export default function BlogPage() {
                               </Dialog>
                             </div>
                           ) : (
-                            <div className="h-64 lg:h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                            <div className="h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
                               <div className="text-center text-gray-500 dark:text-gray-400">
                                 <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
                                 <p className="text-sm">No Image</p>
@@ -222,8 +222,8 @@ export default function BlogPage() {
                           )}
                         </div>
 
-                        {/* Content Section */}
-                        <div className="lg:w-3/5 p-6 lg:p-8 flex flex-col justify-between">
+                        {/* Content Section - Right Side */}
+                        <div className="w-2/3 p-6 flex flex-col justify-between">
                           <div className="space-y-4">
                             {/* Header */}
                             <div className="space-y-2">
@@ -249,11 +249,9 @@ export default function BlogPage() {
                             </div>
 
                             {/* Summary */}
-                            {blog.excerpt && (
-                              <p className="text-muted-foreground text-lg leading-relaxed">
-                                {blog.excerpt}
-                              </p>
-                            )}
+                            <p className="text-muted-foreground text-lg leading-relaxed">
+                              {blog.title.split(' ').slice(0, 4).join(' ')}...
+                            </p>
 
                             {/* Tags */}
                             {blog.tags && blog.tags.length > 0 && (

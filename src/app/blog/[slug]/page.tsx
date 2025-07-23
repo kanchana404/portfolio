@@ -5,6 +5,8 @@ import { formatDate } from "@/lib/utils";
 import { DATA } from "@/data/resume";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Blog {
   id: string;
@@ -135,10 +137,56 @@ export default function Blog({ params }: { params: { slug: string } }) {
           </div>
         )}
       </div>
-      <article
-        className="prose dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: post.content }}
-      ></article>
+      <article className="prose dark:prose-invert max-w-none">
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]}
+          components={{
+            img: ({ node, ...props }) => {
+              // Skip the featured image since it's already shown above
+              const isFeaturedImage = props.alt?.includes('Featured Image') || 
+                                    props.src === imageUrl ||
+                                    props.src === post.featuredImage ||
+                                    props.src === post.generatedImageUrl;
+              if (isFeaturedImage) {
+                return null;
+              }
+              return (
+                <img 
+                  {...props} 
+                  className="w-full h-auto rounded-lg my-8 shadow-lg"
+                  loading="lazy"
+                />
+              );
+            },
+            h1: ({ node, ...props }) => (
+              <h1 {...props} className="text-4xl font-bold mb-6 text-gray-900 dark:text-gray-100" />
+            ),
+            h2: ({ node, ...props }) => (
+              <h2 {...props} className="text-2xl font-semibold mb-4 mt-8 text-gray-800 dark:text-gray-200" />
+            ),
+            h3: ({ node, ...props }) => (
+              <h3 {...props} className="text-xl font-semibold mb-3 mt-6 text-gray-800 dark:text-gray-200" />
+            ),
+            p: ({ node, ...props }) => (
+              <p {...props} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed" />
+            ),
+            a: ({ node, ...props }) => (
+              <a {...props} className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />
+            ),
+            strong: ({ node, ...props }) => (
+              <strong {...props} className="font-semibold text-gray-900 dark:text-gray-100" />
+            ),
+            em: ({ node, ...props }) => (
+              <em {...props} className="italic text-gray-800 dark:text-gray-200" />
+            ),
+            hr: ({ node, ...props }) => (
+              <hr {...props} className="my-8 border-gray-300 dark:border-gray-600" />
+            ),
+          }}
+        >
+          {post.content}
+        </ReactMarkdown>
+      </article>
     </section>
   );
 }
