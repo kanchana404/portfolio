@@ -1,68 +1,79 @@
-import { getBlogPosts, getPost } from "@/data/blog";
-import { DATA } from "@/data/resume";
+"use client";
+
+import { useState, useEffect } from 'react';
 import { formatDate } from "@/lib/utils";
-import type { Metadata } from "next";
+import { DATA } from "@/data/resume";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export async function generateStaticParams() {
-  const posts = await getBlogPosts();
-  return posts.map((post) => ({ slug: post.slug }));
+interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage?: string;
+  generatedImageUrl?: string;
+  tags: string[];
+  author: string;
+  publishedAt: string;
+  isPublished: boolean;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: {
-    slug: string;
-  };
-}): Promise<Metadata | undefined> {
-  let post = await getPost(params.slug);
+export default function Blog({ params }: { params: { slug: string } }) {
+  const [post, setPost] = useState<Blog | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  let {
-    title,
-    publishedAt: publishedTime,
-    summary: description,
-    image,
-  } = post.metadata;
-  let ogImage = image ? `${DATA.url}${image}` : `${DATA.url}/og?title=${title}`;
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const response = await fetch(`/api/blogs/${params.slug}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Blog not found');
+          } else {
+            throw new Error('Failed to fetch blog');
+          }
+        } else {
+          const data = await response.json();
+          setPost(data);
+        }
+      } catch (err) {
+        console.error('Error fetching blog:', err);
+        setError('Failed to load blog');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      publishedTime,
-      url: `${DATA.url}/blog/${post.slug}`,
-      images: [
-        {
-          url: ogImage,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImage],
-    },
-  };
-}
+    fetchBlog();
+  }, [params.slug]);
 
-export default async function Blog({
-  params,
-}: {
-  params: {
-    slug: string;
-  };
-}) {
-  let post = await getPost(params.slug);
-
-  if (!post) {
-    notFound();
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading blog...</p>
+        </div>
+      </div>
+    );
   }
+
+  if (error || !post) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Blog Not Found</h1>
+          <p className="text-gray-600">{error || 'The requested blog post could not be found.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const imageUrl = post.generatedImageUrl || post.featuredImage;
+  const ogImage = imageUrl ? `${DATA.url}${imageUrl}` : `${DATA.url}/og?title=${post.title}`;
 
   return (
     <section id="blog">
@@ -73,13 +84,13 @@ export default async function Blog({
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BlogPosting",
-            headline: post.metadata.title,
-            datePublished: post.metadata.publishedAt,
-            dateModified: post.metadata.publishedAt,
-            description: post.metadata.summary,
-            image: post.metadata.image
-              ? `${DATA.url}${post.metadata.image}`
-              : `${DATA.url}/og?title=${post.metadata.title}`,
+            headline: post.title,
+            datePublished: post.publishedAt,
+            dateModified: post.publishedAt,
+            description: post.excerpt,
+            image: imageUrl
+              ? `${DATA.url}${imageUrl}`
+              : `${DATA.url}/og?title=${post.title}`,
             url: `${DATA.url}/blog/${post.slug}`,
             author: {
               "@type": "Person",
@@ -88,19 +99,45 @@ export default async function Blog({
           }),
         }}
       />
+      {imageUrl && (
+        <div className="relative h-64 mb-8 overflow-hidden rounded-lg">
+          <img
+            src={imageUrl}
+            alt={post.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
       <h1 className="title font-medium text-2xl tracking-tighter max-w-[650px]">
-        {post.metadata.title}
+        {post.title}
       </h1>
-      <div className="flex justify-between items-center mt-2 mb-8 text-sm max-w-[650px]">
-        <Suspense fallback={<p className="h-5" />}>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {formatDate(post.metadata.publishedAt)}
-          </p>
-        </Suspense>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 mb-8 text-sm max-w-[650px] space-y-2 sm:space-y-0">
+        <div className="flex items-center space-x-4">
+          <Suspense fallback={<p className="h-5" />}>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {formatDate(post.publishedAt)}
+            </p>
+          </Suspense>
+          <span className="text-sm text-neutral-600 dark:text-neutral-400">
+            By {post.author || 'Kavitha Kanchan'}
+          </span>
+        </div>
+        {post.tags && post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {post.tags.map((tag: string) => (
+              <span
+                key={tag}
+                className="inline-block bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 px-2 py-1 rounded text-xs"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <article
         className="prose dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: post.source }}
+        dangerouslySetInnerHTML={{ __html: post.content }}
       ></article>
     </section>
   );
