@@ -87,9 +87,21 @@ export const DATA = {
         "Working at Xleron, a software product engineering company specializing in innovative solutions powered by AI, machine learning, and IoT. Contributing to full-stack development of applications, helping harness cutting-edge AI/ML technologies to build advanced software products. Gaining industry experience working on intelligent systems and collaborative engineering projects in a startup-sized team environment.",
     },
     {
+      company: "PulseOpes Ai",
+      href: "https://pulseopsai.com/",
+      badges: ["Co-Founder"],
+      location: "Sri Lanka",
+      title: "Startup Founder / Product Designer",
+      logoUrl: "/pulseai.jpg",
+      start: "2025",
+      end: "Present",
+      description:
+        "Co-founding and leading PulseOpes Ai, an AI automation platform that connects social media accounts and enables intelligent post scheduling. Driving product development, technical strategy, and business growth. Specializing in AI-powered automation solutions to streamline social media management and improve content scheduling efficiency.",
+    },
+    {
       company: "Ryzera Technologies",
       href: "https://ryzera.io",
-      badges: ["Startup Founder"],
+      badges: ["Co-Founder"],
       location: "Sri Lanka",
       title: "Startup Founder / Software Engineer",
       logoUrl: "/ryzera.jpg",
