@@ -1,5 +1,6 @@
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
+import TrackingScript from "@/components/tracking-script";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
@@ -119,6 +120,9 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
+        {/* AgentKong pixel tracking script */}
+        <TrackingScript />
+        
         <ThemeProvider attribute="class" defaultTheme="light">
           <TooltipProvider delayDuration={0}>
             {children}
