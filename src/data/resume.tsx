@@ -8,9 +8,9 @@ export const DATA = {
   location: "Sri Lanka",
   locationLink: "https://www.google.com/maps/place/sri+lanka",
   description:
-    "Associate Software Engineer at Xleron | Startup Founder at Ryzera Technologies | Full-Stack Developer | AI/ML & Automation Specialist | Building innovative solutions with cutting-edge technologies.",
+    "Software Engineer at AgentKong | Startup Founder at Ryzera Technologies | Full-Stack Developer | AI/ML & Automation Specialist | Building innovative solutions with cutting-edge technologies.",
   summary:
-    "I'm Kavitha Kanchana, a Sri Lankan software engineering professional currently pursuing my undergraduate degree in Software Engineering at Birmingham City University. I work as an Associate Software Engineer at Xleron, specializing in AI/ML and IoT solutions, while also founding Ryzera Technologies to focus on innovative software solutions. I have extensive experience in full-stack development, AI automation using n8n and Make.com, and building AI-powered applications. My expertise spans from creating interactive 3D web experiences to developing comprehensive automation workflows that streamline business processes. I'm also an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
+    "I'm Kavitha Kanchana, a Sri Lankan software engineering professional currently pursuing my undergraduate degree in Software Engineering at Birmingham City University. I work as a Software Engineer at AgentKong, specializing in AI/ML and automation solutions, while also founding Ryzera Technologies to focus on innovative software solutions. I have extensive experience in full-stack development, AI automation using n8n and Make.com, and building AI-powered applications. My expertise spans from creating interactive 3D web experiences to developing comprehensive automation workflows that streamline business processes. I'm also an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
   avatarUrl: "/me.png",
   skills: [
     "JavaScript",
@@ -75,28 +75,16 @@ export const DATA = {
 
   work: [
     {
-      company: "Xleron",
-      href: "https://xleron.io",
+      company: "AgentKong",
+      href: "https://agentkong.com",
       badges: ["Full-time"],
-      location: "Sri Lanka",
-      title: "Associate Software Engineer",
-      logoUrl: "/xleron.jpg",
-      start: "2023",
+      location: "Remote",
+      title: "Software Engineer",
+      logoUrl: "/agentkong.jfif",
+      start: "Aug 2025",
       end: "Present",
       description:
-        "Working at Xleron, a software product engineering company specializing in innovative solutions powered by AI, machine learning, and IoT. Contributing to full-stack development of applications, helping harness cutting-edge AI/ML technologies to build advanced software products. Gaining industry experience working on intelligent systems and collaborative engineering projects in a startup-sized team environment.",
-    },
-    {
-      company: "PulseOpes Ai",
-      href: "https://pulseopsai.com/",
-      badges: ["Co-Founder"],
-      location: "Sri Lanka",
-      title: "Startup Founder / Product Designer",
-      logoUrl: "/pulseai.jpg",
-      start: "2025",
-      end: "Present",
-      description:
-        "Co-founding and leading PulseOpes Ai, an AI automation platform that connects social media accounts and enables intelligent post scheduling. Driving product development, technical strategy, and business growth. Specializing in AI-powered automation solutions to streamline social media management and improve content scheduling efficiency.",
+        "Working as a Software Engineer at AgentKong, focusing on AI-powered automation solutions and intelligent agent development. Contributing to cutting-edge AI technologies and building scalable software solutions that enhance business processes through intelligent automation.",
     },
     {
       company: "Ryzera Technologies",
@@ -109,6 +97,42 @@ export const DATA = {
       end: "Present",
       description:
         "Founding and leading Ryzera Technologies, focusing on innovative software solutions and automation technologies. Driving product development, technical strategy, and business growth. Specializing in AI automation solutions using n8n and Make.com to streamline operations and improve efficiency.",
+    },
+    {
+      company: "Xleron",
+      href: "https://xleron.io",
+      badges: ["Full-time"],
+      location: "Sri Lanka",
+      title: "Associate Software Engineer",
+      logoUrl: "/xleron.jpg",
+      start: "Mar 2025",
+      end: "Aug 2025",
+      description:
+        "Worked as an Associate Software Engineer at Xleron, a software product engineering company specializing in innovative solutions powered by AI, machine learning, and IoT. Contributed to full-stack development of applications, helping harness cutting-edge AI/ML technologies to build advanced software products. Gained industry experience working on intelligent systems and collaborative engineering projects in a startup-sized team environment.",
+    },
+    {
+      company: "Xleron",
+      href: "https://xleron.io",
+      badges: ["Internship"],
+      location: "Sri Lanka",
+      title: "Software Engineer Intern",
+      logoUrl: "/xleron.jpg",
+      start: "Oct 2024",
+      end: "Mar 2025",
+      description:
+        "Completed a 6-month internship as a Software Engineer Intern at Xleron, gaining hands-on experience in AI/ML solutions, IoT development, and full-stack software engineering. Worked on innovative projects involving intelligent systems and automation technologies.",
+    },
+    {
+      company: "PulseOpes Ai",
+      href: "https://pulseopsai.com/",
+      badges: ["Co-Founder"],
+      location: "Sri Lanka",
+      title: "Startup Founder / Product Designer",
+      logoUrl: "/pulseai.jpg",
+      start: "2025",
+      end: "Present",
+      description:
+        "Co-founding and leading PulseOpes Ai, an AI automation platform that connects social media accounts and enables intelligent post scheduling. Driving product development, technical strategy, and business growth. Specializing in AI-powered automation solutions to streamline social media management and improve content scheduling efficiency.",
     },
     {
       company: "Upwork",

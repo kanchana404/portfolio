@@ -19,11 +19,35 @@ const BLUR_FADE_DELAY = 0.04;
 
 export default function Page() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentWorkPage, setCurrentWorkPage] = useState(1);
   const projectsPerPage = 4;
+  const workPerPage = 4;
   const totalPages = Math.ceil(DATA.projects.length / projectsPerPage);
   const startIndex = (currentPage - 1) * projectsPerPage;
   const endIndex = startIndex + projectsPerPage;
   const currentProjects = DATA.projects.slice(startIndex, endIndex);
+  // Simple pagination: AgentKong first, then paginate all experiences
+  const agentKongWork = DATA.work.find(work => work.company === "AgentKong");
+  const otherWork = DATA.work.filter(work => work.company !== "AgentKong");
+  
+  let currentWork;
+  if (currentWorkPage === 1) {
+    // First page: AgentKong + 3 other experiences
+    const firstPageOthers = otherWork.slice(0, workPerPage - 1);
+    currentWork = agentKongWork ? [agentKongWork, ...firstPageOthers] : otherWork.slice(0, workPerPage);
+  } else {
+    // Other pages: continue from where first page left off
+    const remainingWork = otherWork.slice(workPerPage - 1);
+    const startIndex = (currentWorkPage - 2) * workPerPage;
+    const endIndex = startIndex + workPerPage;
+    currentWork = remainingWork.slice(startIndex, endIndex);
+  }
+  
+  const totalWorkPages = Math.ceil((otherWork.length + 1) / workPerPage);
+
+  // Debug logging
+  console.log('Current work page:', currentWorkPage);
+  console.log('Current work:', currentWork.map(w => w.company + ' - ' + w.title));
 
   return (
     <main className="flex flex-col min-h-[100dvh] space-y-10">
@@ -63,39 +87,101 @@ export default function Page() {
         </BlurFade>
       </section>
       <section id="work">
-        <div className="flex min-h-0 flex-col gap-y-3">
+        <div className="space-y-12 w-full py-12">
           <BlurFade delay={BLUR_FADE_DELAY * 5}>
-            <h2 className="text-xl font-bold">Work Experience</h2>
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                  Professional Experience
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  Work Experience
+                </h2>
+                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  My professional journey across various companies and roles, building innovative solutions and gaining valuable experience.
+                </p>
+              </div>
+            </div>
           </BlurFade>
-          {DATA.work.map((work, id) => (
-            <BlurFade
-              key={work.company}
-              delay={BLUR_FADE_DELAY * 6 + id * 0.05}
-            >
-              <ResumeCard
-                key={work.company}
-                logoUrl={work.logoUrl}
-                altText={work.company}
-                title={work.company}
-                subtitle={work.title}
-                href={work.href}
-                badges={work.badges}
-                period={`${work.start} - ${work.end ?? "Present"}`}
-                description={work.description}
-              />
+          <div className="flex min-h-0 flex-col gap-y-3 max-w-[800px] mx-auto">
+            {currentWork.map((work, id) => (
+              <BlurFade
+                key={`${work.company}-${work.title}-${currentWorkPage}`}
+                delay={BLUR_FADE_DELAY * 6 + id * 0.05}
+              >
+                <ResumeCard
+                  key={work.company}
+                  logoUrl={work.logoUrl}
+                  altText={work.company}
+                  title={work.company}
+                  subtitle={work.title}
+                  href={work.href}
+                  badges={work.badges}
+                  period={`${work.start} - ${work.end ?? "Present"}`}
+                  description={work.description}
+                />
+              </BlurFade>
+            ))}
+          </div>
+          
+          {/* Work Experience Pagination */}
+          {totalWorkPages > 1 && (
+            <BlurFade delay={BLUR_FADE_DELAY * 7}>
+              <div className="flex justify-center items-center space-x-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWorkPage(Math.max(1, currentWorkPage - 1))}
+                  disabled={currentWorkPage === 1}
+                  className="px-3 py-1"
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex space-x-1">
+                  {Array.from({ length: totalWorkPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentWorkPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentWorkPage(page)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWorkPage(Math.min(totalWorkPages, currentWorkPage + 1))}
+                  disabled={currentWorkPage === totalWorkPages}
+                  className="px-3 py-1"
+                >
+                  Next
+                </Button>
+              </div>
             </BlurFade>
-          ))}
+          )}
+          
+          {/* Show total work experience count */}
+          <BlurFade delay={BLUR_FADE_DELAY * 8}>
+            <div className="text-center text-sm text-muted-foreground">
+              Page {currentWorkPage} of {totalWorkPages} • {DATA.work.length} total experiences
+            </div>
+          </BlurFade>
         </div>
       </section>
       <section id="education">
         <div className="flex min-h-0 flex-col gap-y-3">
-          <BlurFade delay={BLUR_FADE_DELAY * 7}>
+          <BlurFade delay={BLUR_FADE_DELAY * 9}>
             <h2 className="text-xl font-bold">Education</h2>
           </BlurFade>
           {DATA.education.map((education, id) => (
             <BlurFade
               key={education.school}
-              delay={BLUR_FADE_DELAY * 8 + id * 0.05}
+              delay={BLUR_FADE_DELAY * 10 + id * 0.05}
             >
               <ResumeCard
                 key={education.school}
@@ -112,12 +198,12 @@ export default function Page() {
       </section>
       <section id="skills">
         <div className="flex min-h-0 flex-col gap-y-3">
-          <BlurFade delay={BLUR_FADE_DELAY * 9}>
+          <BlurFade delay={BLUR_FADE_DELAY * 11}>
             <h2 className="text-xl font-bold">Technical Skills</h2>
           </BlurFade>
           <div className="flex flex-wrap gap-1">
             {DATA.skills.map((skill, id) => (
-              <BlurFade key={skill} delay={BLUR_FADE_DELAY * 10 + id * 0.05}>
+              <BlurFade key={skill} delay={BLUR_FADE_DELAY * 12 + id * 0.05}>
                 <Badge key={skill}>{skill}</Badge>
               </BlurFade>
             ))}
@@ -126,7 +212,7 @@ export default function Page() {
       </section>
       <section id="projects">
         <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 11}>
+          <BlurFade delay={BLUR_FADE_DELAY * 13}>
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
@@ -145,7 +231,7 @@ export default function Page() {
             {currentProjects.map((project, id) => (
               <BlurFade
                 key={project.title}
-                delay={BLUR_FADE_DELAY * 12 + id * 0.05}
+                delay={BLUR_FADE_DELAY * 14 + id * 0.05}
               >
                 <ProjectCard
                   href={project.href}
@@ -164,7 +250,7 @@ export default function Page() {
           
           {/* Pagination */}
           {totalPages > 1 && (
-            <BlurFade delay={BLUR_FADE_DELAY * 13}>
+            <BlurFade delay={BLUR_FADE_DELAY * 15}>
               <div className="flex justify-center items-center space-x-2 mt-8">
                 <Button
                   variant="outline"
@@ -204,7 +290,7 @@ export default function Page() {
           )}
           
           {/* Show total projects count */}
-          <BlurFade delay={BLUR_FADE_DELAY * 14}>
+          <BlurFade delay={BLUR_FADE_DELAY * 16}>
             <div className="text-center text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(endIndex, DATA.projects.length)} of {DATA.projects.length} projects
             </div>
@@ -213,7 +299,7 @@ export default function Page() {
       </section>
       <section id="hackathons">
         <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 15}>
+          <BlurFade delay={BLUR_FADE_DELAY * 17}>
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
@@ -228,12 +314,12 @@ export default function Page() {
               </div>
             </div>
           </BlurFade>
-          <BlurFade delay={BLUR_FADE_DELAY * 16}>
+          <BlurFade delay={BLUR_FADE_DELAY * 18}>
             <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
               {DATA.hackathons.map((project, id) => (
                 <BlurFade
                   key={project.title + project.dates}
-                  delay={BLUR_FADE_DELAY * 17 + id * 0.05}
+                  delay={BLUR_FADE_DELAY * 19 + id * 0.05}
                 >
                   <HackathonCard
                     title={project.title}
@@ -251,7 +337,7 @@ export default function Page() {
       </section>
       <section id="contact">
         <div className="grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 18}>
+          <BlurFade delay={BLUR_FADE_DELAY * 20}>
             <div className="space-y-3">
               <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
                 Get In Touch
