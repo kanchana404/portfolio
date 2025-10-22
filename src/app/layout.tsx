@@ -11,8 +11,6 @@ import "./globals.css";
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "swap",
-  preload: true,
 });
 
 export const metadata: Metadata = {
