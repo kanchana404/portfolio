@@ -179,6 +179,136 @@ export const DATA = {
   ],
   projects: [
     {
+      title: "Kaidenz Clothing - Full-Stack E-commerce Platform",
+      href: "https://kaidenz-clothing.vercel.app",
+      dates: "2024",
+      active: true,
+      description:
+        "Built a complete full-stack e-commerce platform from the ground up with cutting-edge technology. Features lightning-fast responsive user experience with Next.js frontend, enterprise-grade Java EE6 backend architecture, and secure Stripe payment integration. This project showcases end-to-end development expertise from crafting intuitive user interfaces to implementing robust backend systems and secure payment processing.",
+      technologies: [
+        "Next.js",
+        "Java EE6",
+        "Stripe",
+        "Full-Stack",
+        "E-commerce",
+        "Payment Integration",
+      ],
+      links: [
+        {
+          type: "Live Demo",
+          href: "https://kaidenz-clothing.vercel.app",
+          icon: <Icons.globe className="size-3" />,
+        },
+        {
+          type: "GitHub",
+          href: "https://github.com/kanchana404/kaidenz-clothing",
+          icon: <Icons.github className="size-3" />,
+        },
+        {
+          type: "LinkedIn",
+          href: "https://www.linkedin.com/posts/kavitha-kanchana_%F0%9D%97%9D%F0%9D%98%82%F0%9D%98%80%F0%9D%98%81-%F0%9D%97%B9%F0%9D%97%AE%F0%9D%98%82%F0%9D%97%BB%F0%9D%97%B0%F0%9D%97%B5%F0%9D%97%B2%F0%9D%97%B1-%F0%9D%97%AE-%F0%9D%97%B3%F0%9D%98%82%F0%9D%97%B9%F0%9D%97%B9-%F0%9D%98%80%F0%9D%98%81%F0%9D%97%AE%F0%9D%97%B0%F0%9D%97%B8-activity-7361400455844818945-zRlb",
+          icon: <Icons.linkedin className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
+      title: "GSAP Animation Project",
+      href: "https://lnkd.in/gt4MJYJg",
+      dates: "2024",
+      active: true,
+      description:
+        "My inaugural GSAP animation endeavor! Delved into GSAP, crafting a web project adorned with seamless animations. Witnessing how animations breathe vitality into a website is truly remarkable. Built with React, Vite, GSAP, and Tailwind CSS to create engaging and smooth user experiences.",
+      technologies: [
+        "React",
+        "Vite",
+        "GSAP",
+        "Tailwind CSS",
+        "Animation",
+        "Front-End",
+      ],
+      links: [
+        {
+          type: "Live Demo",
+          href: "https://lnkd.in/gt4MJYJg",
+          icon: <Icons.globe className="size-3" />,
+        },
+        {
+          type: "GitHub",
+          href: "https://github.com/kanchana404/gsap-project",
+          icon: <Icons.github className="size-3" />,
+        },
+        {
+          type: "LinkedIn",
+          href: "https://www.linkedin.com/posts/kavitha-kanchana_webdevelopment-gsap-react-activity-7346758173195714561-aEH8",
+          icon: <Icons.linkedin className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
+      title: "Google Business API Integration",
+      href: "https://github.com/kanchana404/Google-bussiness-api-Get-reviews-and-Reply-reviews",
+      dates: "2024",
+      active: true,
+      description:
+        "Built a complete solution for Google Business API integration in Next.js that handles OAuth authentication, review fetching and replies, multi-location management, and token handling. Features secure authentication, real-time review management, direct reply system, and advanced filtering capabilities. Ready to use with step-by-step setup guide.",
+      technologies: [
+        "Next.js 14",
+        "TypeScript",
+        "Google My Business API",
+        "OAuth",
+        "API Integration",
+        "Review Management",
+      ],
+      links: [
+        {
+          type: "GitHub",
+          href: "https://github.com/kanchana404/Google-bussiness-api-Get-reviews-and-Reply-reviews",
+          icon: <Icons.github className="size-3" />,
+        },
+        {
+          type: "LinkedIn",
+          href: "https://www.linkedin.com/posts/kavitha-kanchana_nextjs-googlebusinessapi-react-activity-7343672817554493440-gYXK",
+          icon: <Icons.linkedin className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
+      title: "Fit For Hire - AI-Powered HR Platform",
+      href: "https://github.com/kanchana404/Fit-For-Hire",
+      dates: "2024",
+      active: true,
+      description:
+        "MicroSaaS web application built for the JS Mastery Hackathon by Adrian Hajdin and JavaScript Mastery. This AI-powered platform replaces traditional HR managers by analyzing resumes and matching candidates with the best job opportunities available. Employers can post job openings, and candidates can easily apply - all seamlessly managed with AI technology.",
+      technologies: [
+        "AI/ML",
+        "HR Tech",
+        "OpenAI",
+        "MicroSaaS",
+        "Job Matching",
+        "Resume Analysis",
+      ],
+      links: [
+        {
+          type: "GitHub",
+          href: "https://github.com/kanchana404/Fit-For-Hire",
+          icon: <Icons.github className="size-3" />,
+        },
+        {
+          type: "LinkedIn",
+          href: "https://www.linkedin.com/posts/kavitha-kanchana_ai-hrtech-openai-activity-7279273378153119744-K9M4",
+          icon: <Icons.linkedin className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
       title: "AI-Powered Document Summarizer",
       href: "#",
       dates: "2024",
@@ -202,8 +332,8 @@ export const DATA = {
       ],
       image: "",
       video: "",
-        },
-        {
+    },
+    {
       title: "n8n RAG Agent with Web UI",
       href: "#",
       dates: "2024",
@@ -278,108 +408,23 @@ export const DATA = {
       image: "",
       video: "",
     },
-    {
-      title: "n8n Booking System Automation",
-      href: "#",
-      dates: "2024",
-      active: true,
-      description:
-        "Automated booking system with voice AI capabilities for streamlined appointment scheduling and management processes. Integrated voice recognition and AI-powered automation for enhanced user experience using n8n workflows.",
-      technologies: [
-        "n8n",
-        "Voice AI",
-        "Automation",
-        "Booking Systems",
-        "AI Integration",
-        "Process Optimization",
-      ],
-      links: [
-        {
-          type: "View Project",
-          href: "#",
-          icon: <Icons.github className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-        },
-        {
-      title: "Apple iPhone 15 Pro Clone",
-      href: "#",
-      dates: "2024",
-      active: true,
-      description:
-        "Created a dynamic clone of Apple's iPhone 15 Pro product page featuring GSAP animations and Three.js 3D effects. Demonstrates advanced front-end skills with complex animations and 3D visual effects, showcasing attention to detail and modern web development techniques.",
-      technologies: [
-        "GSAP",
-        "Three.js",
-        "3D Effects",
-        "Animation",
-        "Front-End",
-        "Product Design",
-      ],
-      links: [
-        {
-          type: "View Project",
-          href: "#",
-          icon: <Icons.github className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-    },
-    {
-      title: "OpenMRS Healthcare Software",
-      href: "#",
-      dates: "2024",
-      active: true,
-      description:
-        "Participated in the OpenMRS open-source health IT community, applying for Google Summer of Code (GSoC) 2024. Worked on improving healthcare software modules, reflecting dedication to collaborative projects and open-source initiatives. Demonstrates commitment to using code for social impact.",
-      technologies: [
-        "Open Source",
-        "Healthcare IT",
-        "Java",
-        "Collaboration",
-        "Social Impact",
-        "GSoC",
-      ],
-      links: [
-        {
-          type: "OpenMRS",
-          href: "https://talk.openmrs.org",
-          icon: <Icons.globe className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-    },
-    {
-      title: "Automation Solutions Portfolio",
-      href: "#",
-      dates: "2021 - Present",
-      active: true,
-      description:
-        "Custom workflow automation solutions using n8n and Make.com for various clients. System integrations and process optimization that reduced manual work and improved efficiency significantly. Comprehensive automation portfolio showcasing diverse business process improvements.",
-      technologies: [
-        "n8n",
-        "Make.com",
-        "Workflow Automation",
-        "System Integration",
-        "Process Optimization",
-        "Business Automation",
-      ],
-      links: [
-        {
-          type: "Portfolio",
-          href: "#",
-          icon: <Icons.globe className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-    },
   ],
   hackathons: [
+    {
+      title: "IDEALIZE 2025 Web Development Competition - Finals",
+      dates: "2025",
+      location: "University of Moratuwa, Sri Lanka",
+      description:
+        "Thrilled to share that our team KSA Labs was selected for the finals of IDEALIZE 2025 Web Development Competition, organized by AIESEC in University of Moratuwa. Among 900+ applicants, we made it to the final stage and received recognition for building a real-world enterprise web system that goes beyond just a competition project. Our solution is already in the market with real customers. We developed Socyads, a platform that connects social media content creators (influencers) with advertisers. Features include AI-powered influencer-brand matching, multi-platform support (YouTube, Instagram, TikTok, etc.), dashboards for creators & advertisers, secure escrow payments & real-time messaging, and advanced analytics for campaign performance.",
+      image: "",
+      links: [
+        {
+          title: "LinkedIn",
+          icon: <Icons.linkedin className="h-4 w-4" />,
+          href: "https://www.linkedin.com/posts/kalanasandakelum_idealize2025-webdevelopment-startupjourney-activity-7379773403580370944-fGWJ",
+        },
+      ],
+    },
     {
       title: "Generation ALPHA Tech Community",
       dates: "2023 - Present",
