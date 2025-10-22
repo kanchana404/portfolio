@@ -1,6 +1,7 @@
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import TrackingScript from "@/components/tracking-script";
+import FontLoader from "@/components/font-loader";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ import "./globals.css";
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -120,6 +122,9 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
+        {/* Font loader */}
+        <FontLoader />
+        
         {/* AgentKong pixel tracking script */}
         <TrackingScript />
         
