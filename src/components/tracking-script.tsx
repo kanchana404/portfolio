@@ -7,7 +7,7 @@ export default function TrackingScript() {
     <>
       {/* AgentKong tracking script */}
       <Script
-        src="https://portforward.kavithakanchana.xyz/api/widgets/cmhep72t90001vdvwhbseboh1.js?v=4"
+        src="https://portforward.kavithakanchana.xyz/api/widgets/cmguhbcxv0001vdrok0hn8ml2.js?v=4"
         strategy="afterInteractive"
         onLoad={() => {
           console.log('✅ AgentKong tracking loaded via Next.js Script');
