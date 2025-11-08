@@ -5,6 +5,18 @@ import Script from "next/script";
 export default function TrackingScript() {
   return (
     <>
+      {/* AgentKong development tracking script */}
+      <Script
+        src="https://development.agentkong.ai/api/widgets/cmhpssmbo0001lb04m0k5bcbe.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          console.log("✅ AgentKong development tracking loaded via Next.js Script");
+        }}
+        onError={(e) => {
+          console.error("❌ AgentKong development tracking failed to load:", e);
+        }}
+      />
+
       {/* AgentKong tracking script */}
       <Script
         src="https://portforward.kavithakanchana.xyz/api/widgets/cmguhbcxv0001vdrok0hn8ml2.js?v=4"
@@ -21,6 +33,9 @@ export default function TrackingScript() {
       <Script
         id="meta-pixel"
         strategy="afterInteractive"
+        onError={() => {
+          // Silently handle ad blocker interference - this is expected behavior
+        }}
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s)
