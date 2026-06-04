@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/me.png",
+        url: "/IMG_2648.jpg",
         width: 1200,
         height: 630,
         alt: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
     description: "Kavitha Kanchana is an Associate Software Engineer at Xleron and Startup Founder at Ryzera Technologies, specializing in AI/ML integration and workflow automation.",
-    images: ["/me.png"],
+    images: ["/IMG_2648.jpg"],
     creator: "@kanchana404",
   },
   verification: {

@@ -11,7 +11,7 @@ export const DATA = {
     "Software Engineer at AgentKong | Startup Founder at Ryzera Technologies | Full-Stack Developer | AI/ML & Automation Specialist | Building innovative solutions with cutting-edge technologies.",
   summary:
     "I'm Kavitha Kanchana, a Sri Lankan software engineering professional currently pursuing my undergraduate degree in Software Engineering at Birmingham City University. I work as a Software Engineer at AgentKong, specializing in AI/ML and automation solutions, while also founding Ryzera Technologies to focus on innovative software solutions. I have extensive experience in full-stack development, AI automation using n8n and Make.com, and building AI-powered applications. My expertise spans from creating interactive 3D web experiences to developing comprehensive automation workflows that streamline business processes. I'm also an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
-  avatarUrl: "/me.png",
+  avatarUrl: "/IMG_2648.jpg",
   skills: [
     "JavaScript",
     "TypeScript",
