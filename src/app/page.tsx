@@ -6,6 +6,7 @@ import BlurFadeText from "@/components/magicui/blur-fade-text";
 import { ProjectCard } from "@/components/project-card";
 import { ResumeCard } from "@/components/resume-card";
 import GithubCalendar from "@/components/github-calendar";
+import GithubRepos from "@/components/github-repos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -308,6 +309,32 @@ export default function Page() {
           <BlurFade delay={BLUR_FADE_DELAY * 16}>
             <div className="text-center text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(endIndex, DATA.projects.length)} of {DATA.projects.length} projects
+            </div>
+          </BlurFade>
+        </div>
+      </section>
+      <section id="repositories">
+        <div className="space-y-12 w-full py-12">
+          <BlurFade delay={BLUR_FADE_DELAY * 16.5}>
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                  Open Source
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  All Repositories
+                </h2>
+                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Every public repository I&apos;ve built, pulled live from the
+                  GitHub API and analyzed into a short description. This list
+                  syncs itself — new projects I push show up here automatically.
+                </p>
+              </div>
+            </div>
+          </BlurFade>
+          <BlurFade delay={BLUR_FADE_DELAY * 17}>
+            <div className="max-w-[800px] mx-auto">
+              <GithubRepos />
             </div>
           </BlurFade>
         </div>
