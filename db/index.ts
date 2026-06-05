@@ -1,4 +1,3 @@
-// utils/mongodb.ts
 
 import mongoose from 'mongoose';
 
