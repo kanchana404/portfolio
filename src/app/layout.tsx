@@ -114,6 +114,42 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: DATA.name,
+    url: DATA.url,
+    image: new URL(DATA.avatarUrl, DATA.url).toString(),
+    gender: "Male",
+    jobTitle: "Software Engineer",
+    description: DATA.description,
+    worksFor: [
+      { "@type": "Organization", name: "AgentKong", url: "https://agentkong.com" },
+      { "@type": "Organization", name: "Ryzera Technologies" },
+    ],
+    alumniOf: {
+      "@type": "CollegeOrUniversity",
+      name: "Birmingham City University",
+    },
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "Sri Lanka",
+    },
+    sameAs: [
+      DATA.contact.social.GitHub.url,
+      DATA.contact.social.LinkedIn.url,
+      "https://twitter.com/kanchana404",
+    ],
+    knowsAbout: [
+      "Software Engineering",
+      "Full-Stack Development",
+      "AI/ML Integration",
+      "Workflow Automation",
+      "React",
+      "Next.js",
+    ],
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -122,6 +158,11 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
+        {/* Person structured data — tells search engines who you are, incl. gender */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
         {/* Font loader */}
         <FontLoader />
         
