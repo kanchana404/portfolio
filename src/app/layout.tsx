@@ -99,7 +99,7 @@ export const metadata: Metadata = {
     creator: "@kanchana404",
   },
   verification: {
-    google: "",
+    google: "ruMST9fSdT__2l747yzmAhzGJX4xsyYYKYX9EwymwVc",
     yandex: "",
   },
   alternates: {
