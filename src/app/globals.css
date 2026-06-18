@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Respect users who prefer reduced motion: disable the blur/transform fades. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
     :root {
       --background: 0 0% 100%;
