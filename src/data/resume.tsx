@@ -8,10 +8,10 @@ export const DATA = {
   location: "Sri Lanka",
   locationLink: "https://www.google.com/maps/place/sri+lanka",
   description:
-    "Software Engineer at AgentKong | Startup Founder at Ryzera Technologies | Full-Stack Developer | AI/ML & Automation Specialist | Building innovative solutions with cutting-edge technologies.",
+    "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies, building SaaS products — from micro SaaS to enterprise-level platforms — plus AI automation, with React, Next.js, and Node.js.",
   summary:
-    "I'm Kavitha Kanchana (he/him), a Sri Lankan software engineering professional currently pursuing my undergraduate degree in Software Engineering at Birmingham City University. I work as a Software Engineer at AgentKong, specializing in AI/ML and automation solutions, while also founding Ryzera Technologies to focus on innovative software solutions. I have extensive experience in full-stack development, AI automation using n8n and Make.com, and building AI-powered applications. My expertise spans from creating interactive 3D web experiences to developing comprehensive automation workflows that streamline business processes. I'm also an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
-  avatarUrl: "/IMG_2648.jpg",
+    "I'm Kavitha Kanchana (he/him), a Sri Lankan software engineer pursuing my B.Sc. in Software Engineering at Birmingham City University. I work as a Software Engineer at Cortana AI and co-founded Ryzera Technologies, where I focus on building SaaS products — from lightweight micro SaaS tools to enterprise-level platforms. I have extensive experience in full-stack development with React, Next.js, and Node.js, designing scalable architectures, subscription and payment systems, and clean REST APIs. Alongside my SaaS work, I also build AI automation and AI-powered features. I'm an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
+  avatarUrl: "/kavitha-kanchana-software-engineer.jpg",
   skills: [
     "JavaScript",
     "TypeScript",
@@ -49,8 +49,9 @@ export const DATA = {
     { href: "/blog", icon: NotebookIcon, label: "Blog" },
   ],
   contact: {
-    email: "kavitha.kanchana@example.com",
-    tel: "+94 123 456 7890",
+    email: "kanchanakavitha6@gmail.com",
+    workEmail: "kavitha@usecortana.ai",
+    tel: "",
     social: {
       GitHub: {
         name: "GitHub",
@@ -66,7 +67,7 @@ export const DATA = {
       },
       email: {
         name: "Send Email",
-        url: "mailto:kavitha.kanchana@example.com",
+        url: "mailto:kanchanakavitha6@gmail.com",
         icon: Icons.email,
         navbar: false,
       },
@@ -75,8 +76,8 @@ export const DATA = {
 
   work: [
     {
-      company: "AgentKong",
-      href: "https://agentkong.com",
+      company: "Cortana AI",
+      href: "https://usecortana.ai",
       badges: ["Full-time"],
       location: "Remote",
       title: "Software Engineer",
@@ -84,14 +85,14 @@ export const DATA = {
       start: "Aug 2025",
       end: "Present",
       description:
-        "Working as a Software Engineer at AgentKong, focusing on AI-powered automation solutions and intelligent agent development. Contributing to cutting-edge AI technologies and building scalable software solutions that enhance business processes through intelligent automation.",
+        "Working as a Software Engineer at Cortana AI, building SaaS products and AI-powered automation, including intelligent agent development. Contributing to cutting-edge AI technologies and building scalable software solutions that enhance business processes.",
     },
     {
       company: "Ryzera Technologies",
       href: "https://ryzera.io",
       badges: ["Co-Founder"],
       location: "Sri Lanka",
-      title: "Startup Founder / Software Engineer",
+      title: "Co-Founder & Software Engineer",
       logoUrl: "/ryzera.jpg",
       start: "2023",
       end: "Present",
@@ -127,7 +128,7 @@ export const DATA = {
       href: "https://pulseopsai.com/",
       badges: ["Co-Founder"],
       location: "Sri Lanka",
-      title: "Startup Founder / Product Designer",
+      title: "Co-Founder & Product Designer",
       logoUrl: "/pulseai.jpg",
       start: "2025",
       end: "Present",

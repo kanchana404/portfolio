@@ -5,7 +5,7 @@ import FontLoader from "@/components/font-loader";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 
@@ -15,70 +15,47 @@ const fontSans = FontSans({
   display: "swap",
 });
 
+// Single source of truth for the site's SEO copy (current role: Software
+// Engineer @ Cortana AI — keep in sync with the Person JSON-LD below).
+const SITE_TITLE = `${DATA.name} - Full-Stack & SaaS Software Engineer`;
+const SITE_DESCRIPTION =
+  "Software Engineer at Cortana AI building SaaS — from micro SaaS to enterprise-grade platforms — plus AI automation. Next.js, React, Node.js. Sri Lanka.";
+const OG_DESCRIPTION =
+  "Software Engineer at Cortana AI building SaaS products — from micro SaaS to enterprise-level platforms — plus AI automation, with Next.js, React & Node.js.";
+const TWITTER_DESCRIPTION =
+  "Software Engineer at Cortana AI building SaaS — micro SaaS to enterprise — plus AI automation, with React, Next.js & Node.js. Full-stack developer in Sri Lanka.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(DATA.url),
   title: {
-    default: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
+    default: SITE_TITLE,
     template: `%s | ${DATA.name}`,
   },
-  description: "Kavitha Kanchana is an Associate Software Engineer at Xleron and Startup Founder at Ryzera Technologies, specializing in AI/ML integration, workflow automation with n8n/Make.com, and full-stack development. Expert in React, Next.js, Three.js, and cutting-edge technologies. Based in Sri Lanka.",
+  description: SITE_DESCRIPTION,
   keywords: [
     "Kavitha Kanchana",
-    "Associate Software Engineer",
-    "Startup Founder",
+    "Software Engineer",
+    "SaaS Developer",
+    "Micro SaaS Developer",
+    "Enterprise SaaS Developer",
     "Full-Stack Developer",
-    "AI/ML Integration Specialist",
-    "Automation Specialist",
-    "MERN Stack Developer",
-    "React Developer",
     "Next.js Developer",
-    "Three.js Developer",
-    "OpenAI API",
-    "GPT-4 Integration",
-    "n8n Automation",
-    "Make.com",
-    "Workflow Automation",
+    "React Developer",
+    "AI Automation",
     "Sri Lanka Software Engineer",
-    "Xleron",
+    "Cortana AI",
     "Ryzera Technologies",
-    "Birmingham City University",
-    "Software Engineering",
-    "AI-Powered Applications",
-    "3D Web Development",
-    "Open Source Contributor",
-    "Generation ALPHA",
-    "OpenMRS",
-    "GSoC",
-    "GSAP Animations",
-    "Three.js 3D Effects",
-    "Document Summarizer",
-    "Image Editing SaaS",
-    "Apple iPhone Clone",
-    "Travel Web Application",
-    "Healthcare IT",
-    "Social Impact",
-    "Upwork Automation Engineer",
-    "Fiverr Web Developer",
-    "Freelance Developer"
   ],
-  authors: [{ name: DATA.name }],
+  authors: [{ name: DATA.name, url: DATA.url }],
   creator: DATA.name,
   publisher: DATA.name,
   openGraph: {
-    title: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
-    description: "Kavitha Kanchana is an Associate Software Engineer at Xleron and Startup Founder at Ryzera Technologies, specializing in AI/ML integration, workflow automation with n8n/Make.com, and full-stack development.",
+    title: SITE_TITLE,
+    description: OG_DESCRIPTION,
     url: DATA.url,
-    siteName: `${DATA.name} - Portfolio`,
+    siteName: `${DATA.name} — Portfolio`,
     locale: "en_US",
     type: "website",
-    images: [
-      {
-        url: "/IMG_2648.jpg",
-        width: 1200,
-        height: 630,
-        alt: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
-      },
-    ],
   },
   robots: {
     index: true,
@@ -93,20 +70,26 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${DATA.name} - Associate Software Engineer | Startup Founder | AI/ML & Automation Specialist`,
-    description: "Kavitha Kanchana is an Associate Software Engineer at Xleron and Startup Founder at Ryzera Technologies, specializing in AI/ML integration and workflow automation.",
-    images: ["/IMG_2648.jpg"],
+    title: SITE_TITLE,
+    description: TWITTER_DESCRIPTION,
     creator: "@kanchana404",
   },
   verification: {
     google: "ruMST9fSdT__2l747yzmAhzGJX4xsyYYKYX9EwymwVc",
-    yandex: "",
   },
   alternates: {
     canonical: DATA.url,
   },
-  category: "technology",
-  classification: "Software Engineer Portfolio",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+  colorScheme: "light dark",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -114,39 +97,91 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const personJsonLd = {
+  const personImage = new URL(DATA.avatarUrl, DATA.url).toString();
+
+  // Unified structured-data graph: WebSite + Person + ProfilePage, cross-linked
+  // by @id so search engines resolve one consistent entity for the site owner.
+  const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Person",
-    name: DATA.name,
-    url: DATA.url,
-    image: new URL(DATA.avatarUrl, DATA.url).toString(),
-    gender: "Male",
-    jobTitle: "Software Engineer",
-    description: DATA.description,
-    worksFor: [
-      { "@type": "Organization", name: "AgentKong", url: "https://agentkong.com" },
-      { "@type": "Organization", name: "Ryzera Technologies" },
-    ],
-    alumniOf: {
-      "@type": "CollegeOrUniversity",
-      name: "Birmingham City University",
-    },
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "Sri Lanka",
-    },
-    sameAs: [
-      DATA.contact.social.GitHub.url,
-      DATA.contact.social.LinkedIn.url,
-      "https://twitter.com/kanchana404",
-    ],
-    knowsAbout: [
-      "Software Engineering",
-      "Full-Stack Development",
-      "AI/ML Integration",
-      "Workflow Automation",
-      "React",
-      "Next.js",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${DATA.url}/#website`,
+        url: DATA.url,
+        name: `${DATA.name} — Portfolio`,
+        alternateName: `${DATA.name} Portfolio`,
+        description:
+          "Portfolio of Kavitha Kanchana, a software engineer specializing in full-stack development, building SaaS products from micro SaaS to enterprise-level platforms, plus AI automation.",
+        inLanguage: "en-US",
+        publisher: { "@id": `${DATA.url}/#person` },
+      },
+      {
+        "@type": "Person",
+        "@id": `${DATA.url}/#person`,
+        name: DATA.name,
+        givenName: "Kavitha",
+        familyName: "Kanchana",
+        alternateName: "kanchana404",
+        // Explicit gender signal — the name is often misread as female online.
+        gender: "https://schema.org/Male",
+        pronouns: "he/him",
+        url: DATA.url,
+        image: {
+          "@type": "ImageObject",
+          url: personImage,
+        },
+        jobTitle: "Software Engineer",
+        description:
+          "Kavitha Kanchana is a software engineer at Cortana AI and the co-founder of Ryzera Technologies and PulseOpes Ai. He builds SaaS products ranging from micro SaaS tools to enterprise-level platforms, and also develops AI automation — specializing in full-stack development with React, Next.js, Node.js and TypeScript.",
+        worksFor: {
+          "@type": "Organization",
+          name: "Cortana AI",
+          url: "https://usecortana.ai",
+        },
+        alumniOf: {
+          "@type": "CollegeOrUniversity",
+          name: "Birmingham City University",
+          url: "https://www.bcu.ac.uk",
+        },
+        address: { "@type": "PostalAddress", addressCountry: "LK" },
+        nationality: { "@type": "Country", name: "Sri Lanka" },
+        memberOf: { "@type": "Organization", name: "Generation ALPHA" },
+        sameAs: [
+          DATA.contact.social.GitHub.url,
+          DATA.contact.social.LinkedIn.url,
+          "https://x.com/kanchana404",
+        ],
+        knowsAbout: [
+          "Software Engineering",
+          "Full-Stack Development",
+          "SaaS Development",
+          "Micro SaaS",
+          "Enterprise Software",
+          "Software as a Service",
+          "AI Automation",
+          "JavaScript",
+          "TypeScript",
+          "React",
+          "Next.js",
+          "Node.js",
+          "PostgreSQL",
+          "REST APIs",
+          "Cloud Deployment",
+        ],
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": `${DATA.url}/#profilepage`,
+        url: DATA.url,
+        name: `${DATA.name} - Software Engineer & Founder`,
+        dateCreated: "2025-08-01T00:00:00+05:30",
+        dateModified: "2026-06-18T00:00:00+05:30",
+        isPartOf: { "@id": `${DATA.url}/#website` },
+        about: { "@id": `${DATA.url}/#person` },
+        mainEntity: { "@id": `${DATA.url}/#person` },
+        primaryImageOfPage: { "@type": "ImageObject", url: personImage },
+        inLanguage: "en-US",
+      },
     ],
   };
 
@@ -158,17 +193,17 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {/* Person structured data — tells search engines who you are, incl. gender */}
+        {/* Structured data: WebSite + Person + ProfilePage (one cross-linked graph) */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {/* Font loader */}
         <FontLoader />
-        
-        {/* AgentKong pixel tracking script */}
+
+        {/* Cortana AI pixel tracking script */}
         <TrackingScript />
-        
+
         <ThemeProvider attribute="class" defaultTheme="light">
           <TooltipProvider delayDuration={0}>
             {children}
