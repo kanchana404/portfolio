@@ -1,419 +1,407 @@
-"use client";
-
 import { HackathonCard } from "@/components/hackathon-card";
 import BlurFade from "@/components/magicui/blur-fade";
 import BlurFadeText from "@/components/magicui/blur-fade-text";
-import { ProjectCard } from "@/components/project-card";
 import { ResumeCard } from "@/components/resume-card";
 import GithubCalendar from "@/components/github-calendar";
 import GithubRepos from "@/components/github-repos";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WorkSection from "@/components/work-section";
+import ProjectsSection from "@/components/projects-section";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { DATA } from "@/data/resume";
+import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
-import { useState } from "react";
-
-
 
 const BLUR_FADE_DELAY = 0.04;
 
 export default function Page() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [currentWorkPage, setCurrentWorkPage] = useState(1);
-  const projectsPerPage = 4;
-  const workPerPage = 4;
-  const totalPages = Math.ceil(DATA.projects.length / projectsPerPage);
-  const startIndex = (currentPage - 1) * projectsPerPage;
-  const endIndex = startIndex + projectsPerPage;
-  const currentProjects = DATA.projects.slice(startIndex, endIndex);
-  // Simple pagination: AgentKong first, then paginate all experiences
-  const agentKongWork = DATA.work.find(work => work.company === "AgentKong");
-  const otherWork = DATA.work.filter(work => work.company !== "AgentKong");
-  
-  let currentWork;
-  if (currentWorkPage === 1) {
-    // First page: AgentKong + 3 other experiences
-    const firstPageOthers = otherWork.slice(0, workPerPage - 1);
-    currentWork = agentKongWork ? [agentKongWork, ...firstPageOthers] : otherWork.slice(0, workPerPage);
-  } else {
-    // Other pages: continue from where first page left off
-    const remainingWork = otherWork.slice(workPerPage - 1);
-    const startIndex = (currentWorkPage - 2) * workPerPage;
-    const endIndex = startIndex + workPerPage;
-    currentWork = remainingWork.slice(startIndex, endIndex);
-  }
-  
-  const totalWorkPages = Math.ceil((otherWork.length + 1) / workPerPage);
-
-  // Debug logging
-  console.log('Current work page:', currentWorkPage);
-  console.log('Current work:', currentWork.map(w => w.company + ' - ' + w.title));
+  const firstName = DATA.name.split(" ")[0];
+  const year = new Date().getFullYear();
 
   return (
-    <main className="flex flex-col min-h-[100dvh] space-y-10">
-      <section id="hero">
-        <div className="mx-auto w-full max-w-2xl space-y-8">
-          <div className="gap-2 flex justify-between">
-            <div className="flex-col flex flex-1 space-y-1.5">
-              <BlurFadeText
-                delay={BLUR_FADE_DELAY}
-                className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none"
-                yOffset={8}
-                text={`Hi, I'm ${DATA.name.split(" ")[0]} 👋`}
-              />
-              <BlurFadeText
-                className="max-w-[600px] md:text-xl"
-                delay={BLUR_FADE_DELAY}
-                text={DATA.description}
-              />
-            </div>
-            <BlurFade delay={BLUR_FADE_DELAY}>
-              <Avatar className="size-28 border">
-                <AvatarImage
-                  alt={DATA.name}
-                  src={DATA.avatarUrl}
-                  className="object-cover object-[center_25%]"
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-foreground focus:px-3 focus:py-2 focus:text-background"
+      >
+        Skip to main content
+      </a>
+      <main
+        id="main-content"
+        className="flex flex-col min-h-[100dvh] space-y-10"
+      >
+        <section id="hero" className="scroll-mt-24">
+          <div className="mx-auto w-full max-w-2xl space-y-8">
+            <div className="gap-2 flex justify-between">
+              <div className="flex-col flex flex-1 space-y-1.5">
+                {/* Single, keyword-rich H1 — rendered statically (no fade) so it
+                    is visible to every crawler, including non-JS AI bots. */}
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  Hi, I&apos;m {firstName} 👋
+                  <span className="sr-only">
+                    {" "}
+                    — Full-Stack Software Engineer building SaaS products, from
+                    micro SaaS to enterprise level, plus AI automation, in Sri
+                    Lanka
+                  </span>
+                </h1>
+                <BlurFadeText
+                  className="max-w-[600px] md:text-xl"
+                  delay={BLUR_FADE_DELAY}
+                  text={DATA.description}
                 />
-                <AvatarFallback>{DATA.initials}</AvatarFallback>
-              </Avatar>
-            </BlurFade>
-          </div>
-        </div>
-      </section>
-      <section id="about">
-        <BlurFade delay={BLUR_FADE_DELAY * 3}>
-          <h2 className="text-xl font-bold">About Me</h2>
-        </BlurFade>
-        <BlurFade delay={BLUR_FADE_DELAY * 4}>
-          <Markdown className="prose max-w-full text-pretty font-sans text-sm text-muted-foreground dark:prose-invert">
-            {DATA.summary}
-          </Markdown>
-        </BlurFade>
-      </section>
-      <section id="work">
-        <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 5}>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                  Professional Experience
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Work Experience
-                </h2>
-                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  My professional journey across various companies and roles, building innovative solutions and gaining valuable experience.
-                </p>
+                <BlurFade delay={BLUR_FADE_DELAY * 2}>
+                  <p className="text-sm text-muted-foreground">
+                    📍{" "}
+                    <Link
+                      href={DATA.locationLink}
+                      className="hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {DATA.location}
+                    </Link>{" "}
+                    · He/Him · Available worldwide for remote work &amp;
+                    freelance projects
+                  </p>
+                </BlurFade>
               </div>
+              <BlurFade delay={BLUR_FADE_DELAY}>
+                <Image
+                  src={DATA.avatarUrl}
+                  alt="Kavitha Kanchana — Software Engineer at Cortana AI, full-stack & SaaS developer (and AI automation) in Sri Lanka"
+                  width={112}
+                  height={112}
+                  priority
+                  className="size-28 rounded-full border object-cover object-[center_25%]"
+                />
+              </BlurFade>
             </div>
+          </div>
+        </section>
+
+        <nav aria-label="Page sections" className="-mt-4">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <li>
+              <Link href="#about" className="hover:text-foreground hover:underline">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link href="#work" className="hover:text-foreground hover:underline">
+                Work Experience
+              </Link>
+            </li>
+            <li>
+              <Link href="#skills" className="hover:text-foreground hover:underline">
+                Technical Skills
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="#projects"
+                className="hover:text-foreground hover:underline"
+              >
+                SaaS Projects
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="#repositories"
+                className="hover:text-foreground hover:underline"
+              >
+                Open Source
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog" className="hover:text-foreground hover:underline">
+                Writing
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="#contact"
+                className="hover:text-foreground hover:underline"
+              >
+                Contact
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        <section id="about" className="scroll-mt-24">
+          <BlurFade delay={BLUR_FADE_DELAY * 3}>
+            <h2 className="text-xl font-bold">About Me</h2>
           </BlurFade>
-          <div className="flex min-h-0 flex-col gap-y-3 max-w-[800px] mx-auto">
-            {currentWork.map((work, id) => (
+          <BlurFade delay={BLUR_FADE_DELAY * 4}>
+            <Markdown className="prose max-w-full text-pretty font-sans text-sm text-muted-foreground dark:prose-invert">
+              {DATA.summary}
+            </Markdown>
+          </BlurFade>
+        </section>
+
+        <section id="work" className="scroll-mt-24">
+          <div className="space-y-12 w-full py-12">
+            <BlurFade delay={BLUR_FADE_DELAY * 5}>
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="space-y-2">
+                  <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                    Professional Experience
+                  </div>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                    Work Experience
+                  </h2>
+                  <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    My professional journey across various companies and roles,
+                    building innovative solutions and gaining valuable
+                    experience.
+                  </p>
+                </div>
+              </div>
+            </BlurFade>
+            <WorkSection />
+          </div>
+        </section>
+
+        <section id="education" className="scroll-mt-24">
+          <div className="flex min-h-0 flex-col gap-y-3">
+            <BlurFade delay={BLUR_FADE_DELAY * 9}>
+              <h2 className="text-xl font-bold">Education</h2>
+            </BlurFade>
+            {DATA.education.map((education, id) => (
               <BlurFade
-                key={`${work.company}-${work.title}-${currentWorkPage}`}
-                delay={BLUR_FADE_DELAY * 6 + id * 0.05}
+                key={education.school}
+                delay={BLUR_FADE_DELAY * 10 + id * 0.05}
               >
                 <ResumeCard
-                  key={work.company}
-                  logoUrl={work.logoUrl}
-                  altText={work.company}
-                  title={work.company}
-                  subtitle={work.title}
-                  href={work.href}
-                  badges={work.badges}
-                  period={`${work.start} - ${work.end ?? "Present"}`}
-                  description={work.description}
+                  key={education.school}
+                  href={education.href}
+                  logoUrl={education.logoUrl}
+                  altText={education.school}
+                  title={education.school}
+                  subtitle={education.degree}
+                  period={`${education.start} - ${education.end}`}
                 />
               </BlurFade>
             ))}
           </div>
-          
-          {/* Work Experience Pagination */}
-          {totalWorkPages > 1 && (
-            <BlurFade delay={BLUR_FADE_DELAY * 7}>
-              <div className="flex justify-center items-center space-x-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentWorkPage(Math.max(1, currentWorkPage - 1))}
-                  disabled={currentWorkPage === 1}
-                  className="px-3 py-1"
-                >
-                  Previous
-                </Button>
-                
-                <div className="flex space-x-1">
-                  {Array.from({ length: totalWorkPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentWorkPage === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentWorkPage(page)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {page}
-                    </Button>
-                  ))}
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentWorkPage(Math.min(totalWorkPages, currentWorkPage + 1))}
-                  disabled={currentWorkPage === totalWorkPages}
-                  className="px-3 py-1"
-                >
-                  Next
-                </Button>
-              </div>
+        </section>
+
+        <section id="skills" className="scroll-mt-24">
+          <div className="flex min-h-0 flex-col gap-y-3">
+            <BlurFade delay={BLUR_FADE_DELAY * 11}>
+              <h2 className="text-xl font-bold">Technical Skills</h2>
             </BlurFade>
-          )}
-          
-          {/* Show total work experience count */}
-          <BlurFade delay={BLUR_FADE_DELAY * 8}>
-            <div className="text-center text-sm text-muted-foreground">
-              Page {currentWorkPage} of {totalWorkPages} • {DATA.work.length} total experiences
-            </div>
-          </BlurFade>
-        </div>
-      </section>
-      <section id="education">
-        <div className="flex min-h-0 flex-col gap-y-3">
-          <BlurFade delay={BLUR_FADE_DELAY * 9}>
-            <h2 className="text-xl font-bold">Education</h2>
-          </BlurFade>
-          {DATA.education.map((education, id) => (
-            <BlurFade
-              key={education.school}
-              delay={BLUR_FADE_DELAY * 10 + id * 0.05}
-            >
-              <ResumeCard
-                key={education.school}
-                href={education.href}
-                logoUrl={education.logoUrl}
-                altText={education.school}
-                title={education.school}
-                subtitle={education.degree}
-                period={`${education.start} - ${education.end}`}
-              />
-            </BlurFade>
-          ))}
-        </div>
-      </section>
-      <section id="skills">
-        <div className="flex min-h-0 flex-col gap-y-3">
-          <BlurFade delay={BLUR_FADE_DELAY * 11}>
-            <h2 className="text-xl font-bold">Technical Skills</h2>
-          </BlurFade>
-          <div className="flex flex-wrap gap-1">
-            {DATA.skills.map((skill, id) => (
-              <BlurFade key={skill} delay={BLUR_FADE_DELAY * 12 + id * 0.05}>
-                <Badge key={skill}>{skill}</Badge>
-              </BlurFade>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section id="github">
-        <div className="flex min-h-0 flex-col gap-y-3">
-          <BlurFade delay={BLUR_FADE_DELAY * 12.5}>
-            <h2 className="text-xl font-bold">GitHub Contributions</h2>
-          </BlurFade>
-          <BlurFade delay={BLUR_FADE_DELAY * 13}>
-            <GithubCalendar />
-          </BlurFade>
-        </div>
-      </section>
-      <section id="projects">
-        <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 13}>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                  Featured Projects
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  My Latest Work
-                </h2>
-                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  I&apos;ve worked on various projects ranging from AI-powered applications to automation solutions. Here are some of my recent highlights.
-                </p>
-              </div>
-            </div>
-          </BlurFade>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-[800px] mx-auto">
-            {currentProjects.map((project, id) => (
-              <BlurFade
-                key={project.title}
-                delay={BLUR_FADE_DELAY * 14 + id * 0.05}
-              >
-                <ProjectCard
-                  href={project.href}
-                  key={project.title}
-                  title={project.title}
-                  description={project.description}
-                  dates={project.dates}
-                  tags={project.technologies}
-                  image={project.image}
-                  video={project.video}
-                  links={project.links}
-                />
-              </BlurFade>
-            ))}
-          </div>
-          
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <BlurFade delay={BLUR_FADE_DELAY * 15}>
-              <div className="flex justify-center items-center space-x-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1"
-                >
-                  Previous
-                </Button>
-                
-                <div className="flex space-x-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {page}
-                    </Button>
-                  ))}
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1"
-                >
-                  Next
-                </Button>
-              </div>
-            </BlurFade>
-          )}
-          
-          {/* Show total projects count */}
-          <BlurFade delay={BLUR_FADE_DELAY * 16}>
-            <div className="text-center text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(endIndex, DATA.projects.length)} of {DATA.projects.length} projects
-            </div>
-          </BlurFade>
-        </div>
-      </section>
-      <section id="repositories">
-        <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 16.5}>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                  Open Source
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  All Repositories
-                </h2>
-                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Every public repository I&apos;ve built, pulled live from the
-                  GitHub API and analyzed into a short description. This list
-                  syncs itself — new projects I push show up here automatically.
-                </p>
-              </div>
-            </div>
-          </BlurFade>
-          <BlurFade delay={BLUR_FADE_DELAY * 17}>
-            <div className="max-w-[800px] mx-auto">
-              <GithubRepos />
-            </div>
-          </BlurFade>
-        </div>
-      </section>
-      <section id="hackathons">
-        <div className="space-y-12 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 17}>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                  Community & Events
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Community Involvement
-                </h2>
-                <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  I love participating in tech communities and contributing to open-source projects. These experiences help me grow as a developer and give back to the community.
-                </p>
-              </div>
-            </div>
-          </BlurFade>
-          <BlurFade delay={BLUR_FADE_DELAY * 18}>
-            <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
-              {DATA.hackathons.map((project, id) => (
-                <BlurFade
-                  key={project.title + project.dates}
-                  delay={BLUR_FADE_DELAY * 19 + id * 0.05}
-                >
-                  <HackathonCard
-                    title={project.title}
-                    description={project.description}
-                    location={project.location}
-                    dates={project.dates}
-                    image={project.image}
-                    links={project.links}
-                  />
+            <div className="flex flex-wrap gap-1">
+              {DATA.skills.map((skill, id) => (
+                <BlurFade key={skill} delay={BLUR_FADE_DELAY * 12 + id * 0.05}>
+                  <Badge key={skill}>{skill}</Badge>
                 </BlurFade>
               ))}
-            </ul>
-          </BlurFade>
-        </div>
-      </section>
-      <section id="contact">
-        <div className="grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 20}>
-            <div className="space-y-3">
-              <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                Get In Touch
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                Let&apos;s Connect
-              </h2>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                I&apos;m always interested in new opportunities, collaborations, and interesting projects. Feel free to reach out if you&apos;d like to work together or just want to say hello!
-              </p>
-              <div className="flex justify-center space-x-4 mt-6">
-                <Link
-                  href={DATA.contact.social.GitHub.url}
-                  className="text-blue-500 hover:underline"
-                >
-                  GitHub
-                </Link>
-                <Link
-                  href={DATA.contact.social.LinkedIn.url}
-                  className="text-blue-500 hover:underline"
-                >
-                  LinkedIn
-                </Link>
-                <Link
-                  href={DATA.contact.social.email.url}
-                  className="text-blue-500 hover:underline"
-                >
-                  Email
-                </Link>
-              </div>
             </div>
-          </BlurFade>
+          </div>
+        </section>
+
+        <section id="github" className="scroll-mt-24">
+          <div className="flex min-h-0 flex-col gap-y-3">
+            <BlurFade delay={BLUR_FADE_DELAY * 12.5}>
+              <h2 className="text-xl font-bold">GitHub Contributions</h2>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 13}>
+              <GithubCalendar />
+            </BlurFade>
+          </div>
+        </section>
+
+        <section id="projects" className="scroll-mt-24">
+          <div className="space-y-12 w-full py-12">
+            <BlurFade delay={BLUR_FADE_DELAY * 13}>
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="space-y-2">
+                  <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                    Featured Projects
+                  </div>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                    Featured SaaS &amp; Web Projects
+                  </h2>
+                  <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    I&apos;ve built a range of products, from micro SaaS tools to
+                    full-scale, enterprise-grade platforms — along with AI
+                    automation and AI-powered features. Here are some of my
+                    recent highlights.
+                  </p>
+                </div>
+              </div>
+            </BlurFade>
+            <ProjectsSection />
+          </div>
+        </section>
+
+        <section id="repositories" className="scroll-mt-24">
+          <div className="space-y-12 w-full py-12">
+            <BlurFade delay={BLUR_FADE_DELAY * 16.5}>
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="space-y-2">
+                  <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                    Open Source
+                  </div>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                    Open Source GitHub Repositories
+                  </h2>
+                  <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    Every public repository I&apos;ve built, pulled live from the
+                    GitHub API and analyzed into a short description. This list
+                    syncs itself — new projects I push show up here
+                    automatically.
+                  </p>
+                </div>
+              </div>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 17}>
+              <div className="max-w-[800px] mx-auto">
+                <GithubRepos />
+              </div>
+            </BlurFade>
+          </div>
+        </section>
+
+        <section id="writing" className="scroll-mt-24">
+          <div className="flex min-h-0 flex-col gap-y-3">
+            <BlurFade delay={BLUR_FADE_DELAY * 17.5}>
+              <h2 className="text-xl font-bold">Writing</h2>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 18}>
+              <p className="text-sm text-muted-foreground">
+                I write about software development, building SaaS products,
+                scalable architecture, and shipping with Next.js &amp; React.{" "}
+                <Link href="/blog" className="text-blue-500 hover:underline">
+                  Read the blog →
+                </Link>
+              </p>
+            </BlurFade>
+          </div>
+        </section>
+
+        <section id="hackathons" className="scroll-mt-24">
+          <div className="space-y-12 w-full py-12">
+            <BlurFade delay={BLUR_FADE_DELAY * 18}>
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="space-y-2">
+                  <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                    Community &amp; Events
+                  </div>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                    Community Involvement
+                  </h2>
+                  <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    I love participating in tech communities and contributing to
+                    open-source projects. These experiences help me grow as a
+                    developer and give back to the community.
+                  </p>
+                </div>
+              </div>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 19}>
+              <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
+                {DATA.hackathons.map((project, id) => (
+                  <BlurFade
+                    key={project.title + project.dates}
+                    delay={BLUR_FADE_DELAY * 20 + id * 0.05}
+                  >
+                    <HackathonCard
+                      title={project.title}
+                      description={project.description}
+                      location={project.location}
+                      dates={project.dates}
+                      image={project.image}
+                      links={project.links}
+                    />
+                  </BlurFade>
+                ))}
+              </ul>
+            </BlurFade>
+          </div>
+        </section>
+
+        <section id="contact" className="scroll-mt-24">
+          <div className="grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
+            <BlurFade delay={BLUR_FADE_DELAY * 21}>
+              <div className="space-y-3">
+                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                  Get In Touch
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  Contact Kavitha Kanchana
+                </h2>
+                <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  I&apos;m always interested in new opportunities,
+                  collaborations, and interesting projects. Feel free to reach
+                  out if you&apos;d like to work together or just want to say
+                  hello!
+                </p>
+                <div className="flex justify-center space-x-4 mt-6">
+                  <Link
+                    href={DATA.contact.social.GitHub.url}
+                    className="text-blue-500 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub
+                  </Link>
+                  <Link
+                    href={DATA.contact.social.LinkedIn.url}
+                    className="text-blue-500 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    LinkedIn
+                  </Link>
+                  <Link
+                    href={DATA.contact.social.email.url}
+                    className="text-blue-500 hover:underline"
+                  >
+                    Email
+                  </Link>
+                </div>
+              </div>
+            </BlurFade>
+          </div>
+        </section>
+      </main>
+
+      <footer className="mx-auto w-full max-w-2xl border-t pt-6 mt-12 text-sm text-muted-foreground">
+        <p>
+          © {year} {DATA.name} — Software Engineer &amp; Founder, based in{" "}
+          {DATA.location}.
+        </p>
+        <div className="mt-2 flex gap-4">
+          <Link
+            href={DATA.contact.social.GitHub.url}
+            className="hover:text-foreground hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </Link>
+          <Link
+            href={DATA.contact.social.LinkedIn.url}
+            className="hover:text-foreground hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            LinkedIn
+          </Link>
+          <Link
+            href={DATA.contact.social.email.url}
+            className="hover:text-foreground hover:underline"
+          >
+            Email
+          </Link>
+          <Link href="/blog" className="hover:text-foreground hover:underline">
+            Blog
+          </Link>
         </div>
-      </section>
-    </main>
+      </footer>
+    </>
   );
 }
