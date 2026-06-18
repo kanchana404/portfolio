@@ -8,7 +8,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api", "/publish-blog"],
+      // Only block private/admin surfaces. Public read endpoints under /api
+      // (github contributions/repos, blogs) stay crawlable so client islands
+      // and structured data referencing them aren't blocked.
+      disallow: ["/admin", "/api/admin", "/api/debug", "/publish-blog"],
     },
     sitemap: `${base}/sitemap.xml`,
     host: base,

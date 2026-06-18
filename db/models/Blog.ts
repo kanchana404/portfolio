@@ -58,7 +58,7 @@ const BlogSchema: Schema = new Schema({
   author: {
     type: String,
     required: [true, 'Author is required'],
-    default: 'Kavitha Kanchan'
+    default: 'Kavitha Kanchana'
   },
   publishedAt: {
     type: Date,

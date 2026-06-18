@@ -3,13 +3,15 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI is missing from environment variables');
-}
-
 let cached = (global as any).mongoose || { conn: null, promise: null };
 
 export const connectToDatabase = async () => {
+  // Check at call time (not import time) so build steps / sitemap generation
+  // that merely import this module don't crash when the env var is absent.
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI is missing from environment variables');
+  }
+
   // If already connected, return the existing connection
   if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
