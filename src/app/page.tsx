@@ -11,6 +11,16 @@ import { DATA } from "@/data/resume";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import {
+  Terminal,
+  TypingAnimation,
+  AnimatedSpan,
+} from "@/components/ui/terminal";
+import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
+import { Ripple } from "@/components/ui/ripple";
+import { AuroraText } from "@/components/ui/aurora-text";
+import { DotPattern } from "@/components/ui/dot-pattern";
+import { Boxes, Code2, Workflow } from "lucide-react";
 
 const BLUR_FADE_DELAY = 0.04;
 
@@ -30,41 +40,58 @@ export default function Page() {
         id="main-content"
         className="flex flex-col min-h-[100dvh] space-y-10"
       >
-        <section id="hero" className="scroll-mt-24">
-          <div className="mx-auto w-full max-w-2xl space-y-8">
-            <div className="gap-2 flex justify-between">
-              <div className="flex-col flex flex-1 space-y-1.5">
+        <section id="hero" className="scroll-mt-24 relative">
+          <DotPattern
+            width={20}
+            height={20}
+            className="text-neutral-300/60 dark:text-neutral-700/50 [mask-image:radial-gradient(350px_circle_at_center,white,transparent)]"
+          />
+          <div className="relative z-10 mx-auto w-full max-w-2xl">
+            <div className="flex justify-between items-start gap-6">
+              <div className="flex flex-1 flex-col space-y-6">
                 {/* Single, keyword-rich H1 — rendered statically (no fade) so it
                     is visible to every crawler, including non-JS AI bots. */}
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  Hi, I&apos;m {firstName} 👋
+                  Hi, I&apos;m{" "}
+                  <span className="whitespace-nowrap">
+                    {firstName}{" "}
+                    <span
+                      className="inline-block animate-wave"
+                      role="img"
+                      aria-label="waving hand"
+                    >
+                      👋
+                    </span>
+                  </span>
                   <span className="sr-only">
                     {" "}
-                    — Full-Stack Software Engineer building SaaS products, from
+                    . Full-Stack Software Engineer building SaaS products, from
                     micro SaaS to enterprise level, plus AI automation, in Sri
                     Lanka
                   </span>
                 </h1>
-                <BlurFadeText
-                  className="max-w-[600px] md:text-xl"
-                  delay={BLUR_FADE_DELAY}
-                  text={DATA.description}
-                />
-                <BlurFade delay={BLUR_FADE_DELAY * 2}>
-                  <p className="text-sm text-muted-foreground">
-                    📍{" "}
-                    <Link
-                      href={DATA.locationLink}
-                      className="hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {DATA.location}
-                    </Link>{" "}
-                    · He/Him · Available worldwide for remote work &amp;
-                    freelance projects
-                  </p>
-                </BlurFade>
+                <div className="space-y-3">
+                  <BlurFadeText
+                    className="max-w-[600px] text-base leading-relaxed text-muted-foreground md:text-lg"
+                    delay={BLUR_FADE_DELAY}
+                    text={DATA.description}
+                  />
+                  <BlurFade delay={BLUR_FADE_DELAY * 2}>
+                    <p className="text-sm text-muted-foreground">
+                      📍{" "}
+                      <Link
+                        href={DATA.locationLink}
+                        className="hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {DATA.location}
+                      </Link>{" "}
+                      · He/Him · Available worldwide for remote &amp; freelance
+                      work
+                    </p>
+                  </BlurFade>
+                </div>
               </div>
               <BlurFade delay={BLUR_FADE_DELAY}>
                 <Image
@@ -80,54 +107,35 @@ export default function Page() {
           </div>
         </section>
 
-        <nav aria-label="Page sections" className="-mt-4">
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <li>
-              <Link href="#about" className="hover:text-foreground hover:underline">
-                About
-              </Link>
-            </li>
-            <li>
-              <Link href="#work" className="hover:text-foreground hover:underline">
-                Work Experience
-              </Link>
-            </li>
-            <li>
-              <Link href="#skills" className="hover:text-foreground hover:underline">
-                Technical Skills
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#projects"
-                className="hover:text-foreground hover:underline"
-              >
-                SaaS Projects
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#repositories"
-                className="hover:text-foreground hover:underline"
-              >
-                Open Source
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog" className="hover:text-foreground hover:underline">
-                Writing
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#contact"
-                className="hover:text-foreground hover:underline"
-              >
-                Contact
-              </Link>
-            </li>
-          </ul>
-        </nav>
+        <section id="terminal" className="scroll-mt-24">
+          <BlurFade delay={BLUR_FADE_DELAY * 2.5}>
+            <Terminal className="mx-auto">
+              <TypingAnimation>
+                kavitha@portfolio:~$ whoami
+              </TypingAnimation>
+              <AnimatedSpan className="text-green-600 dark:text-green-500">
+                Kavitha Kanchana · Software Engineer @ Cortana AI
+              </AnimatedSpan>
+
+              <TypingAnimation>$ cat focus.txt</TypingAnimation>
+              <AnimatedSpan className="text-muted-foreground">
+                Building SaaS products, from micro SaaS to enterprise scale.
+              </AnimatedSpan>
+              <AnimatedSpan className="text-muted-foreground">
+                Plus AI automation and AI-powered features.
+              </AnimatedSpan>
+
+              <TypingAnimation>$ ls stack/</TypingAnimation>
+              <AnimatedSpan className="text-blue-600 dark:text-blue-400">
+                react next.js node.js typescript postgres mongodb
+              </AnimatedSpan>
+
+              <TypingAnimation className="text-muted-foreground">
+                Open to SaaS builds and collaborations.
+              </TypingAnimation>
+            </Terminal>
+          </BlurFade>
+        </section>
 
         <section id="about" className="scroll-mt-24">
           <BlurFade delay={BLUR_FADE_DELAY * 3}>
@@ -137,6 +145,49 @@ export default function Page() {
             <Markdown className="prose max-w-full text-pretty font-sans text-sm text-muted-foreground dark:prose-invert">
               {DATA.summary}
             </Markdown>
+          </BlurFade>
+        </section>
+
+        <section id="what-i-build" className="scroll-mt-24">
+          <BlurFade delay={BLUR_FADE_DELAY * 4.5}>
+            <h2 className="mb-4 text-xl font-bold">What I Build</h2>
+          </BlurFade>
+          <BlurFade delay={BLUR_FADE_DELAY * 5}>
+            <BentoGrid className="grid-cols-1 md:grid-cols-3 auto-rows-[14rem]">
+              <BentoCard
+                name="SaaS Products"
+                className="md:col-span-1"
+                Icon={Boxes}
+                description="From micro SaaS tools to enterprise-scale platforms, with auth, billing, and clean APIs."
+                href="#projects"
+                cta="See projects"
+                background={
+                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-500/[0.04] to-transparent" />
+                }
+              />
+              <BentoCard
+                name="AI Automation"
+                className="md:col-span-1"
+                Icon={Workflow}
+                description="AI-powered features and automation that streamline real product workflows."
+                href="#projects"
+                cta="See work"
+                background={
+                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-500/[0.04] to-transparent" />
+                }
+              />
+              <BentoCard
+                name="Full-Stack Web"
+                className="md:col-span-1"
+                Icon={Code2}
+                description="End-to-end apps built with React, Next.js, Node.js, and TypeScript."
+                href="#skills"
+                cta="See skills"
+                background={
+                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-500/[0.04] to-transparent" />
+                }
+              />
+            </BentoGrid>
           </BlurFade>
         </section>
 
@@ -226,9 +277,8 @@ export default function Page() {
                   </h2>
                   <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     I&apos;ve built a range of products, from micro SaaS tools to
-                    full-scale, enterprise-grade platforms — along with AI
-                    automation and AI-powered features. Here are some of my
-                    recent highlights.
+                    full-scale enterprise platforms, along with AI automation and
+                    AI-powered features. Here are some of my recent highlights.
                   </p>
                 </div>
               </div>
@@ -251,7 +301,7 @@ export default function Page() {
                   <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     Every public repository I&apos;ve built, pulled live from the
                     GitHub API and analyzed into a short description. This list
-                    syncs itself — new projects I push show up here
+                    syncs itself, so new projects I push show up here
                     automatically.
                   </p>
                 </div>
@@ -323,8 +373,12 @@ export default function Page() {
           </div>
         </section>
 
-        <section id="contact" className="scroll-mt-24">
-          <div className="grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
+        <section
+          id="contact"
+          className="scroll-mt-24 relative overflow-hidden rounded-xl"
+        >
+          <Ripple className="opacity-70" />
+          <div className="relative z-10 grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
             <BlurFade delay={BLUR_FADE_DELAY * 21}>
               <div className="space-y-3">
                 <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
@@ -371,7 +425,7 @@ export default function Page() {
 
       <footer className="mx-auto w-full max-w-2xl border-t pt-6 mt-12 text-sm text-muted-foreground">
         <p>
-          © {year} {DATA.name} — Software Engineer &amp; Founder, based in{" "}
+          © {year} {DATA.name} · Software Engineer &amp; Founder, based in{" "}
           {DATA.location}.
         </p>
         <div className="mt-2 flex gap-4">
