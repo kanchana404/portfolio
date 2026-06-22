@@ -162,43 +162,6 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Selected Work (project showcase) — moved up: it's the evidence */}
-        <section id="projects" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-6">
-            <BlurFade delay={BLUR_FADE_DELAY * 5}>
-              <SectionHeading>Projects</SectionHeading>
-            </BlurFade>
-            <ProjectsSection />
-          </div>
-        </section>
-
-        {/* What I Build (capability summary) */}
-        <section id="what-i-build" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-4">
-            <BlurFade delay={BLUR_FADE_DELAY * 5}>
-              <SectionHeading>What I Build</SectionHeading>
-            </BlurFade>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {WHAT_I_BUILD.map((item, id) => (
-                <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 6 + id * 0.05}>
-                  <div className="relative h-full overflow-hidden rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
-                    <BorderBeam size={70} duration={6} delay={id * 2} />
-                    <item.Icon
-                      className="size-5 text-foreground"
-                      strokeWidth={1.5}
-                      aria-hidden
-                    />
-                    <h3 className="mt-3 text-sm font-medium">{item.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </div>
-                </BlurFade>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Work Experience */}
         <section id="work" className="scroll-mt-24">
           <div className="flex flex-col gap-y-6">
@@ -257,6 +220,43 @@ export default function Page() {
                 ))}
               </div>
             </BlurFade>
+          </div>
+        </section>
+
+        {/* Projects */}
+        <section id="projects" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-6">
+            <BlurFade delay={BLUR_FADE_DELAY * 11}>
+              <SectionHeading>Projects</SectionHeading>
+            </BlurFade>
+            <ProjectsSection />
+          </div>
+        </section>
+
+        {/* What I Build (capability summary) */}
+        <section id="what-i-build" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-4">
+            <BlurFade delay={BLUR_FADE_DELAY * 11}>
+              <SectionHeading>What I Build</SectionHeading>
+            </BlurFade>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {WHAT_I_BUILD.map((item, id) => (
+                <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 12 + id * 0.05}>
+                  <div className="relative h-full overflow-hidden rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
+                    <BorderBeam size={70} duration={6} delay={id * 2} />
+                    <item.Icon
+                      className="size-5 text-foreground"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    />
+                    <h3 className="mt-3 text-sm font-medium">{item.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </BlurFade>
+              ))}
+            </div>
           </div>
         </section>
 
