@@ -177,7 +177,7 @@ export default async function BlogPage({
                       )}
                       <Link
                         href={`/blog/${post.slug}`}
-                        className="text-sm text-blue-500 hover:underline"
+                        className="text-sm text-muted-foreground link-underline"
                       >
                         Read full article →
                       </Link>
@@ -218,7 +218,7 @@ export default async function BlogPage({
       </section>
 
       <section id="contact" className="max-w-2xl mx-auto text-center">
-        <Link href="/" className="text-blue-500 hover:underline">
+        <Link href="/" className="text-muted-foreground link-underline">
           ← Back to portfolio
         </Link>
       </section>
