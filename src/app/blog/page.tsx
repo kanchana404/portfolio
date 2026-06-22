@@ -103,8 +103,8 @@ export default async function BlogPage({
           </h1>
           <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl">
             Exploring software development, building SaaS products, scalable
-            architecture, and shipping with Next.js — insights from my journey
-            as a software engineer and founder.
+            architecture, and shipping with Next.js. Insights from my journey as
+            a software engineer and founder.
           </p>
         </div>
       </section>
