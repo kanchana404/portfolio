@@ -12,6 +12,27 @@ import { DATA } from "@/data/resume";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import { Boxes, Code2, Workflow } from "lucide-react";
+
+const WHAT_I_BUILD = [
+  {
+    Icon: Boxes,
+    title: "SaaS products",
+    description:
+      "Micro SaaS tools to enterprise platforms, with auth, billing, and dashboards.",
+  },
+  {
+    Icon: Workflow,
+    title: "AI automation",
+    description:
+      "Workflows, integrations, and GPT-powered features that cut manual work.",
+  },
+  {
+    Icon: Code2,
+    title: "Full-stack web",
+    description: "End-to-end apps with React, Next.js, Node.js, and TypeScript.",
+  },
+];
 
 const BLUR_FADE_DELAY = 0.04;
 
@@ -113,9 +134,34 @@ export default function Page() {
           </div>
         </section>
 
+        <section id="what-i-build" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-4">
+            <BlurFade delay={BLUR_FADE_DELAY * 4.5}>
+              <SectionHeading>What I Build</SectionHeading>
+            </BlurFade>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {WHAT_I_BUILD.map((item, id) => (
+                <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 5 + id * 0.05}>
+                  <div className="h-full rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
+                    <item.Icon
+                      className="size-5 text-foreground"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    />
+                    <h3 className="mt-3 text-sm font-medium">{item.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </BlurFade>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section id="work" className="scroll-mt-24">
           <div className="flex flex-col gap-y-6">
-            <BlurFade delay={BLUR_FADE_DELAY * 5}>
+            <BlurFade delay={BLUR_FADE_DELAY * 5.5}>
               <SectionHeading>Work Experience</SectionHeading>
             </BlurFade>
             <WorkSection />
