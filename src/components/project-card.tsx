@@ -66,11 +66,7 @@ export function ProjectCard({
   );
 
   return (
-    <Card
-      className={
-        "flex flex-col overflow-hidden border hover:shadow-lg transition-all duration-300 ease-out h-full"
-      }
-    >
+    <Card className="group flex h-full flex-col overflow-hidden border transition-all duration-300 ease-out hover:-translate-y-1 hover:border-foreground/20 hover:shadow-md">
       {/* Only wrap media in a link when there's a real destination — avoids dead
           href="#" anchors that read as broken links to crawlers. */}
       {(video || image) &&
