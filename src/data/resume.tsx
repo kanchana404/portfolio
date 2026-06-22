@@ -9,7 +9,6 @@ export const DATA = {
   locationLink: "https://www.google.com/maps/place/sri+lanka",
   description:
     "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies. I build SaaS products, from micro SaaS to enterprise scale, plus AI automation with React, Next.js, and Node.js.",
-    "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies. I build SaaS products, from micro SaaS to enterprise scale, plus AI automation with React, Next.js, and Node.js.",
   summary:
     "I'm Kavitha Kanchana (he/him), pursuing my B.Sc. in Software Engineering at Birmingham City University. I care about scalable architecture, subscription and payment systems, and clean REST APIs. I'm an active member of Generation ALPHA, a Sri Lankan tech community, and contribute to open source.",
   avatarUrl: "/kavitha-kanchana-software-engineer.jpg",
