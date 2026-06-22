@@ -130,14 +130,20 @@ export default function Page() {
               </div>
             </div>
             <BlurFade delay={BLUR_FADE_DELAY}>
-              <Image
-                src={DATA.avatarUrl}
-                alt="Kavitha Kanchana, software engineer"
-                width={112}
-                height={112}
-                priority
-                className="size-28 rounded-full border object-cover object-[center_25%]"
-              />
+              <div className="flex flex-col items-center gap-2">
+                <Image
+                  src={DATA.avatarUrl}
+                  alt="Kavitha Kanchana, software engineer"
+                  width={112}
+                  height={112}
+                  priority
+                  className="size-28 rounded-full border object-cover object-[center_25%]"
+                />
+                <MorphingText
+                  texts={["SaaS", "AI automation", "Full-stack", "Clean code"]}
+                  className="h-5 w-36 text-xs font-medium text-muted-foreground sm:h-5 sm:text-xs"
+                />
+              </div>
             </BlurFade>
           </div>
         </section>
@@ -336,20 +342,6 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Closing statement — morphing capabilities (its own place) */}
-        <section id="statement" className="scroll-mt-24 py-4">
-          <BlurFade delay={BLUR_FADE_DELAY}>
-            <MorphingText
-              texts={[
-                "SaaS products",
-                "AI automation",
-                "Full-stack apps",
-                "Clean code",
-              ]}
-              className="text-foreground"
-            />
-          </BlurFade>
-        </section>
       </main>
 
       <footer className="mt-16 border-t pt-6 text-sm text-muted-foreground">
