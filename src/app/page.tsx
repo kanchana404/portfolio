@@ -141,7 +141,7 @@ export default function Page() {
                 />
                 <MorphingText
                   texts={["SaaS", "AI automation", "Full-stack", "Clean code"]}
-                  className="h-5 w-36 text-xs font-medium text-muted-foreground sm:h-5 sm:text-xs"
+                  className="h-7 w-44 text-base font-medium text-muted-foreground [filter:none] sm:h-7 sm:text-base"
                 />
               </div>
             </BlurFade>
