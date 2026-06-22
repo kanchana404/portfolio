@@ -31,40 +31,52 @@ export default function Page() {
         className="flex flex-col min-h-[100dvh] space-y-10"
       >
         <section id="hero" className="scroll-mt-24">
-          <div className="mx-auto w-full max-w-2xl space-y-8">
-            <div className="gap-2 flex justify-between">
-              <div className="flex-col flex flex-1 space-y-1.5">
+          <div className="mx-auto w-full max-w-2xl">
+            <div className="flex justify-between items-start gap-6">
+              <div className="flex flex-1 flex-col space-y-6">
                 {/* Single, keyword-rich H1 — rendered statically (no fade) so it
                     is visible to every crawler, including non-JS AI bots. */}
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  Hi, I&apos;m {firstName} 👋
+                  Hi, I&apos;m{" "}
+                  <span className="whitespace-nowrap">
+                    {firstName}{" "}
+                    <span
+                      className="inline-block animate-wave"
+                      role="img"
+                      aria-label="waving hand"
+                    >
+                      👋
+                    </span>
+                  </span>
                   <span className="sr-only">
                     {" "}
-                    — Full-Stack Software Engineer building SaaS products, from
+                    . Full-Stack Software Engineer building SaaS products, from
                     micro SaaS to enterprise level, plus AI automation, in Sri
                     Lanka
                   </span>
                 </h1>
-                <BlurFadeText
-                  className="max-w-[600px] md:text-xl"
-                  delay={BLUR_FADE_DELAY}
-                  text={DATA.description}
-                />
-                <BlurFade delay={BLUR_FADE_DELAY * 2}>
-                  <p className="text-sm text-muted-foreground">
-                    📍{" "}
-                    <Link
-                      href={DATA.locationLink}
-                      className="hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {DATA.location}
-                    </Link>{" "}
-                    · He/Him · Available worldwide for remote work &amp;
-                    freelance projects
-                  </p>
-                </BlurFade>
+                <div className="space-y-3">
+                  <BlurFadeText
+                    className="max-w-[600px] text-base leading-relaxed text-muted-foreground md:text-lg"
+                    delay={BLUR_FADE_DELAY}
+                    text={DATA.description}
+                  />
+                  <BlurFade delay={BLUR_FADE_DELAY * 2}>
+                    <p className="text-sm text-muted-foreground">
+                      📍{" "}
+                      <Link
+                        href={DATA.locationLink}
+                        className="hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {DATA.location}
+                      </Link>{" "}
+                      · He/Him · Available worldwide for remote &amp; freelance
+                      work
+                    </p>
+                  </BlurFade>
+                </div>
               </div>
               <BlurFade delay={BLUR_FADE_DELAY}>
                 <Image
@@ -79,55 +91,6 @@ export default function Page() {
             </div>
           </div>
         </section>
-
-        <nav aria-label="Page sections" className="-mt-4">
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <li>
-              <Link href="#about" className="hover:text-foreground hover:underline">
-                About
-              </Link>
-            </li>
-            <li>
-              <Link href="#work" className="hover:text-foreground hover:underline">
-                Work Experience
-              </Link>
-            </li>
-            <li>
-              <Link href="#skills" className="hover:text-foreground hover:underline">
-                Technical Skills
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#projects"
-                className="hover:text-foreground hover:underline"
-              >
-                SaaS Projects
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#repositories"
-                className="hover:text-foreground hover:underline"
-              >
-                Open Source
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog" className="hover:text-foreground hover:underline">
-                Writing
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="#contact"
-                className="hover:text-foreground hover:underline"
-              >
-                Contact
-              </Link>
-            </li>
-          </ul>
-        </nav>
 
         <section id="about" className="scroll-mt-24">
           <BlurFade delay={BLUR_FADE_DELAY * 3}>
@@ -226,9 +189,8 @@ export default function Page() {
                   </h2>
                   <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     I&apos;ve built a range of products, from micro SaaS tools to
-                    full-scale, enterprise-grade platforms — along with AI
-                    automation and AI-powered features. Here are some of my
-                    recent highlights.
+                    full-scale enterprise platforms, along with AI automation and
+                    AI-powered features. Here are some of my recent highlights.
                   </p>
                 </div>
               </div>
@@ -251,7 +213,7 @@ export default function Page() {
                   <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     Every public repository I&apos;ve built, pulled live from the
                     GitHub API and analyzed into a short description. This list
-                    syncs itself — new projects I push show up here
+                    syncs itself, so new projects I push show up here
                     automatically.
                   </p>
                 </div>
@@ -371,7 +333,7 @@ export default function Page() {
 
       <footer className="mx-auto w-full max-w-2xl border-t pt-6 mt-12 text-sm text-muted-foreground">
         <p>
-          © {year} {DATA.name} — Software Engineer &amp; Founder, based in{" "}
+          © {year} {DATA.name} · Software Engineer &amp; Founder, based in{" "}
           {DATA.location}.
         </p>
         <div className="mt-2 flex gap-4">
