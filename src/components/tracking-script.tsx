@@ -5,15 +5,16 @@ import Script from "next/script";
 export default function TrackingScript() {
   return (
     <>
-      {/* AgentKong development tracking script */}
+      {/* Cortana AI tracking pixel */}
       <Script
-        src="https://development.agentkong.ai/api/widgets/cmhpssmbo0001lb04m0k5bcbe.js"
+        src="https://app.usecortana.ai/api/hub/v1/cmqp4fx5200adi9041c7skj20"
         strategy="afterInteractive"
+        async
         onLoad={() => {
-          console.log("✅ AgentKong development tracking loaded via Next.js Script");
+          console.log("✅ Cortana AI tracking loaded via Next.js Script");
         }}
         onError={(e) => {
-          console.error("❌ AgentKong development tracking failed to load:", e);
+          console.error("❌ Cortana AI tracking failed to load:", e);
         }}
       />
 
