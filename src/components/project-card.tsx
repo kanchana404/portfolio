@@ -1,13 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Safari } from "@/components/ui/safari";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
 
@@ -17,7 +10,6 @@ interface Props {
   description: string;
   dates: string;
   tags: readonly string[];
-  link?: string;
   image?: string;
   video?: string;
   links?: readonly {
@@ -28,114 +20,113 @@ interface Props {
   className?: string;
 }
 
+// A real, navigable URL (excludes "#", relative, and social-redirect links).
+const isReal = (u?: string) =>
+  Boolean(
+    u &&
+      u !== "#" &&
+      /^https?:\/\//.test(u) &&
+      !u.includes("lnkd.in") &&
+      !u.includes("linkedin.com")
+  );
+
 export function ProjectCard({
   title,
   href,
   description,
   dates,
   tags,
-  link,
   image,
   video,
   links,
   className,
 }: Props) {
-  const hasHref = Boolean(href && href !== "#");
-  const media = (
-    <>
-      {video && (
-        <video
-          src={video}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="pointer-events-none mx-auto h-40 w-full object-cover object-top" // needed because random black line at bottom of video
-        />
-      )}
-      {image && (
-        <Image
-          src={image}
-          alt={`${title} — project screenshot`}
-          width={500}
-          height={300}
-          className="h-40 w-full overflow-hidden object-cover object-top"
-        />
-      )}
-    </>
-  );
+  const repoUrl = links?.find((l) => l.type === "GitHub" && isReal(l.href))?.href;
+  const liveUrl =
+    (isReal(href) ? href : undefined) ||
+    links?.find((l) => l.type === "Live Demo" && isReal(l.href))?.href;
+  const primary = liveUrl || repoUrl;
+  const domain = liveUrl
+    ? liveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
+    : undefined;
+  const hasImage = Boolean(image);
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden border transition-all duration-300 ease-out hover:-translate-y-1 hover:border-foreground/20 hover:shadow-md">
-      {/* Only wrap media in a link when there's a real destination — avoids dead
-          href="#" anchors that read as broken links to crawlers. */}
-      {(video || image) &&
-        (hasHref ? (
-          <Link
-            href={href!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn("block cursor-pointer", className)}
-          >
-            {media}
-          </Link>
-        ) : (
-          <div className={cn("block", className)}>{media}</div>
-        ))}
-      <CardHeader className="px-2">
-        <div className="space-y-1">
-          <CardTitle className="mt-1 text-base">{title}</CardTitle>
-          <time className="font-sans text-xs">{dates}</time>
-          <div className="hidden font-sans text-xs underline print:visible">
-            {link?.replace("https://", "").replace("www.", "").replace("/", "")}
-          </div>
-          <Markdown className="prose max-w-full text-pretty font-sans text-xs text-muted-foreground dark:prose-invert">
-            {description}
-          </Markdown>
+    <div className={cn("group flex flex-col gap-4", className)}>
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <Safari
+          url={domain}
+          imageSrc={image || undefined}
+          videoSrc={video || undefined}
+          className={cn(
+            "w-full transition-transform duration-300 ease-out motion-reduce:transform-none",
+            hasImage && "group-hover:scale-[1.03]"
+          )}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-base font-medium">
+            {primary ? (
+              <Link
+                href={primary}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-underline"
+              >
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
+          </h3>
+          <span className="shrink-0 text-sm text-muted-foreground">{dates}</span>
         </div>
-      </CardHeader>
-      <CardContent className="mt-auto flex flex-col px-2">
+
+        <Markdown className="prose max-w-none text-pretty font-sans text-sm leading-relaxed text-muted-foreground dark:prose-invert">
+          {description}
+        </Markdown>
+
         {tags && tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {tags?.map((tag) => (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {tags.slice(0, 6).map((tag) => (
               <Badge
-                className="px-1 py-0 text-[10px]"
-                variant="secondary"
                 key={tag}
+                variant="outline"
+                className="font-normal text-muted-foreground"
               >
                 {tag}
               </Badge>
             ))}
           </div>
         )}
-      </CardContent>
-      <CardFooter className="px-2 pb-2">
-        {links && links.length > 0 && (
-          <div className="flex flex-row flex-wrap items-start gap-1">
-            {links?.map((link, idx) => {
-              const valid = Boolean(link?.href && link.href !== "#");
-              const badge = (
-                <Badge className="flex gap-2 px-2 py-1 text-[10px]">
-                  {link.icon}
-                  {link.type}
-                </Badge>
-              );
-              return valid ? (
-                <Link
-                  href={link.href}
-                  key={idx}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {badge}
-                </Link>
-              ) : (
-                <span key={idx}>{badge}</span>
-              );
-            })}
+
+        {(liveUrl || repoUrl) && (
+          <div className="mt-1 flex gap-4 text-sm text-muted-foreground">
+            {liveUrl && (
+              <Link
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-underline"
+              >
+                Live ↗
+              </Link>
+            )}
+            {repoUrl && (
+              <Link
+                href={repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-underline"
+              >
+                Code ↗
+              </Link>
+            )}
           </div>
         )}
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
