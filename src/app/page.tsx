@@ -1,18 +1,24 @@
 import { HackathonCard } from "@/components/hackathon-card";
 import BlurFade from "@/components/magicui/blur-fade";
 import BlurFadeText from "@/components/magicui/blur-fade-text";
-import { ResumeCard } from "@/components/resume-card";
 import GithubCalendar from "@/components/github-calendar";
-import GithubRepos from "@/components/github-repos";
 import WorkSection from "@/components/work-section";
 import ProjectsSection from "@/components/projects-section";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { DATA } from "@/data/resume";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import { Boxes, Code2, Workflow } from "lucide-react";
+
+const BLUR_FADE_DELAY = 0.04;
+
+// One plain, left-aligned heading style for every section.
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-xl font-bold tracking-tight">{children}</h2>;
+}
 
 const WHAT_I_BUILD = [
   {
@@ -34,12 +40,25 @@ const WHAT_I_BUILD = [
   },
 ];
 
-const BLUR_FADE_DELAY = 0.04;
-
-// One plain, left-aligned heading style for every section (minimalist redesign).
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xl font-bold tracking-tight">{children}</h2>;
-}
+const SKILL_GROUPS = [
+  { label: "Languages", items: ["JavaScript", "TypeScript"] },
+  {
+    label: "Frontend",
+    items: ["React", "Next.js", "Redux", "Three.js", "GSAP", "Tailwind CSS"],
+  },
+  {
+    label: "Backend",
+    items: ["Node.js", "Express.js", "MongoDB", "PostgreSQL", "REST APIs"],
+  },
+  {
+    label: "AI & Automation",
+    items: ["OpenAI API", "GPT-4", "AI/ML Integration", "n8n", "Make.com"],
+  },
+  {
+    label: "DevOps & Cloud",
+    items: ["Docker", "Git", "CI/CD", "Google Cloud", "Microsoft Azure", "Heroku"],
+  },
+];
 
 export default function Page() {
   const firstName = DATA.name.split(" ")[0];
@@ -54,6 +73,7 @@ export default function Page() {
         Skip to main content
       </a>
       <main id="main-content" className="flex flex-col min-h-[100dvh] space-y-16">
+        {/* Hero */}
         <section id="hero" className="relative scroll-mt-24">
           <DotPattern
             width={20}
@@ -62,8 +82,6 @@ export default function Page() {
           />
           <div className="relative z-10 flex items-start justify-between gap-6">
             <div className="flex flex-1 flex-col space-y-6">
-              {/* Single, keyword-rich H1 — rendered statically (no fade) so it
-                  is visible to every crawler, including non-JS AI bots. */}
               <h1 className="text-4xl font-bold tracking-tighter leading-[1.05] sm:text-5xl">
                 Hi, I&apos;m{" "}
                 <span className="whitespace-nowrap">
@@ -121,6 +139,7 @@ export default function Page() {
           </div>
         </section>
 
+        {/* About */}
         <section id="about" className="scroll-mt-24">
           <div className="flex flex-col gap-y-3">
             <BlurFade delay={BLUR_FADE_DELAY * 3}>
@@ -134,14 +153,25 @@ export default function Page() {
           </div>
         </section>
 
+        {/* Selected Work (project showcase) — moved up: it's the evidence */}
+        <section id="projects" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-6">
+            <BlurFade delay={BLUR_FADE_DELAY * 5}>
+              <SectionHeading>Selected Work</SectionHeading>
+            </BlurFade>
+            <ProjectsSection />
+          </div>
+        </section>
+
+        {/* What I Build (capability summary) */}
         <section id="what-i-build" className="scroll-mt-24">
           <div className="flex flex-col gap-y-4">
-            <BlurFade delay={BLUR_FADE_DELAY * 4.5}>
+            <BlurFade delay={BLUR_FADE_DELAY * 5}>
               <SectionHeading>What I Build</SectionHeading>
             </BlurFade>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {WHAT_I_BUILD.map((item, id) => (
-                <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 5 + id * 0.05}>
+                <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 6 + id * 0.05}>
                   <div className="h-full rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
                     <item.Icon
                       className="size-5 text-foreground"
@@ -159,101 +189,91 @@ export default function Page() {
           </div>
         </section>
 
+        {/* Work Experience */}
         <section id="work" className="scroll-mt-24">
           <div className="flex flex-col gap-y-6">
-            <BlurFade delay={BLUR_FADE_DELAY * 5.5}>
+            <BlurFade delay={BLUR_FADE_DELAY * 6}>
               <SectionHeading>Work Experience</SectionHeading>
             </BlurFade>
             <WorkSection />
           </div>
         </section>
 
-        <section id="education" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-3">
-            <BlurFade delay={BLUR_FADE_DELAY * 6}>
-              <SectionHeading>Education</SectionHeading>
-            </BlurFade>
-            {DATA.education.map((education, id) => (
-              <BlurFade
-                key={education.school}
-                delay={BLUR_FADE_DELAY * 7 + id * 0.05}
-              >
-                <ResumeCard
-                  key={education.school}
-                  href={education.href}
-                  logoUrl={education.logoUrl}
-                  altText={education.school}
-                  title={education.school}
-                  subtitle={education.degree}
-                  period={`${education.start} - ${education.end}`}
-                />
-              </BlurFade>
-            ))}
-          </div>
-        </section>
-
+        {/* Technical Skills (grouped) */}
         <section id="skills" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-3">
-            <BlurFade delay={BLUR_FADE_DELAY * 8}>
+          <div className="flex flex-col gap-y-4">
+            <BlurFade delay={BLUR_FADE_DELAY * 7}>
               <SectionHeading>Technical Skills</SectionHeading>
             </BlurFade>
-            <div className="flex flex-wrap gap-1.5">
-              {DATA.skills.map((skill, id) => (
-                <BlurFade key={skill} delay={BLUR_FADE_DELAY * 9 + id * 0.03}>
-                  <Badge variant="secondary" className="font-normal">
-                    {skill}
-                  </Badge>
+            <div className="flex flex-col gap-y-3">
+              {SKILL_GROUPS.map((group, gi) => (
+                <BlurFade key={group.label} delay={BLUR_FADE_DELAY * 8 + gi * 0.04}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
+                    <span className="w-32 shrink-0 text-sm text-muted-foreground">
+                      {group.label}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.items.map((skill) => (
+                        <Badge key={skill} variant="secondary" className="font-normal">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 </BlurFade>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="open-source" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-6">
+        {/* Education (compact) */}
+        <section id="education" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-3">
+            <BlurFade delay={BLUR_FADE_DELAY * 9}>
+              <SectionHeading>Education</SectionHeading>
+            </BlurFade>
             <BlurFade delay={BLUR_FADE_DELAY * 10}>
+              <div className="flex flex-col gap-y-2">
+                {DATA.education.map((education) => (
+                  <div
+                    key={education.school}
+                    className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm"
+                  >
+                    <span className="font-medium">{education.school}</span>
+                    <span className="text-muted-foreground">
+                      {education.degree} · {education.start}–{education.end}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </BlurFade>
+          </div>
+        </section>
+
+        {/* Open Source — contributions activity */}
+        <section id="open-source" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-4">
+            <BlurFade delay={BLUR_FADE_DELAY * 11}>
               <SectionHeading>Open Source</SectionHeading>
             </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 11}>
+            <BlurFade delay={BLUR_FADE_DELAY * 12}>
               <GithubCalendar />
             </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 11.5}>
-              <p className="text-sm text-muted-foreground">
-                Every public repository I&apos;ve built, pulled live from the
-                GitHub API. New projects I push show up here automatically.
-              </p>
-            </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 12}>
-              <GithubRepos />
-            </BlurFade>
           </div>
         </section>
 
-        <section id="projects" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-6">
-            <BlurFade delay={BLUR_FADE_DELAY * 13}>
-              <SectionHeading>Featured Projects</SectionHeading>
-            </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 13.5}>
-              <p className="text-sm text-muted-foreground">
-                A selection of recent work.
-              </p>
-            </BlurFade>
-            <ProjectsSection />
-          </div>
-        </section>
-
+        {/* Community */}
         <section id="hackathons" className="scroll-mt-24">
           <div className="flex flex-col gap-y-6">
-            <BlurFade delay={BLUR_FADE_DELAY * 14}>
+            <BlurFade delay={BLUR_FADE_DELAY * 13}>
               <SectionHeading>Community</SectionHeading>
             </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 15}>
+            <BlurFade delay={BLUR_FADE_DELAY * 14}>
               <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
                 {DATA.hackathons.map((project, id) => (
                   <BlurFade
                     key={project.title + project.dates}
-                    delay={BLUR_FADE_DELAY * 16 + id * 0.05}
+                    delay={BLUR_FADE_DELAY * 15 + id * 0.05}
                   >
                     <HackathonCard
                       title={project.title}
@@ -270,18 +290,19 @@ export default function Page() {
           </div>
         </section>
 
+        {/* Contact */}
         <section id="contact" className="scroll-mt-24">
           <div className="flex flex-col gap-y-3">
-            <BlurFade delay={BLUR_FADE_DELAY * 17}>
+            <BlurFade delay={BLUR_FADE_DELAY * 16}>
               <SectionHeading>Get in touch</SectionHeading>
             </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 18}>
+            <BlurFade delay={BLUR_FADE_DELAY * 17}>
               <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
                 Open to new opportunities, collaborations, and interesting
                 projects. Reach out and let&apos;s build something.
               </p>
             </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 19}>
+            <BlurFade delay={BLUR_FADE_DELAY * 18}>
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
                 <Link
                   href={DATA.contact.social.GitHub.url}

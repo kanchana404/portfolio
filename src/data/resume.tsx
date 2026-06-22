@@ -184,8 +184,9 @@ export const DATA = {
       href: "https://kaidenz-clothing.vercel.app",
       dates: "2024",
       active: true,
+      featured: true,
       description:
-        "Built a complete full-stack e-commerce platform from the ground up with cutting-edge technology. Features lightning-fast responsive user experience with Next.js frontend, enterprise-grade Java EE6 backend architecture, and secure Stripe payment integration. This project showcases end-to-end development expertise from crafting intuitive user interfaces to implementing robust backend systems and secure payment processing.",
+        "A full-stack e-commerce platform with a Next.js storefront, a Java EE6 backend, and secure Stripe checkout, built end to end.",
       technologies: [
         "Next.js",
         "Java EE6",
@@ -254,8 +255,9 @@ export const DATA = {
       href: "https://github.com/kanchana404/Google-bussiness-api-Get-reviews-and-Reply-reviews",
       dates: "2024",
       active: true,
+      featured: true,
       description:
-        "Built a complete solution for Google Business API integration in Next.js that handles OAuth authentication, review fetching and replies, multi-location management, and token handling. Features secure authentication, real-time review management, direct reply system, and advanced filtering capabilities. Ready to use with step-by-step setup guide.",
+        "A Next.js integration for the Google Business Profile API: OAuth, multi-location management, and real-time review fetching with one-click replies.",
       technologies: [
         "Next.js 14",
         "TypeScript",
