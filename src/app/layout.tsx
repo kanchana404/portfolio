@@ -19,11 +19,11 @@ const fontSans = FontSans({
 // Engineer @ Cortana AI — keep in sync with the Person JSON-LD below).
 const SITE_TITLE = `${DATA.name} - Full-Stack & SaaS Software Engineer`;
 const SITE_DESCRIPTION =
-  "Software Engineer at Cortana AI building SaaS — from micro SaaS to enterprise-grade platforms — plus AI automation. Next.js, React, Node.js. Sri Lanka.";
+  "Software Engineer at Cortana AI building SaaS products, from micro SaaS to enterprise scale, plus AI automation. Next.js, React, Node.js. Based in Sri Lanka.";
 const OG_DESCRIPTION =
-  "Software Engineer at Cortana AI building SaaS products — from micro SaaS to enterprise-level platforms — plus AI automation, with Next.js, React & Node.js.";
+  "Software Engineer at Cortana AI building SaaS products, from micro SaaS to enterprise scale, plus AI automation, with Next.js, React & Node.js.";
 const TWITTER_DESCRIPTION =
-  "Software Engineer at Cortana AI building SaaS — micro SaaS to enterprise — plus AI automation, with React, Next.js & Node.js. Full-stack developer in Sri Lanka.";
+  "Software Engineer at Cortana AI building SaaS products, from micro SaaS to enterprise scale, plus AI automation, with React, Next.js & Node.js. Based in Sri Lanka.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(DATA.url),
@@ -132,7 +132,7 @@ export default function RootLayout({
         },
         jobTitle: "Software Engineer",
         description:
-          "Kavitha Kanchana is a software engineer at Cortana AI and the co-founder of Ryzera Technologies and PulseOpes Ai. He builds SaaS products ranging from micro SaaS tools to enterprise-level platforms, and also develops AI automation — specializing in full-stack development with React, Next.js, Node.js and TypeScript.",
+          "Kavitha Kanchana is a software engineer at Cortana AI and the co-founder of Ryzera Technologies and PulseOpes Ai. He builds SaaS products ranging from micro SaaS tools to enterprise-level platforms, and also develops AI automation. He specializes in full-stack development with React, Next.js, Node.js and TypeScript.",
         worksFor: {
           "@type": "Organization",
           name: "Cortana AI",
