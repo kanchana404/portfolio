@@ -20,6 +20,78 @@
   animation: wave 2.5s ease-in-out infinite;
 }
 
+/* Waving hand 👋 — real-time wave animation on the hero emoji. */
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave 2.5s ease-in-out infinite;
+}
+
+/* Ripple (MagicUI) — concentric pulse behind the closing section. */
+@keyframes ripple {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+.animate-ripple {
+  animation: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s) infinite;
+}
+
+/* Signature link interaction: left-origin underline wipe + accent on hover. */
+.link-underline {
+  position: relative;
+  transition: color 150ms ease;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 150ms ease;
+}
+
+@media (hover: hover) {
+  .link-underline:hover {
+    color: #0070f3;
+  }
+  .link-underline:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+/* AnimatedThemeToggler (MagicUI) — scope the view-transition to theme toggles. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-magicui-theme-vt="active"]::view-transition-group(root) {
+  animation-duration: var(--magicui-theme-toggle-vt-duration);
+}
+
 /* Respect users who prefer reduced motion: disable the blur/transform fades. */
 @media (prefers-reduced-motion: reduce) {
   *,

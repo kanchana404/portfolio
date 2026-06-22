@@ -9,8 +9,9 @@ export const DATA = {
   locationLink: "https://www.google.com/maps/place/sri+lanka",
   description:
     "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies. I build SaaS products, from micro SaaS to enterprise scale, plus AI automation with React, Next.js, and Node.js.",
+    "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies. I build SaaS products, from micro SaaS to enterprise scale, plus AI automation with React, Next.js, and Node.js.",
   summary:
-    "I'm Kavitha Kanchana (he/him), a Sri Lankan software engineer pursuing my B.Sc. in Software Engineering at Birmingham City University. I work as a Software Engineer at Cortana AI and co-founded Ryzera Technologies, where I focus on building SaaS products, from lightweight micro SaaS tools to enterprise-level platforms. I have extensive experience in full-stack development with React, Next.js, and Node.js, designing scalable architectures, subscription and payment systems, and clean REST APIs. Alongside my SaaS work, I also build AI automation and AI-powered features. I'm an active member of Generation ALPHA, a Sri Lankan tech community initiative, and contribute to open-source projects.",
+    "I'm Kavitha Kanchana (he/him), pursuing my B.Sc. in Software Engineering at Birmingham City University. I care about scalable architecture, subscription and payment systems, and clean REST APIs. I'm an active member of Generation ALPHA, a Sri Lankan tech community, and contribute to open source.",
   avatarUrl: "/kavitha-kanchana-software-engineer.jpg",
   skills: [
     "JavaScript",
@@ -184,8 +185,9 @@ export const DATA = {
       href: "https://kaidenz-clothing.vercel.app",
       dates: "2024",
       active: true,
+      featured: true,
       description:
-        "Built a complete full-stack e-commerce platform from the ground up with cutting-edge technology. Features lightning-fast responsive user experience with Next.js frontend, enterprise-grade Java EE6 backend architecture, and secure Stripe payment integration. This project showcases end-to-end development expertise from crafting intuitive user interfaces to implementing robust backend systems and secure payment processing.",
+        "A full-stack e-commerce platform with a Next.js storefront, a Java EE6 backend, and secure Stripe checkout, built end to end.",
       technologies: [
         "Next.js",
         "Java EE6",
@@ -254,8 +256,9 @@ export const DATA = {
       href: "https://github.com/kanchana404/Google-bussiness-api-Get-reviews-and-Reply-reviews",
       dates: "2024",
       active: true,
+      featured: true,
       description:
-        "Built a complete solution for Google Business API integration in Next.js that handles OAuth authentication, review fetching and replies, multi-location management, and token handling. Features secure authentication, real-time review management, direct reply system, and advanced filtering capabilities. Ready to use with step-by-step setup guide.",
+        "A Next.js integration for the Google Business Profile API: OAuth, multi-location management, and real-time review fetching with one-click replies.",
       technologies: [
         "Next.js 14",
         "TypeScript",

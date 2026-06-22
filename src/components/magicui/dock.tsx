@@ -12,7 +12,7 @@ export interface DockProps extends VariantProps<typeof dockVariants> {
   children: React.ReactNode;
 }
 
-const DEFAULT_MAGNIFICATION = 60;
+const DEFAULT_MAGNIFICATION = 44;
 const DEFAULT_DISTANCE = 140;
 
 const dockVariants = cva(
