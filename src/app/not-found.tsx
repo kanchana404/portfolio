@@ -10,10 +10,10 @@ export default function NotFound() {
         The page you&apos;re looking for doesn&apos;t exist or has moved.
       </p>
       <div className="flex gap-4">
-        <Link href="/" className="text-blue-500 hover:underline">
+        <Link href="/" className="text-foreground link-underline">
           Back to home
         </Link>
-        <Link href="/blog" className="text-blue-500 hover:underline">
+        <Link href="/blog" className="text-foreground link-underline">
           Read the blog
         </Link>
       </div>
