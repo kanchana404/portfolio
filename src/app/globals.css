@@ -20,6 +20,21 @@
   animation: wave 2.5s ease-in-out infinite;
 }
 
+/* Ripple (MagicUI) — concentric pulse behind the closing section. */
+@keyframes ripple {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+.animate-ripple {
+  animation: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s) infinite;
+}
+
 /* Signature link interaction: left-origin underline wipe + accent on hover. */
 .link-underline {
   position: relative;
