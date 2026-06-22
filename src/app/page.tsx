@@ -5,6 +5,9 @@ import GithubCalendar from "@/components/github-calendar";
 import WorkSection from "@/components/work-section";
 import ProjectsSection from "@/components/projects-section";
 import { DotPattern } from "@/components/ui/dot-pattern";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { Ripple } from "@/components/ui/ripple";
+import { MorphingText } from "@/components/ui/morphing-text";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DATA } from "@/data/resume";
@@ -172,7 +175,8 @@ export default function Page() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {WHAT_I_BUILD.map((item, id) => (
                 <BlurFade key={item.title} delay={BLUR_FADE_DELAY * 6 + id * 0.05}>
-                  <div className="h-full rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
+                  <div className="relative h-full overflow-hidden rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20">
+                    <BorderBeam size={70} duration={6} delay={id * 2} />
                     <item.Icon
                       className="size-5 text-foreground"
                       strokeWidth={1.5}
@@ -290,20 +294,35 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Contact */}
-        <section id="contact" className="scroll-mt-24">
-          <div className="flex flex-col gap-y-3">
+        {/* Contact — closing statement with Morphing Text + Ripple */}
+        <section
+          id="contact"
+          className="relative scroll-mt-24 overflow-hidden rounded-xl"
+        >
+          <Ripple className="opacity-60" />
+          <div className="relative z-10 flex flex-col items-center gap-6 py-16 text-center">
             <BlurFade delay={BLUR_FADE_DELAY * 16}>
-              <SectionHeading>Get in touch</SectionHeading>
+              <MorphingText
+                texts={[
+                  "SaaS products",
+                  "AI automation",
+                  "Full-stack apps",
+                  "Clean code",
+                ]}
+                className="text-foreground"
+              />
             </BlurFade>
             <BlurFade delay={BLUR_FADE_DELAY * 17}>
-              <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
-                Open to new opportunities, collaborations, and interesting
-                projects. Reach out and let&apos;s build something.
-              </p>
+              <div className="space-y-2">
+                <SectionHeading>Get in touch</SectionHeading>
+                <p className="mx-auto max-w-prose text-sm leading-relaxed text-muted-foreground">
+                  Open to new opportunities, collaborations, and interesting
+                  projects. Let&apos;s build something.
+                </p>
+              </div>
             </BlurFade>
             <BlurFade delay={BLUR_FADE_DELAY * 18}>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+              <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
                 <Link
                   href={DATA.contact.social.GitHub.url}
                   className="link-underline"
