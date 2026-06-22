@@ -179,10 +179,10 @@ export default async function BlogPostPage({
       </h1>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 mb-8 text-sm max-w-[650px] space-y-2 sm:space-y-0">
         <div className="flex items-center space-x-4">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground">
             {post.publishedAt ? formatDate(post.publishedAt) : ""}
           </p>
-          <span className="text-sm text-neutral-600 dark:text-neutral-400">
+          <span className="text-sm text-muted-foreground">
             By {post.author || "Kavitha Kanchana"}
           </span>
         </div>
@@ -250,7 +250,7 @@ export default async function BlogPostPage({
             a: ({ node, ...props }) => (
               <a
                 {...props}
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-[#0070f3]"
                 target="_blank"
                 rel="noopener noreferrer"
               />
