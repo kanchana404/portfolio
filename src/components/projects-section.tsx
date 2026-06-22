@@ -9,7 +9,11 @@ export default function ProjectsSection() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {DATA.projects.map((project, id) => (
-        <BlurFade key={project.title} delay={BLUR_FADE_DELAY + id * 0.05}>
+        <BlurFade
+          key={project.title}
+          delay={BLUR_FADE_DELAY + id * 0.05}
+          className="h-full"
+        >
           <ProjectCard
             title={project.title}
             href={project.href}
