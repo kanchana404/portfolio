@@ -160,7 +160,7 @@ export default function Page() {
         <section id="projects" className="scroll-mt-24">
           <div className="flex flex-col gap-y-6">
             <BlurFade delay={BLUR_FADE_DELAY * 5}>
-              <SectionHeading>Selected Work</SectionHeading>
+              <SectionHeading>Projects</SectionHeading>
             </BlurFade>
             <ProjectsSection />
           </div>
@@ -300,19 +300,8 @@ export default function Page() {
           className="relative scroll-mt-24 overflow-hidden rounded-xl"
         >
           <Ripple className="opacity-60" />
-          <div className="relative z-10 flex flex-col items-center gap-6 py-16 text-center">
+          <div className="relative z-10 flex flex-col items-center gap-5 py-16 text-center">
             <BlurFade delay={BLUR_FADE_DELAY * 16}>
-              <MorphingText
-                texts={[
-                  "SaaS products",
-                  "AI automation",
-                  "Full-stack apps",
-                  "Clean code",
-                ]}
-                className="text-foreground"
-              />
-            </BlurFade>
-            <BlurFade delay={BLUR_FADE_DELAY * 17}>
               <div className="space-y-2">
                 <SectionHeading>Get in touch</SectionHeading>
                 <p className="mx-auto max-w-prose text-sm leading-relaxed text-muted-foreground">
@@ -345,6 +334,21 @@ export default function Page() {
               </div>
             </BlurFade>
           </div>
+        </section>
+
+        {/* Closing statement — morphing capabilities (its own place) */}
+        <section id="statement" className="scroll-mt-24 py-4">
+          <BlurFade delay={BLUR_FADE_DELAY}>
+            <MorphingText
+              texts={[
+                "SaaS products",
+                "AI automation",
+                "Full-stack apps",
+                "Clean code",
+              ]}
+              className="text-foreground"
+            />
+          </BlurFade>
         </section>
       </main>
 
