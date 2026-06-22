@@ -2,6 +2,7 @@ import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import TrackingScript from "@/components/tracking-script";
 import FontLoader from "@/components/font-loader";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,8 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Scroll progress bar (top of every page) */}
+        <ScrollProgress />
         {/* Font loader */}
         <FontLoader />
 
