@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import Markdown from "react-markdown";
 
 interface Props {
   title: string;
@@ -69,9 +68,9 @@ export function ProjectCard({
         <span className="shrink-0 text-sm text-muted-foreground">{dates}</span>
       </div>
 
-      <Markdown className="prose max-w-none text-pretty font-sans text-sm leading-relaxed text-muted-foreground dark:prose-invert">
+      <p className="line-clamp-4 text-pretty text-sm leading-relaxed text-muted-foreground">
         {description}
-      </Markdown>
+      </p>
 
       {tags && tags.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1.5">
@@ -88,7 +87,7 @@ export function ProjectCard({
       )}
 
       {(liveUrl || repoUrl) && (
-        <div className="mt-1 flex gap-4 text-sm text-muted-foreground">
+        <div className="mt-auto flex gap-4 pt-2 text-sm text-muted-foreground">
           {liveUrl && (
             <Link
               href={liveUrl}
