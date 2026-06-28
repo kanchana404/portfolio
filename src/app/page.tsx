@@ -281,19 +281,18 @@ export default function Page() {
             <BlurFade delay={BLUR_FADE_DELAY * 14}>
               <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
                 {DATA.hackathons.map((project, id) => (
-                  <BlurFade
-                    key={project.title + project.dates}
-                    delay={BLUR_FADE_DELAY * 15 + id * 0.05}
-                  >
-                    <HackathonCard
-                      title={project.title}
-                      description={project.description}
-                      location={project.location}
-                      dates={project.dates}
-                      image={project.image}
-                      links={project.links}
-                    />
-                  </BlurFade>
+                  <li key={project.title + project.dates}>
+                    <BlurFade delay={BLUR_FADE_DELAY * 15 + id * 0.05}>
+                      <HackathonCard
+                        title={project.title}
+                        description={project.description}
+                        location={project.location}
+                        dates={project.dates}
+                        image={project.image}
+                        links={project.links}
+                      />
+                    </BlurFade>
+                  </li>
                 ))}
               </ul>
             </BlurFade>
@@ -317,7 +316,7 @@ export default function Page() {
               </div>
             </BlurFade>
             <BlurFade delay={BLUR_FADE_DELAY * 18}>
-              <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+              <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-medium text-foreground">
                 <Link
                   href={DATA.contact.social.GitHub.url}
                   className="link-underline"
