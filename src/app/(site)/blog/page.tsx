@@ -2,8 +2,8 @@ import { DATA } from "@/data/resume";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connectToDatabase } from "../../../db";
-import Blog from "../../../db/models/Blog";
+import { connectToDatabase } from "@db";
+import Blog from "@db/models/Blog";
 
 export const revalidate = 3600;
 

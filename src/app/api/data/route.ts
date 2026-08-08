@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../../db';
-import Blog from '../../../../db/models/Blog';
+import { connectToDatabase } from "@db";
+import Blog from "@db/models/Blog";
 
 // Function to generate image using the existing image generation API
 async function generateImage(prompt: string): Promise<string> {
