@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { DATA } from "@/data/resume";
-import { connectToDatabase } from "../../db";
-import Blog from "../../db/models/Blog";
+import { connectToDatabase } from "@db";
+import Blog from "@db/models/Blog";
 
 // Regenerate the sitemap hourly so newly published posts appear automatically.
 export const revalidate = 3600;

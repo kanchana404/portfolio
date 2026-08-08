@@ -35,7 +35,8 @@ export default function PublishBlog() {
         <CardHeader>
           <CardTitle>Publish Blog</CardTitle>
           <CardDescription>
-            Publish the "AI Innovators Summit" blog to make it visible on the blog page
+            Publish the &ldquo;AI Innovators Summit&rdquo; blog to make it visible
+            on the blog page
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
