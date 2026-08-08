@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { connectToDatabase } from "../../../../db";
-import Blog from "../../../../db/models/Blog";
+import { connectToDatabase } from "@db";
+import Blog from "@db/models/Blog";
 
 // ISR: prebuild known posts, render new ones on demand, refresh hourly.
 export const revalidate = 3600;

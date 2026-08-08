@@ -190,7 +190,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased max-w-2xl mx-auto py-12 sm:py-24 px-6",
+          // Layout width lives in the route-group layouts, not here: (site) keeps
+          // the narrow reading column, (tools) needs a wider canvas for side-by-side
+          // panes. Putting it on <body> capped every route at 672px.
+          "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}
       >

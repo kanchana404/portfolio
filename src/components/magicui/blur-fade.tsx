@@ -9,6 +9,11 @@ import {
 } from "framer-motion";
 import { useRef } from "react";
 
+// Derived from the hook itself rather than hardcoded as `string`, so it stays
+// correct across framer-motion versions. framer-motion types `margin` as a
+// template literal (e.g. `-50px`), which a plain `string` is not assignable to.
+type InViewMargin = NonNullable<Parameters<typeof useInView>[1]>["margin"];
+
 interface BlurFadeProps {
   children: React.ReactNode;
   className?: string;
@@ -20,7 +25,7 @@ interface BlurFadeProps {
   delay?: number;
   yOffset?: number;
   inView?: boolean;
-  inViewMargin?: string;
+  inViewMargin?: InViewMargin;
   blur?: string;
 }
 const BlurFade = ({
