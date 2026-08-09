@@ -1,17 +1,27 @@
 import { Icons } from "@/components/icons";
 import { HomeIcon, NotebookIcon } from "lucide-react";
+import {
+  SITE_AVATAR,
+  SITE_CONTACT_EMAIL,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 export const DATA = {
-  name: "Kavitha Kanchana",
+  // Identity primitives live in `@/lib/site` so that SEO plumbing can import
+  // them without pulling this file's React icons into its module graph. Do not
+  // inline them back here — the JSON-LD `@id` strings are derived from the same
+  // constants and must not be able to drift.
+  name: SITE_NAME,
   initials: "KK",
-  url: "https://kavithakanchana.me",
+  url: SITE_URL,
   location: "Sri Lanka",
   locationLink: "https://www.google.com/maps/place/sri+lanka",
   description:
     "I'm a software engineer at Cortana AI and co-founder of Ryzera Technologies. I build SaaS products, from micro SaaS to enterprise scale, plus AI automation with React, Next.js, and Node.js.",
   summary:
     "I'm Kavitha Kanchana (he/him), pursuing my B.Sc. in Software Engineering at Birmingham City University. I care about scalable architecture, subscription and payment systems, and clean REST APIs. I'm an active member of Generation ALPHA, a Sri Lankan tech community, and contribute to open source.",
-  avatarUrl: "/kavitha-kanchana-software-engineer.jpg",
+  avatarUrl: SITE_AVATAR,
   skills: [
     "JavaScript",
     "TypeScript",
@@ -49,7 +59,7 @@ export const DATA = {
     { href: "/blog", icon: NotebookIcon, label: "Blog" },
   ],
   contact: {
-    email: "kanchanakavitha6@gmail.com",
+    email: SITE_CONTACT_EMAIL,
     workEmail: "kavitha@usecortana.ai",
     tel: "",
     social: {

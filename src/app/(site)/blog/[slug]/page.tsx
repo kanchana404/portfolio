@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/utils";
 import { DATA } from "@/data/resume";
+import { ogImageUrl } from "@/lib/og";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
@@ -48,7 +49,10 @@ export async function generateStaticParams() {
 function resolveImage(post: PostDoc): string {
   const img = post.generatedImageUrl || post.featuredImage;
   if (img) return img.startsWith("http") ? img : `${DATA.url}${img}`;
-  return `${DATA.url}/og?title=${encodeURIComponent(post.title)}`;
+  // Built through the shared helper, never hand-assembled: `/og` now answers
+  // with a one-year immutable cache, so the URL is the only invalidation
+  // mechanism the card has. See `@/lib/og`.
+  return ogImageUrl("blog", post.title);
 }
 
 export async function generateMetadata({
