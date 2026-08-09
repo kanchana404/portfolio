@@ -149,25 +149,55 @@ export interface ToolDef {
   updatedAt: string;
   /** 3–8 phrases. Used as a brief far more than as a meta tag. */
   keywords: string[];
-  /** Sits between the H1 and the widget. Long enough to establish relevance, short enough not to push the widget below the fold. */
-  intro: string;
-  /** The real mechanism, not "simply upload your file". */
-  howItWorks: string;
-  /** The cases where this tool is the wrong answer. */
-  gotchas: string;
   /**
-   * Honest limits, rendered directly under the widget.
+   * One or two sentences between the H1 and the widget.
+   *
+   * Deliberately short. Someone arriving from a search query came to use the
+   * tool, and every line above it is a line between them and the thing they
+   * wanted. Say what it does, then get out of the way.
+   */
+  intro: string;
+  /**
+   * How to use it — the only prose under the widget.
+   *
+   * Short imperative steps, in order, each one action. This replaced a pair of
+   * essay-length "how it works" and "edge cases" sections: they read as filler,
+   * pushed the FAQ off the screen, and nobody using a percentage calculator
+   * wants four paragraphs on compounding first.
+   *
+   * If a step needs a caveat, put the caveat in the step.
+   */
+  howToUse: string[];
+  /**
+   * A single honest limit, rendered directly under the widget.
    *
    * Required for anything that does not run purely in the browser: a tool that
-   * ships work to a server owes the reader an account of what it does badly,
+   * ships work to a server owes the reader one line about what it does badly,
    * in the place someone who just got a mediocre result will actually look.
+   * One line — not a section.
    */
   caveats?: string;
   /** Fewer than three looks thin; more than six reads as padding and dilutes the FAQPage node. */
   faqs: ToolFaq[];
   /** Slugs of sibling tools. Must all exist, must not include self. */
   related: string[];
-  /** Primary sources. Required in spirit for anything with a regulated number in it. */
+  /**
+   * Set this when the tool **hardcodes a number somebody else controls** — a tax
+   * band, a statutory contribution rate, a passport photo dimension, a published
+   * cutoff mark.
+   *
+   * Doing so makes `sources` mandatory at build time. That is the point: a wrong
+   * statutory figure on a page with a real name attached is a reputational
+   * problem rather than a bug, and the failure mode is silence — nobody notices
+   * a rate went stale until someone relies on it.
+   *
+   * Tools where the user supplies every rate (the loan and compound-interest
+   * calculators, for instance) must leave this off. They cannot go stale, so
+   * demanding a citation from them would train everyone to add a meaningless
+   * one.
+   */
+  embedsThirdPartyRates?: boolean;
+  /** Primary sources. Mandatory when `embedsThirdPartyRates` is set. */
   sources?: Citation[];
 }
 

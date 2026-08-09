@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, LabelHTMLAttributes } from "react";
+import type {
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 
 /**
  * Dependency-free primitives for tool widgets.
@@ -62,4 +67,74 @@ export function ToolInput({
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cx(TOOL_INPUT_CLASS, className)} {...props} />;
+}
+
+/**
+ * Multi-line input for the text and developer tools.
+ *
+ * `font-mono` because everything typed into one of these is data — JSON, base64,
+ * a URL — where character-level alignment is the point and a proportional font
+ * actively hides mistakes.
+ */
+export function ToolTextarea({
+  className,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={cx(
+        "flex w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm",
+        "ring-offset-background placeholder:text-muted-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function ToolSelect({
+  className,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cx(
+        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+        "ring-offset-background focus-visible:outline-none focus-visible:ring-2",
+        "focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+/**
+ * A labelled figure in a results grid.
+ *
+ * `tabular-nums` so digits do not jitter as values change under the reader —
+ * the numbers in these tools update on every keystroke.
+ */
+export function StatTile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-lg border p-3">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      {hint ? (
+        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  );
 }

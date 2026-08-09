@@ -40,33 +40,42 @@ export const LIMITS = {
   descriptionMin: 120,
   descriptionMax: 165,
 
-  introWordsMin: 40,
-  introWordsMax: 70,
+  introWordsMin: 15,
+  introWordsMax: 45,
 
-  /** Applies to howItWorks, gotchas, and caveats when present. */
-  proseWordsMin: 120,
+  /** Steps in `howToUse`. Fewer than three is not a guide; more than six is a manual. */
+  howToUseStepsMin: 3,
+  howToUseStepsMax: 6,
+  howToUseStepWordsMin: 4,
+  howToUseStepWordsMax: 35,
+
+  /** A caveat is one line, and only required for tools that leave the browser. */
+  caveatWordsMin: 12,
 
   /**
    * Total rendered body copy.
    *
-   * The floor is the one that matters: thin pages are precisely what fails to
-   * get indexed, and indexation is the programme's actual bottleneck.
+   * These numbers were deliberately cut down from 400–1800. The original band
+   * came from the sprint plan's indexation thesis — thin pages get crawled and
+   * then not indexed — and it produced tool pages carrying two essay-length
+   * sections a visitor had to scroll past to reach the thing they came for.
    *
-   * The ceiling is a runaway guard, not a style rule, and is deliberately far
-   * above the 400–700 band the sprint plan's Definition of Done quotes. Word
-   * count cannot tell depth from filler — a genuinely thorough tool page earns
-   * its length, and the plan's own OCR copy is ~1,360 words. Enforcing 700 would
-   * reject content the same document asks for. Filler is caught by the
-   * duplicate and similarity rules below, which is where the leverage actually
-   * is.
+   * That trade was called the wrong way round. A tool page's job is to be a
+   * usable tool; the copy is supporting material, not the product. The floor
+   * here is low enough to permit a genuinely short page and high enough that a
+   * page with no guidance at all still fails.
+   *
+   * The known risk: pages this short are harder to get indexed, and the fix if
+   * that shows up in Search Console is better copy, not more of it.
    */
-  pageWordsMin: 400,
-  pageWordsMax: 1800,
+  pageWordsMin: 90,
+  pageWordsMax: 400,
 
   faqsMin: 3,
-  faqsMax: 6,
+  faqsMax: 5,
   faqQuestionMinChars: 10,
-  faqAnswerWordsMin: 15,
+  faqAnswerWordsMin: 10,
+  faqAnswerWordsMax: 45,
 
   relatedMax: 4,
   keywordsMin: 3,
@@ -147,8 +156,7 @@ export function pageWordCount(tool: ToolDef): number {
   );
   return (
     countWords(tool.intro) +
-    countWords(tool.howItWorks) +
-    countWords(tool.gotchas) +
+    tool.howToUse.reduce((sum, step) => sum + countWords(step), 0) +
     (tool.caveats ? countWords(tool.caveats) : 0) +
     faqWords
   );
@@ -355,30 +363,46 @@ export function validateTools(
       );
     }
 
-    for (const field of ["howItWorks", "gotchas"] as const) {
-      const words = countWords(t[field]);
-      if (words < LIMITS.proseWordsMin) {
+    // --- how to use
+    if (
+      t.howToUse.length < LIMITS.howToUseStepsMin ||
+      t.howToUse.length > LIMITS.howToUseStepsMax
+    ) {
+      at(
+        t.slug,
+        "howToUse",
+        `${t.howToUse.length} steps, must be ${LIMITS.howToUseStepsMin}-${LIMITS.howToUseStepsMax}. ` +
+          `Fewer than ${LIMITS.howToUseStepsMin} is not a guide; more than ` +
+          `${LIMITS.howToUseStepsMax} is a manual nobody reads.`
+      );
+    }
+    t.howToUse.forEach((step, i) => {
+      const words = countWords(step);
+      if (words < LIMITS.howToUseStepWordsMin) {
+        at(t.slug, `howToUse[${i}]`, `${words} words — too terse to be a step.`);
+      }
+      if (words > LIMITS.howToUseStepWordsMax) {
         at(
           t.slug,
-          field,
-          `${words} words, minimum ${LIMITS.proseWordsMin}. A section this short ` +
-            `is a heading with filler under it and will not earn the H2.`
+          `howToUse[${i}]`,
+          `${words} words, max ${LIMITS.howToUseStepWordsMax}. A step is one ` +
+            `action, not a paragraph — split it or cut it.`
         );
       }
-    }
+    });
 
-    // A tool that ships work to a server owes the reader an account of what it
+    // A tool that ships work to a server owes the reader a line about what it
     // does badly. Browser-only tools are exempt: their failure modes are visible
     // immediately and cost nothing to retry.
     if (t.compute !== "browser") {
       const caveatWords = t.caveats ? countWords(t.caveats) : 0;
-      if (caveatWords < LIMITS.proseWordsMin) {
+      if (caveatWords < LIMITS.caveatWordsMin) {
         at(
           t.slug,
           "caveats",
-          `${caveatWords} words, minimum ${LIMITS.proseWordsMin} for a tool with ` +
-            `compute: "${t.compute}". Anything that leaves the browser must ` +
-            `document its limits where someone who just got a bad result will look.`
+          `${caveatWords} words, minimum ${LIMITS.caveatWordsMin} for a tool with ` +
+            `compute: "${t.compute}". Anything that leaves the browser must say ` +
+            `so where someone who just got a bad result will look.`
         );
       }
     }
@@ -428,6 +452,14 @@ export function validateTools(
             `answer, it is a stub, and Google treats the FAQPage node as low quality.`
         );
       }
+      if (answerWords > LIMITS.faqAnswerWordsMax) {
+        at(
+          t.slug,
+          `faqs[${i}].a`,
+          `${answerWords} words, max ${LIMITS.faqAnswerWordsMax}. Answer in the ` +
+            `first sentence and stop — this is a FAQ, not an article.`
+        );
+      }
       const key = faq.q.trim().toLowerCase();
       if (seenQuestions.has(key)) {
         at(t.slug, `faqs[${i}].q`, `duplicate question: "${faq.q}".`);
@@ -460,6 +492,22 @@ export function validateTools(
     }
 
     // --- sources
+    //
+    // A tool that hardcodes somebody else's number must say where it came from
+    // and when a human last checked it. This is the mechanism behind the highest
+    // -harm failure mode in the whole platform: a statutory rate that quietly
+    // went stale on a page carrying a real name.
+    if (t.embedsThirdPartyRates && (t.sources?.length ?? 0) === 0) {
+      at(
+        t.slug,
+        "sources",
+        `is empty, but embedsThirdPartyRates is set. Any hardcoded tax band, ` +
+          `statutory rate or published dimension needs a primary source and the ` +
+          `date a human read it. If the user supplies every rate instead, unset ` +
+          `embedsThirdPartyRates rather than adding a token citation.`
+      );
+    }
+
     (t.sources ?? []).forEach((s, i) => {
       if (s.title.trim().length === 0) {
         at(t.slug, `sources[${i}].title`, "empty.");

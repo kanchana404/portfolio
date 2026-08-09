@@ -12,7 +12,7 @@ import {
   toolsByRecency,
 } from "./registry";
 import { MAX_TOOLS, RESERVED_SLUGS, TOOL_CATEGORIES } from "./types";
-import { pageWordCount, validateTools } from "./validate";
+import { LIMITS, pageWordCount, validateTools } from "./validate";
 
 /**
  * These run against the real registry, not a fixture.
@@ -65,9 +65,13 @@ describe("registry invariants the validator does not cover", () => {
   });
 
   it("carries enough body copy on every page to be worth indexing", () => {
+    // Reads the floor from LIMITS rather than repeating it. The number moved
+    // once already — from 400 down to 90, when the essay-length "how it works"
+    // and "gotchas" sections were replaced by a short how-to — and a copy of it
+    // hardcoded here was the only thing that had to be found and changed by hand.
     for (const tool of TOOLS) {
       expect(pageWordCount(tool), `${tool.slug} body copy`).toBeGreaterThanOrEqual(
-        400
+        LIMITS.pageWordsMin
       );
     }
   });
@@ -80,14 +84,16 @@ describe("registry invariants the validator does not cover", () => {
     }
   });
 
-  it("cites a primary source for anything carrying a regulated number", () => {
-    // Not enforceable by type — this is the reminder that a finance or
-    // statutory tool without a citation is a liability, not a feature.
+  it("cites a primary source for every tool that hardcodes someone else's number", () => {
+    // Keyed on an explicit declaration rather than on a heuristic. An earlier
+    // version of this test guessed from the audience tag and flagged the loan
+    // calculator, which embeds no rates at all — the user supplies them. A tool
+    // that cannot go stale should not be made to carry a decorative citation.
     for (const tool of TOOLS) {
-      if (tool.audience.includes("sri-lanka") && tool.category === "calculators") {
+      if (tool.embedsThirdPartyRates) {
         expect(
           tool.sources?.length ?? 0,
-          `${tool.slug} should cite its rates`
+          `${tool.slug} declares embedded third-party rates and must cite them`
         ).toBeGreaterThan(0);
       }
     }

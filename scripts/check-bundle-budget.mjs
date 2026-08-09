@@ -47,7 +47,7 @@ const ROUTE_BUDGETS = [
   { key: "/(site)/blog/[slug]/page", label: "/blog/[slug]", maxKb: 88 },
   { key: "/(site)/blog/page", label: "/blog", maxKb: 96 },
   { key: "/(tools)/tools/page", label: "/tools", maxKb: 100 },
-  { key: "/(tools)/tools/[slug]/page", label: "/tools/[slug]", maxKb: 108 },
+  { key: "/(tools)/tools/[slug]/page", label: "/tools/[slug]", maxKb: 100 },
   {
     key: "/(tools)/tools/category/[category]/page",
     label: "/tools/category/[category]",
@@ -56,14 +56,34 @@ const ROUTE_BUDGETS = [
 ];
 
 /**
- * What one widget may cost, with the shared platform floor cancelled out.
- * Measured at 2.1 kB for the percentage calculator; 8 leaves room for a
- * genuinely richer widget while still catching a stray heavy import.
+ * What mounting a widget costs, with the shared platform floor cancelled out.
+ *
+ * ## History, because the number moved for a reason
+ *
+ * `/tools/[slug]` is a single route, so when the widget map lived in a Server
+ * Component its client chunk contained *every* widget regardless of which tool
+ * was rendering. That measured 15.1 kB for twelve widgets and 27.5 kB for
+ * seventeen — a cost linear in the size of the catalogue, on a catalogue capped
+ * at thirty. The budget was set at 20 kB with an explicit instruction not to
+ * raise it, and adding the seventeenth tool duly broke it.
+ *
+ * The fix was architectural, as intended: the map moved into
+ * `src/components/tools/tool-widget.tsx`, a Client Component using
+ * `next/dynamic`, so webpack emits one async chunk per widget and the browser
+ * fetches only the one it needs. `/tools/[slug]` went from 121.6 kB to 95.8 kB
+ * and this delta from 27.5 kB to 1.4 kB — now just the loader, not the widgets.
+ *
+ * ## What this still guards
+ *
+ * The delta is now roughly constant, so 5 kB is a tight tripwire on the thing
+ * that would undo the fix: a static `import` of a widget creeping back into the
+ * boundary, or a shared dependency being hoisted out of the async chunks.
+ * If it fires, look for a widget imported eagerly rather than via `dynamic()`.
  */
 const WIDGET_DELTA = {
   route: "/(tools)/tools/[slug]/page",
   against: "/(tools)/tools/page",
-  maxKb: 8,
+  maxKb: 5,
 };
 
 /**

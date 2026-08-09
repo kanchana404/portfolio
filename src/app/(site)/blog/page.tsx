@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 export const revalidate = 3600;
 
@@ -90,7 +91,7 @@ export default async function BlogPage({
     <main className="flex flex-col min-h-[100dvh] space-y-10">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
 
       <section id="hero">

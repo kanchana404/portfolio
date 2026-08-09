@@ -3,9 +3,10 @@ import { SITE_AVATAR_96, SITE_CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
 import { toolJsonLd } from "@/lib/tools/jsonld";
 import { getTool } from "@/lib/tools/registry";
 import { CATEGORY_LABELS, type ToolCompute, type ToolDef } from "@/lib/tools/types";
-import { getToolWidget } from "@/lib/tools/widgets";
-import { Prose } from "./prose";
+import "@/lib/tools/widget-slugs";
+import ToolWidget from "./tool-widget";
 import { WidgetFrame } from "./widget-frame";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 /**
  * The tool page template.
@@ -14,8 +15,8 @@ import { WidgetFrame } from "./widget-frame";
  * tool built after the first inherits it for free and the order stops being
  * something anyone has to remember:
  *
- *   breadcrumb → H1 → meta row → intro → **widget** → caveats → how it works →
- *   gotchas (+ sources) → FAQ → related → author card → JSON-LD
+ *   breadcrumb → H1 → meta row → intro → **widget** → caveats → how to use
+ *   (+ sources) → FAQ → related → author card → JSON-LD
  *
  * The widget sits above the fold because a visitor arriving from a search query
  * wants the tool, and time-to-first-interaction on it is the behavioural signal
@@ -60,7 +61,6 @@ function formatDate(isoDate: string): string {
 
 export function ToolShell({ tool }: { tool: ToolDef }) {
   const categoryHref = `/tools/category/${tool.category}`;
-  const Widget = getToolWidget(tool.slug);
   const related = tool.related
     .map(getTool)
     .filter((t): t is ToolDef => Boolean(t));
@@ -113,7 +113,10 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
             {CATEGORY_LABELS[tool.category]}
           </Link>
           <span aria-hidden>·</span>
-          <span>{privacyLine(tool.compute)}</span>
+          {/* Linked, so the claim is checkable rather than merely asserted. */}
+          <Link href="/privacy" className="hover:text-foreground">
+            {privacyLine(tool.compute)}
+          </Link>
           <span aria-hidden>·</span>
           <span>
             Updated{" "}
@@ -144,53 +147,38 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
         <section id="tool-widget" className="mt-6 scroll-mt-6">
           <h2 className="sr-only">{tool.title}</h2>
           <WidgetFrame minHeight={360}>
-            {Widget ? (
-              <Widget />
-            ) : (
-              // Unreachable: src/lib/tools/widgets.ts throws at module scope if a
-              // buildable tool has no widget, so the build fails before this can
-              // render. Kept because an indexable page with a silent hole in it
-              // is worse than an obvious one.
-              <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                This tool is being rebuilt and will be back shortly.
-              </p>
-            )}
+            <ToolWidget slug={tool.slug} />
           </WidgetFrame>
         </section>
 
-        {/* 6 — Honest limits, for anything that leaves the browser. Sits directly
-             under the widget because that is where someone who just got a
-             mediocre result actually looks. */}
+        {/* 6 — Honest limits, for anything that leaves the browser. One line,
+             directly under the widget, because that is where someone who just
+             got a mediocre result actually looks. */}
         {tool.caveats ? (
-          <section
-            aria-labelledby="caveats-heading"
-            className="mt-10 rounded-lg border-l-4 border-amber-500/60 bg-amber-500/5 p-5"
-          >
-            <h2 id="caveats-heading" className="text-lg font-semibold tracking-tight">
-              How good is this, really?
-            </h2>
-            <div className="mt-3">
-              <Prose text={tool.caveats} />
-            </div>
-          </section>
+          <p className="mt-6 rounded-lg border-l-4 border-amber-500/60 bg-amber-500/5 p-4 text-sm">
+            {tool.caveats}
+          </p>
         ) : null}
 
-        {/* 7 — How it works */}
+        {/* 7 — How to use it.
+             This replaced a pair of essay-length sections. A visitor who came
+             from a search query wants the tool, then a short answer to "what do
+             I put where" — not four paragraphs before either. */}
         <section className="mt-10">
-          <h2 className="text-lg font-semibold tracking-tight">How it works</h2>
-          <div className="mt-3">
-            <Prose text={tool.howItWorks} />
-          </div>
-        </section>
-
-        {/* 8 — Edge cases and gotchas, plus dated sources where they exist */}
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Edge cases and gotchas
-          </h2>
-          <div className="mt-3">
-            <Prose text={tool.gotchas} />
-          </div>
+          <h2 className="text-lg font-semibold tracking-tight">How to use it</h2>
+          <ol className="mt-3 space-y-2.5">
+            {tool.howToUse.map((step, index) => (
+              <li key={step} className="flex gap-3 text-sm leading-relaxed">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-medium tabular-nums text-muted-foreground"
+                >
+                  {index + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
 
           {tool.sources?.length ? (
             <div className="mt-5 rounded-lg border p-4">
@@ -314,7 +302,7 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
       {/* 12 — JSON-LD last, so it never delays first paint */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(toolJsonLd(tool)) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(toolJsonLd(tool)) }}
       />
     </>
   );

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
+import { requireAdmin } from '@/lib/auth/admin';
 
 // Function to generate image using the existing image generation API
 async function generateImage(prompt: string): Promise<string> {
@@ -253,9 +255,14 @@ async function createBlogFromNews(newsData: any) {
   };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // This endpoint writes blogs and calls the image generator, so it is
+  // privileged despite not living under /api/admin.
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   let body: any;
-  
+
   try {
     // Parse the request body - accept any data
     body = await request.json();
@@ -434,10 +441,16 @@ export async function POST(request: Request) {
 }
 
 // Also support GET requests for basic data retrieval
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Guarded despite returning no records: it documents the POST action surface
+  // above, which is now admin-only. An endpoint directory for a privileged API
+  // is not something to hand to anonymous callers.
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   try {
     await connectToDatabase();
-    
+
     // Return basic info about available endpoints
     return NextResponse.json({
       message: 'Data API endpoint',

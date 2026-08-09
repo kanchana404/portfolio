@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { TOOL_INPUT_CLASS, TOOL_LABEL_CLASS, cx } from "./ui";
@@ -34,28 +34,62 @@ describe("tool primitives stay in step with the shared UI kit", () => {
   });
 });
 
-describe("no tool widget may import the heavy UI kit", () => {
+describe("nothing on the client side of the tool boundary may import the heavy UI kit", () => {
   // tailwind-merge alone is ~21 kB of client JavaScript, and a widget is the
   // only client JS on an SEO-critical route. This is the guard that stops the
   // next widget quietly reintroducing it.
+  //
+  // The directory is listed rather than the map parsed. An earlier version read
+  // the import statements out of the widget map, which meant a widget file that
+  // existed but was not yet wired up was silently exempt — precisely the moment
+  // someone is copying an existing widget and has not finished cleaning it up.
   const widgetDir = "src/components/tools/widgets";
-  const widgets = readFileSync(join(root, "src/lib/tools/widgets.ts"), "utf8");
 
-  const imported = [...widgets.matchAll(/from "(@\/components\/tools\/widgets\/[^"]+)"/g)].map(
-    (m) => m[1].replace("@/", "src/")
-  );
+  const modules = [
+    // The client boundary itself. If this ever imports widget-frame.tsx for its
+    // skeleton, tailwind-merge crosses into every tool page at once.
+    "src/components/tools/tool-widget.tsx",
+    "src/components/tools/ui.tsx",
+    "src/components/tools/copy-button.tsx",
+    ...readdirSync(join(root, widgetDir))
+      .filter((f) => f.endsWith(".tsx"))
+      .map((f) => `${widgetDir}/${f}`),
+  ];
 
-  it("finds the widget modules to check", () => {
-    expect(imported.length).toBeGreaterThan(0);
-    expect(widgetDir).toBeTruthy();
+  it("finds every widget module to check", () => {
+    // 17 widgets plus the three shared client modules above.
+    expect(modules.length).toBeGreaterThanOrEqual(20);
   });
 
-  it.each(imported)("%s imports no tailwind-merge or Radix", (modulePath) => {
-    const source = read(`${modulePath}.tsx`);
-    expect(source).not.toContain("@/lib/utils");
-    expect(source).not.toContain("@/components/ui/");
-    expect(source).not.toContain("tailwind-merge");
-    expect(source).not.toContain("@radix-ui");
+  /**
+   * Import specifiers only — static `from "x"` and dynamic `import("x")`.
+   *
+   * A plain substring scan over the file flagged `ui.tsx` and `tool-widget.tsx`,
+   * both of which name the forbidden modules in comments explaining why they do
+   * not import them. Punishing a file for documenting the rule is the wrong
+   * incentive, so the check reads what is actually imported.
+   */
+  const importsOf = (source: string): string[] => [
+    ...[...source.matchAll(/\bfrom\s+"([^"]+)"/g)].map((m) => m[1]),
+    ...[...source.matchAll(/\bimport\(\s*"([^"]+)"\s*\)/g)].map((m) => m[1]),
+  ];
+
+  const FORBIDDEN = ["@/lib/utils", "@/components/ui/", "tailwind-merge", "@radix-ui"];
+
+  it.each(modules)("%s imports no tailwind-merge or Radix", (modulePath) => {
+    const specifiers = importsOf(read(modulePath));
+    const offending = specifiers.filter((s) =>
+      FORBIDDEN.some((f) => s.startsWith(f))
+    );
+    expect(offending, `${modulePath} imports ${offending.join(", ")}`).toEqual([]);
+  });
+
+  it("actually detects a forbidden import when one is present", () => {
+    // Without this, a regex that matched nothing would make every case above
+    // pass vacuously.
+    const specifiers = importsOf('import { cn } from "@/lib/utils";');
+    expect(specifiers).toEqual(["@/lib/utils"]);
+    expect(FORBIDDEN.some((f) => specifiers[0].startsWith(f))).toBe(true);
   });
 });
 

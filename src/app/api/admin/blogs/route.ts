@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
+import { requireAdmin } from '@/lib/auth/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     const body = await request.json();
     const { title, content, excerpt, featuredImage, generatedImageUrl, tags, isPublished } = body;
 
@@ -73,6 +77,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
