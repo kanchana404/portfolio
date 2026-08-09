@@ -11,6 +11,7 @@ import { MorphingText } from "@/components/ui/morphing-text";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DATA } from "@/data/resume";
+import { toolsByRecency } from "@/lib/tools/registry";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -257,6 +258,59 @@ export default function Page() {
                 </BlurFade>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/*
+          Tools — the crawl path into /tools.
+
+          A body link inside the main content flow, not just the Dock. The Dock
+          is a real <Link> and does pass equity, but it is fixed-position chrome
+          rendered after {children}; a link surrounded by topical prose is the
+          path that actually gets followed, and indexation is the bottleneck this
+          whole section exists to solve.
+
+          Imports only the registry — never the widget map — so nothing here can
+          drag widget code into the homepage bundle.
+        */}
+        <section id="tools" className="scroll-mt-24">
+          <div className="flex flex-col gap-y-4">
+            <BlurFade delay={BLUR_FADE_DELAY * 11}>
+              <SectionHeading>Tools</SectionHeading>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 11.5}>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Small free utilities I built for my own use and kept online. Most
+                run entirely in your browser — nothing is uploaded, nothing needs
+                an account.{" "}
+                <Link
+                  href="/tools"
+                  className="font-medium text-foreground underline underline-offset-4"
+                >
+                  Browse all tools
+                </Link>
+                .
+              </p>
+            </BlurFade>
+            <BlurFade delay={BLUR_FADE_DELAY * 12}>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {toolsByRecency()
+                  .slice(0, 3)
+                  .map((tool) => (
+                    <li key={tool.slug}>
+                      <Link
+                        href={`/tools/${tool.slug}`}
+                        className="flex h-full flex-col rounded-lg border p-4 transition-colors duration-150 hover:border-foreground/20"
+                      >
+                        <span className="text-sm font-medium">{tool.title}</span>
+                        <span className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                          {tool.description}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
+            </BlurFade>
           </div>
         </section>
 

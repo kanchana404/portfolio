@@ -28,8 +28,25 @@ export const SITE_URL = "https://kavithakanchana.me";
 
 export const SITE_NAME = "Kavitha Kanchana";
 
-/** Public path of the headshot used for Person.image and author cards. */
+/** Full-resolution headshot (896×1195, ~272 kB). Used for Person.image and OG. */
 export const SITE_AVATAR = "/kavitha-kanchana-software-engineer.jpg";
+
+/**
+ * Pre-sized 96×96 crop of the headshot, ~6 kB.
+ *
+ * Exists so the tools author card can use a plain `<img>` at its natural size.
+ * The alternatives were both bad: `next/image` ships a 12 kB client runtime to
+ * every tool page to render a 48px avatar, and a plain `<img>` pointing at the
+ * full headshot downloads 272 kB to display 48 pixels. A purpose-built asset
+ * costs 6 kB and no JavaScript.
+ *
+ * Regenerate alongside the headshot:
+ *   sips -Z 128 public/kavitha-kanchana-software-engineer.jpg --out /tmp/a.jpg
+ *   sips -c 96 96 /tmp/a.jpg --out /tmp/b.jpg
+ *   sips -s format jpeg -s formatOptions 55 /tmp/b.jpg \
+ *     --out public/kavitha-kanchana-avatar-96.jpg
+ */
+export const SITE_AVATAR_96 = "/kavitha-kanchana-avatar-96.jpg";
 
 /** Where "a number looks wrong" reports should land. */
 export const SITE_CONTACT_EMAIL = "kanchanakavitha6@gmail.com";

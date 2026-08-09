@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  # Fast feedback. Fails in seconds on the most common mistakes, before anything
+  # spends time on a build.
+  static:
+    name: Typecheck · Lint · Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The registry validator runs at module scope, so the unit suite is also
+      # what proves the shipped content is valid. It is the cheapest check here
+      # and the one most likely to fail, because it validates hand-written prose
+      # rather than code.
+      - run: pnpm test
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+      # Enforce the connection-pool rule mechanically.
+      #
+      # `minPoolSize: 5` in db/index.ts means a single warm lambda pins five
+      # Atlas connections, so a statically generated tool page must never touch
+      # the pool. Reviewers forget; grep does not.
+      #
+      # Deliberately wider than just the route directory: the widgets and the
+      # registry live outside `src/app/(tools)/` and are imported *into* it, so
+      # scanning only the routes would miss the realistic version of this bug.
+      - name: No database imports in tool code
+        run: |
+          if grep -rnE "from ['\"]@db(/|['\"])" \
+               "src/app/(tools)/" src/lib/tools/ src/components/tools/ ; then
+            echo "::error::Tool code must never import from @db. Use a route handler."
+            exit 1
+          fi
+          echo "ok — no @db import in tool code"
+
+  build:
+    name: Build · Bundle budget
+    runs-on: ubuntu-latest
+    needs: static
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # No MONGODB_URI on purpose. sitemap.ts and the blog routes must survive
+      # without it — their try/catch fallbacks are load-bearing, and this is what
+      # proves they work rather than assuming so.
+      - run: pnpm build
+
+      - run: pnpm budget
+
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    needs: static
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      # playwright.config.ts builds and starts the production server itself.
+      # These assert the things unit tests cannot: that the widget is in the HTML
+      # before JavaScript runs, that typing sends nothing, that layout does not
+      # shift, and that an unknown slug 404s.
+      - run: pnpm test:browser
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
