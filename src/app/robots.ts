@@ -13,7 +13,11 @@ export default function robots(): MetadataRoute.Robots {
       // and structured data referencing them aren't blocked.
       disallow: ["/admin", "/api/admin", "/api/debug", "/publish-blog"],
     },
-    sitemap: `${base}/sitemap.xml`,
+    // Both are declared. The tools segment duplicates URLs that are already in
+    // the main sitemap on purpose: Search Console reports indexation per
+    // sitemap, so a separate submission is the only way to measure the tools
+    // cohort on its own — which is what Gate 1 asks for.
+    sitemap: [`${base}/sitemap.xml`, `${base}/sitemap-tools.xml`],
     host: base,
   };
 }

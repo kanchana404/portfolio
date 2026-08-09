@@ -6,7 +6,9 @@
     "node": "22.x"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "scripts": {
     "dev": "next dev",
@@ -15,7 +17,10 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "budget": "node scripts/check-bundle-budget.mjs",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm budget",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.6",
@@ -50,6 +55,7 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20.17.30",
     "@types/react": "^18.3.20",
