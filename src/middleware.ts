@@ -1,33 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { isAdminRequest } from '@/lib/auth/admin';
 
-export function middleware(request: NextRequest) {
-  // Check if the request is for admin routes (excluding login and API routes)
-  if (request.nextUrl.pathname.startsWith('/admin') && 
-      !request.nextUrl.pathname.startsWith('/admin/login') &&
-      !request.nextUrl.pathname.startsWith('/admin/api')) {
-    
-    // Check for admin password in cookies
-    const adminPassword = request.cookies.get('admin-password')?.value;
-    const correctPassword = process.env.ADMIN_PASSWORD;
+/**
+ * Page-level gate for the admin area.
+ *
+ * This is **defence in depth, not the authorisation boundary**. The real guard
+ * is `requireAdmin()` inside each privileged route handler, because this
+ * middleware's matcher cannot protect the admin API: those routes live under
+ * `/api/admin/*`, which does not start with `/admin`, so the previous version of
+ * this file never ran on them at all. Every mutating admin endpoint was open to
+ * the internet as a result.
+ *
+ * Keep both. If a future route is added under `/admin` and someone forgets the
+ * handler guard, this still redirects; if the matcher is wrong again, the
+ * handler guard still denies.
+ */
+export async function middleware(request: NextRequest) {
+  if (await isAdminRequest(request)) return NextResponse.next();
 
-    // If no password is set in env, allow access (for development)
-    if (!correctPassword) {
-      return NextResponse.next();
-    }
-
-    // If password doesn't match, redirect to login
-    if (adminPassword !== correctPassword) {
-      const loginUrl = new URL('/admin/login', request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
-  return NextResponse.next();
+  // Fails closed. The previous version returned `NextResponse.next()` when
+  // ADMIN_PASSWORD was unset — commented "for development", but middleware runs
+  // in production too, so a missing environment variable silently unlocked the
+  // admin area rather than locking it.
+  const loginUrl = new URL('/admin/login', request.url);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
   matcher: [
     '/admin',
-    '/admin/((?!login|api).*)',
+    // Everything under /admin except the login page itself, which must stay
+    // reachable while logged out.
+    '/admin/((?!login).*)',
   ],
-}; 
+};

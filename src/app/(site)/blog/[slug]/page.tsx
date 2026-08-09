@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 // ISR: prebuild known posts, render new ones on demand, refresh hourly.
 export const revalidate = 3600;
@@ -154,7 +155,7 @@ export default async function BlogPostPage({
     <section id="blog">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
 
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">

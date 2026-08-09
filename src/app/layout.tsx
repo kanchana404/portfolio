@@ -1,6 +1,5 @@
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
-import TrackingScript from "@/components/tracking-script";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
@@ -9,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -200,13 +200,10 @@ export default function RootLayout({
         {/* Structured data: WebSite + Person + ProfilePage (one cross-linked graph) */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
         />
         {/* Scroll progress bar (top of every page) */}
         <ScrollProgress />
-
-        {/* Cortana AI pixel tracking script */}
-        <TrackingScript />
 
         <ThemeProvider attribute="class" defaultTheme="light">
           <TooltipProvider delayDuration={0}>

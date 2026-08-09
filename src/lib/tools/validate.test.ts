@@ -44,9 +44,8 @@ function validTool(overrides: Partial<ToolDef> = {}): ToolDef {
     publishedAt: "2026-01-01",
     updatedAt: "2026-01-01",
     keywords: [`${slug} one`, `${slug} two`, `${slug} three`],
-    intro: words(50),
-    howItWorks: words(140),
-    gotchas: words(140),
+    intro: words(30),
+    howToUse: [words(10), words(10), words(10), words(10)],
     faqs: [
       { q: "What does this tool do?", a: words(25) },
       { q: "Is it free to use?", a: words(25) },
@@ -126,25 +125,23 @@ describe("trigramSimilarity", () => {
 });
 
 describe("pageWordCount", () => {
-  it("sums intro, prose, caveats and every FAQ", () => {
+  it("sums intro, every step, caveats and every FAQ", () => {
     const tool = validTool({
-      intro: words(40),
-      howItWorks: words(120),
-      gotchas: words(120),
+      intro: words(30),
+      howToUse: [words(8), words(12)],
       caveats: words(10),
       faqs: [{ q: words(5), a: words(20) }],
     });
-    expect(pageWordCount(tool)).toBe(40 + 120 + 120 + 10 + 5 + 20);
+    expect(pageWordCount(tool)).toBe(30 + 8 + 12 + 10 + 5 + 20);
   });
   it("omits caveats when absent", () => {
     const tool = validTool({
-      intro: words(40),
-      howItWorks: words(120),
-      gotchas: words(120),
+      intro: words(30),
+      howToUse: [words(8), words(12)],
       faqs: [],
       caveats: undefined,
     });
-    expect(pageWordCount(tool)).toBe(280);
+    expect(pageWordCount(tool)).toBe(50);
   });
 });
 
@@ -299,31 +296,46 @@ describe("validateTools — duplicate detection across the registry", () => {
 
 // ------------------------------------------------------------------- prose
 
-describe("validateTools — prose length", () => {
-  it("rejects howItWorks under the floor and reports the actual count", () => {
+describe("validateTools — how to use", () => {
+  it.each([LIMITS.howToUseStepsMin - 1, LIMITS.howToUseStepsMax + 1])(
+    "rejects a guide of %i steps",
+    (n) => {
+      const howToUse = Array.from({ length: n }, () => words(10));
+      const found = issuesFor([validTool({ howToUse })]);
+      expect(found.some((i) => i.includes("howToUse"))).toBe(true);
+    }
+  );
+
+  it("accepts a guide at exactly the minimum and maximum", () => {
+    for (const n of [LIMITS.howToUseStepsMin, LIMITS.howToUseStepsMax]) {
+      const howToUse = Array.from({ length: n }, () => words(10));
+      expect(issuesFor([validTool({ howToUse })]), `${n} steps`).toEqual([]);
+    }
+  });
+
+  it("rejects a step too terse to be an instruction", () => {
     const found = issuesFor([
-      validTool({ howItWorks: words(LIMITS.proseWordsMin - 1) }),
+      validTool({
+        howToUse: [words(LIMITS.howToUseStepWordsMin - 1), words(10), words(10)],
+      }),
+    ]);
+    expect(found.some((i) => i.includes("howToUse[0]"))).toBe(true);
+  });
+
+  it("rejects a step that has become a paragraph", () => {
+    // The rule that stops the essays coming back one bullet at a time.
+    const found = issuesFor([
+      validTool({
+        howToUse: [words(10), words(LIMITS.howToUseStepWordsMax + 1), words(10)],
+      }),
     ]);
     expect(
-      found.some(
-        (i) =>
-          i.includes("howItWorks") && i.includes(String(LIMITS.proseWordsMin - 1))
-      )
+      found.some((i) => i.includes("howToUse[1]") && i.includes("max"))
     ).toBe(true);
   });
+});
 
-  it("accepts gotchas at exactly the floor", () => {
-    // Compensate elsewhere so the page floor is not what fails.
-    expect(
-      issuesFor([
-        validTool({
-          gotchas: words(LIMITS.proseWordsMin),
-          howItWorks: words(160),
-        }),
-      ])
-    ).toEqual([]);
-  });
-
+describe("validateTools — page length", () => {
   it.each([LIMITS.introWordsMin - 1, LIMITS.introWordsMax + 1])(
     "rejects an intro of %i words",
     (n) => {
@@ -335,13 +347,12 @@ describe("validateTools — prose length", () => {
   it("rejects a page below the total word floor", () => {
     const found = issuesFor([
       validTool({
-        intro: words(40),
-        howItWorks: words(120),
-        gotchas: words(120),
+        intro: words(LIMITS.introWordsMin),
+        howToUse: [words(4), words(4), words(4)],
         faqs: [
-          { q: "Is this a real question?", a: words(15) },
-          { q: "Is this another question?", a: words(15) },
-          { q: "And a third question here?", a: words(15) },
+          { q: "Is this a real question?", a: words(10) },
+          { q: "Is this another question?", a: words(10) },
+          { q: "And a third question here?", a: words(10) },
         ],
       }),
     ]);
@@ -351,8 +362,19 @@ describe("validateTools — prose length", () => {
   });
 
   it("rejects a page above the runaway ceiling", () => {
+    // Everything simultaneously at its own maximum still has to blow the page
+    // budget, or the ceiling is unreachable and therefore untested.
     const found = issuesFor([
-      validTool({ howItWorks: words(LIMITS.pageWordsMax + 100) }),
+      validTool({
+        intro: words(LIMITS.introWordsMax),
+        howToUse: Array.from({ length: LIMITS.howToUseStepsMax }, () =>
+          words(LIMITS.howToUseStepWordsMax)
+        ),
+        faqs: Array.from({ length: LIMITS.faqsMax }, (_, i) => ({
+          q: `Is this question number ${i}?`,
+          a: words(LIMITS.faqAnswerWordsMax),
+        })),
+      }),
     ]);
     expect(found.some((i) => i.includes("page") && i.includes("maximum"))).toBe(
       true
@@ -372,7 +394,7 @@ describe("validateTools — caveats are mandatory off-browser", () => {
   it("accepts an off-browser tool that documents its limits", () => {
     expect(
       issuesFor([
-        validTool({ compute: "railway", caveats: words(LIMITS.proseWordsMin) }),
+        validTool({ compute: "railway", caveats: words(LIMITS.caveatWordsMin) }),
       ])
     ).toEqual([]);
   });

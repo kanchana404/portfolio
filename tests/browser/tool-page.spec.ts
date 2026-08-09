@@ -78,19 +78,23 @@ test.describe("the tool page", () => {
     expect(await page.locator("body").innerText()).not.toContain("NaN");
   });
 
-  test("sends nothing at all while the user is typing", async ({ page }) => {
+  test("sends nothing at all, to anyone, ever", async ({ page }) => {
     // The meta row claims "Runs in your browser — nothing uploaded", and this is
     // that claim made falsifiable.
     //
-    // The assertion is deliberately about *interaction*, not about the page as a
-    // whole. The site-wide analytics pixel (app.usecortana.ai, mounted in the
-    // root layout) fires one pageview on load like any analytics, and asserting
-    // "zero cross-origin requests ever" would be testing something the site does
-    // not claim. What the tool page actually promises is that the numbers you
-    // type never leave the device — so: let the page settle, then start
-    // counting, then interact, and require silence.
+    // This test used to be weaker. It asserted only that the *typed values*
+    // never left, and explicitly tolerated the analytics pixel — which was
+    // mounted in the root layout and therefore fired interaction events on tool
+    // pages while the user typed. The values were never in those events, so the
+    // claim was true about data and uncomfortable in spirit: a visitor with
+    // devtools open watched requests fire as they typed on a page that said
+    // nothing was uploaded.
+    //
+    // The pixel has since been scoped to `(site)`, so tool pages now make zero
+    // network requests of any kind and the test asserts exactly that. Anything
+    // reappearing here — analytics, a font, an avatar CDN — fails the build.
     await page.goto(TOOL, { waitUntil: "load" });
-    await page.waitForTimeout(1500); // let the pageview beacon settle
+    await page.waitForTimeout(1500); // let anything late settle before counting
 
     const afterLoad: string[] = [];
     const sentinelSeen: string[] = [];
@@ -207,9 +211,17 @@ test.describe("the tool page", () => {
     );
 
     const widgetIndex = order.indexOf("WIDGET");
-    const firstProseHeading = order.findIndex((o) => o.startsWith("H2:How it works"));
-    expect(widgetIndex).toBeGreaterThan(-1);
-    expect(firstProseHeading).toBeGreaterThan(widgetIndex);
+    const guideIndex = order.findIndex((o) => o.startsWith("H2:How to use it"));
+    const faqIndex = order.findIndex((o) => o.startsWith("H2:Frequently asked"));
+
+    expect(widgetIndex, "no #tool-widget on the page").toBeGreaterThan(-1);
+    expect(guideIndex, 'no "How to use it" heading').toBeGreaterThan(-1);
+
+    // The rule the whole template exists to enforce: the tool comes before any
+    // copy about the tool. Someone who searched for a percentage calculator did
+    // not arrive wanting to read first.
+    expect(guideIndex).toBeGreaterThan(widgetIndex);
+    expect(faqIndex).toBeGreaterThan(guideIndex);
   });
 });
 
@@ -222,12 +234,13 @@ test.describe("routing and indexability", () => {
   test("a category with too few tools is rendered but not indexable", async ({
     page,
   }) => {
-    await page.goto("/tools/category/calculators");
+    await page.goto("/tools/category/image");
     const robots = await page
       .locator('meta[name="robots"]')
       .getAttribute("content");
-    // One tool is below MIN_TOOLS_FOR_INDEXABLE_CATEGORY, so the page must be
-    // reachable for humans and breadcrumbs but kept out of the index.
+    // The image category holds a single tool, below
+    // MIN_TOOLS_FOR_INDEXABLE_CATEGORY, so the page must stay reachable for
+    // humans and breadcrumbs while being kept out of the index.
     expect(robots).toContain("noindex");
     expect(robots).toContain("follow");
   });

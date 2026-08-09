@@ -13,6 +13,7 @@ import {
   TOOL_CATEGORIES,
   type ToolCategory,
 } from "@/lib/tools/types";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 /**
  * Category listings.
@@ -134,7 +135,7 @@ export default function ToolCategoryPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(toolCategoryJsonLd(category, tools)),
+          __html: jsonLdHtml(toolCategoryJsonLd(category, tools)),
         }}
       />
     </>

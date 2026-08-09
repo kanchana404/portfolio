@@ -10,6 +10,7 @@ import {
   toolsByRecency,
 } from "@/lib/tools/registry";
 import { CATEGORY_LABELS } from "@/lib/tools/types";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 /**
  * The tools hub.
@@ -143,7 +144,7 @@ export default function ToolsHubPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(toolsHubJsonLd(tools)),
+          __html: jsonLdHtml(toolsHubJsonLd(tools)),
         }}
       />
     </>
