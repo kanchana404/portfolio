@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     const { prompt, aspectRatio = "1x1" } = await request.json();
     
     console.log('Image generation request:', { prompt, aspectRatio });

@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    // Without an explicit target TypeScript assumes ES5, which rejects
+    // iteration over strings and Maps and misreports what this codebase can
+    // actually use. Emit is Next/SWC's job (driven by browserslist), so this
+    // only governs type-checking semantics — and Node 22 plus every browser
+    // Next targets support ES2022 comfortably.
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -18,7 +24,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@db": ["./db"],
+      "@db/*": ["./db/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

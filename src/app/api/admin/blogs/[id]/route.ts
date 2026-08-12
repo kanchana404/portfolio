@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../../../../db';
-import Blog from '../../../../../../db/models/Blog';
+import { connectToDatabase } from "@db";
+import Blog from "@db/models/Blog";
+import { requireAdmin } from '@/lib/auth/admin';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     const { id } = params;
 
     if (!id) {
@@ -43,6 +47,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     const { id } = params;
     const body = await request.json();
     const { title, content, excerpt, featuredImage, generatedImageUrl, tags, isPublished } = body;
@@ -130,6 +137,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     const { id } = params;
 
     if (!id) {

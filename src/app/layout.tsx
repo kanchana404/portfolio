@@ -1,14 +1,14 @@
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
-import TrackingScript from "@/components/tracking-script";
-import FontLoader from "@/components/font-loader";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
+import { PERSON_ID, WEBSITE_ID } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -107,18 +107,18 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": `${DATA.url}/#website`,
+        "@id": WEBSITE_ID,
         url: DATA.url,
         name: `${DATA.name} — Portfolio`,
         alternateName: `${DATA.name} Portfolio`,
         description:
           "Portfolio of Kavitha Kanchana, a software engineer specializing in full-stack development, building SaaS products from micro SaaS to enterprise-level platforms, plus AI automation.",
         inLanguage: "en-US",
-        publisher: { "@id": `${DATA.url}/#person` },
+        publisher: { "@id": PERSON_ID },
       },
       {
         "@type": "Person",
-        "@id": `${DATA.url}/#person`,
+        "@id": PERSON_ID,
         name: DATA.name,
         givenName: "Kavitha",
         familyName: "Kanchana",
@@ -177,9 +177,9 @@ export default function RootLayout({
         name: `${DATA.name} - Software Engineer & Founder`,
         dateCreated: "2025-08-01T00:00:00+05:30",
         dateModified: "2026-06-18T00:00:00+05:30",
-        isPartOf: { "@id": `${DATA.url}/#website` },
-        about: { "@id": `${DATA.url}/#person` },
-        mainEntity: { "@id": `${DATA.url}/#person` },
+        isPartOf: { "@id": WEBSITE_ID },
+        about: { "@id": PERSON_ID },
+        mainEntity: { "@id": PERSON_ID },
         primaryImageOfPage: { "@type": "ImageObject", url: personImage },
         inLanguage: "en-US",
       },
@@ -190,22 +190,20 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased max-w-2xl mx-auto py-12 sm:py-24 px-6",
+          // Layout width lives in the route-group layouts, not here: (site) keeps
+          // the narrow reading column, (tools) needs a wider canvas for side-by-side
+          // panes. Putting it on <body> capped every route at 672px.
+          "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}
       >
         {/* Structured data: WebSite + Person + ProfilePage (one cross-linked graph) */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
         />
         {/* Scroll progress bar (top of every page) */}
         <ScrollProgress />
-        {/* Font loader */}
-        <FontLoader />
-
-        {/* Cortana AI pixel tracking script */}
-        <TrackingScript />
 
         <ThemeProvider attribute="class" defaultTheme="light">
           <TooltipProvider delayDuration={0}>

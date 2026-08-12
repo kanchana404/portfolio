@@ -2,7 +2,9 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-[60dvh] text-center space-y-4">
+    // Global 404 must stay at the app root to catch every unmatched URL, so it
+    // is outside the (site) route group and carries its own width classes.
+    <main className="max-w-2xl mx-auto py-12 sm:py-24 px-6 flex flex-col items-center justify-center min-h-[60dvh] text-center space-y-4">
       <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">
         404 — Page not found
       </h1>
