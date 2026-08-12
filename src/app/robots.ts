@@ -7,7 +7,13 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      // `/` alone already permits everything these name explicitly. They are
+      // listed anyway so that a future `disallow` cannot silently swallow the
+      // two surfaces the whole programme depends on: the tools tree, and the
+      // /og image endpoint that every social preview resolves through. A
+      // more-specific `allow` wins over a broader `disallow` in every major
+      // crawler, so this is a guard rail rather than decoration.
+      allow: ["/", "/tools", "/og"],
       // Only block private/admin surfaces. Public read endpoints under /api
       // (github contributions/repos, blogs) stay crawlable so client islands
       // and structured data referencing them aren't blocked.

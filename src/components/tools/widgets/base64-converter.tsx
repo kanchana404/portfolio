@@ -103,7 +103,7 @@ export default function Base64Converter() {
             </p>
           )
         ) : (
-          <p role="alert" className="mt-2 text-sm text-destructive">
+          <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-400">
             {result.error}
           </p>
         )}

@@ -12,14 +12,17 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "vitest run && next build",
+    "build:only": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "budget": "node scripts/check-bundle-budget.mjs",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm budget",
+    "lighthouse": "lhci autorun --config=lighthouserc.json",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build:only && pnpm budget",
+    "validate:registry": "vitest run src/lib/tools/validate.test.ts src/lib/tools/registry.test.ts",
     "test:browser": "playwright test"
   },
   "dependencies": {
@@ -33,7 +36,6 @@
     "@types/mdx": "^2.0.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.18.2",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.395.0",
     "mongodb": "^6.18.0",

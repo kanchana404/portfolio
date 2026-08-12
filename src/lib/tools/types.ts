@@ -33,6 +33,7 @@ export const TOOL_CATEGORIES = [
   "pdf",
   "text",
   "developer",
+  "video",
 ] as const;
 export type ToolCategory = (typeof TOOL_CATEGORIES)[number];
 
@@ -48,6 +49,7 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   pdf: "PDF tools",
   text: "Text tools",
   developer: "Developer tools",
+  video: "Video tools",
 };
 
 /**

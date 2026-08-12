@@ -211,8 +211,12 @@ export function rgbToHex(rgb: Rgb, includeAlpha = false): string {
   const hex = (n: number): string =>
     clamp(Math.round(n), 0, 255).toString(16).padStart(2, "0");
   const base = `#${hex(rgb.r)}${hex(rgb.g)}${hex(rgb.b)}`;
-  if (!includeAlpha && rgb.a >= 1) return base;
-  return `${base}${hex(rgb.a * 255)}`;
+  // `includeAlpha` decides this on its own. The old guard also returned early on
+  // `rgb.a >= 1`, which meant a translucent colour appended alpha even when the
+  // caller had asked for six digits — and the callers that ask for six digits
+  // are `<input type="color">`, which silently resets to #000000 on a 9-char
+  // value. Alpha is opt-in, never inferred.
+  return includeAlpha ? `${base}${hex(rgb.a * 255)}` : base;
 }
 
 export function rgbToHsl(rgb: Rgb): Hsl {
@@ -341,12 +345,30 @@ export function relativeLuminance(rgb: Rgb): number {
  * ratio — it depends on whatever is behind it — and quietly compositing against
  * an assumed white background would produce a confident, wrong number.
  */
-export function contrastRatio(a: Rgb, b: Rgb): number {
+/**
+ * The unrounded ratio. Every pass/fail comparison must use this, never the
+ * display value — see `contrastRatio`.
+ */
+function exactContrastRatio(a: Rgb, b: Rgb): number {
   const la = relativeLuminance(a);
   const lb = relativeLuminance(b);
   const light = Math.max(la, lb);
   const dark = Math.min(la, lb);
-  return round((light + 0.05) / (dark + 0.05), 2);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/**
+ * The ratio as displayed, to 2dp.
+ *
+ * Truncated rather than rounded, because rounding can only ever move a value
+ * *up* across a threshold: #168484 on white is 4.4988…, which rounds to a
+ * displayed "4.5" for a pairing that fails WCAG's `>= 4.5`. Truncating gives
+ * 4.49, so the number a user reads never claims more contrast than exists.
+ * Black on white is exactly 21 and identical colours exactly 1, so neither
+ * boundary is disturbed.
+ */
+export function contrastRatio(a: Rgb, b: Rgb): number {
+  return Math.floor(exactContrastRatio(a, b) * 100) / 100;
 }
 
 export interface ContrastVerdict {
@@ -361,10 +383,16 @@ export interface ContrastVerdict {
 }
 
 export function checkContrast(foreground: Rgb, background: Rgb): ContrastVerdict {
+  // Thresholds compare against the exact ratio, never the 2dp display value.
+  // Comparing the rounded number made 4.4988… report "Passes AA", green-lighting
+  // a pairing that a real audit fails. The affected bands are thin —
+  // [4.495, 4.5), [2.995, 3), [6.995, 7) — but this is the one claim the tool
+  // exists to make, to people who will act on it.
+  const exact = exactContrastRatio(foreground, background);
   const ratio = contrastRatio(foreground, background);
-  const aaNormal = ratio >= 4.5;
-  const aaLarge = ratio >= 3;
-  const aaaNormal = ratio >= 7;
+  const aaNormal = exact >= 4.5;
+  const aaLarge = exact >= 3;
+  const aaaNormal = exact >= 7;
 
   const summary = aaaNormal
     ? "Passes everything, including AAA for body text."
@@ -379,8 +407,8 @@ export function checkContrast(foreground: Rgb, background: Rgb): ContrastVerdict
     aaNormal,
     aaLarge,
     aaaNormal,
-    aaaLarge: ratio >= 4.5,
-    uiComponents: ratio >= 3,
+    aaaLarge: exact >= 4.5,
+    uiComponents: exact >= 3,
     summary,
   };
 }

@@ -156,7 +156,7 @@ export default function CsvJsonConverter() {
 
       <div className="border-t p-4 sm:p-5" aria-live="polite">
         {error ? (
-          <p className="text-sm font-medium text-destructive" role="alert">
+          <p className="text-sm font-medium text-red-700 dark:text-red-400" role="alert">
             {error}
           </p>
         ) : (
@@ -176,7 +176,7 @@ export default function CsvJsonConverter() {
         )}
 
         {warnings.length > 0 ? (
-          <ul className="mt-3 space-y-1 text-sm text-amber-600">
+          <ul className="mt-3 space-y-1 text-sm text-amber-700 dark:text-amber-400">
             {warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}

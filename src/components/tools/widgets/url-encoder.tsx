@@ -118,7 +118,7 @@ export default function UrlEncoder() {
             <p className="mt-2 text-sm text-muted-foreground">Enter something above.</p>
           )
         ) : (
-          <p role="alert" className="mt-2 text-sm text-destructive">
+          <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-400">
             {result.error}
           </p>
         )}

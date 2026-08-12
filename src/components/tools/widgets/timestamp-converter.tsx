@@ -168,7 +168,7 @@ export default function TimestampConverter() {
           <p
             className={cx(
               "text-sm",
-              parsed.error ? "text-destructive" : "text-muted-foreground"
+              parsed.error ? "text-red-700 dark:text-red-400" : "text-muted-foreground"
             )}
             role={parsed.error ? "alert" : undefined}
           >

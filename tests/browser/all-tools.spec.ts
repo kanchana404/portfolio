@@ -86,26 +86,57 @@ for (const tool of tools) {
     });
 
     test("does not shift layout while loading", async ({ page }) => {
+      // The observer is installed via addInitScript so it exists BEFORE any page
+      // script runs.
+      //
+      // The previous version registered it inside page.evaluate() after
+      // `goto(..., { waitUntil: "load" })` had already resolved, and relied on
+      // `buffered: true` to replay what it missed. It does not reliably do that
+      // for layout-shift, so the test read 0 on pages that were in fact shifting
+      // badly — it passed on all seventeen tools while a real measurement found
+      // eight of them breaching, the worst at 0.28 on mobile, which is in
+      // Google's "poor" band. A green test that cannot see the failure is worse
+      // than no test, because it is trusted.
+      await page.addInitScript(() => {
+        (window as unknown as { __cls: number }).__cls = 0;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries() as Array<
+            PerformanceEntry & { value: number; hadRecentInput: boolean }
+          >) {
+            if (!entry.hadRecentInput) {
+              (window as unknown as { __cls: number }).__cls += entry.value;
+            }
+          }
+        }).observe({ type: "layout-shift", buffered: true });
+      });
+
+      // Throttled to Fast 3G and 4x CPU — an ordinary mid-range phone, and what
+      // Lighthouse simulates.
+      //
+      // This is the half of the fix that matters more than the observer timing.
+      // On warm localhost every asset is already there, no hydration gap ever
+      // opens, and CLS reads 0.0000 on all seventeen tools even when the pages
+      // are genuinely shifting. The same pages under this throttle measured up
+      // to 0.2779 — the edge of Google's "poor" band. A layout-shift test run on
+      // loopback is not measuring layout shift, it is measuring nothing.
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Network.emulateNetworkConditions", {
+        offline: false,
+        downloadThroughput: (1.6 * 1024 * 1024) / 8,
+        uploadThroughput: (750 * 1024) / 8,
+        latency: 150,
+      });
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+
       await page.goto(`/tools/${tool.slug}`, { waitUntil: "load" });
+      // Longer than the unthrottled 2s: under this throttle hydration lands
+      // around 1.5-2.5s, and the shift would happen after a shorter wait ended.
+      await page.waitForTimeout(4000);
+
       const cls = await page.evaluate(
-        () =>
-          new Promise<number>((resolve) => {
-            let total = 0;
-            const observer = new PerformanceObserver((list) => {
-              for (const entry of list.getEntries() as Array<
-                PerformanceEntry & { value: number; hadRecentInput: boolean }
-              >) {
-                if (!entry.hadRecentInput) total += entry.value;
-              }
-            });
-            observer.observe({ type: "layout-shift", buffered: true });
-            setTimeout(() => {
-              observer.disconnect();
-              resolve(total);
-            }, 2000);
-          })
+        () => (window as unknown as { __cls: number }).__cls
       );
-      expect(cls).toBeLessThanOrEqual(0.05);
+      expect(cls, `${tool.slug} cumulative layout shift`).toBeLessThanOrEqual(0.05);
     });
 
     test("leaks no computed-value garbage into the widget", async ({ page }) => {

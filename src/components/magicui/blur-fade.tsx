@@ -6,7 +6,7 @@ import {
   useInView,
   useReducedMotion,
   Variants,
-} from "framer-motion";
+} from "motion/react";
 import { useRef } from "react";
 
 // Derived from the hook itself rather than hardcoded as `string`, so it stays

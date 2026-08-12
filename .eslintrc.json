@@ -1,3 +1,42 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "framer-motion",
+            "message": "Import from \"motion/react\" instead. `motion` v12 re-exports the same API and already depends on framer-motion@12; importing the bare package pulled in a SECOND copy of the animation engine and shipped both — 34 kB gzipped on the homepage alone. Only one of the two names may appear in this repo."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/(tools)/**/*.{ts,tsx}",
+        "src/lib/tools/**/*.{ts,tsx}",
+        "src/components/tools/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@db", "@db/*", "**/db", "**/db/*", "mongoose"],
+                "message": "The tools platform must never touch the database. Every /tools route is statically generated at build time, and the shared Mongo pool uses minPoolSize: 5 — a single warm lambda pins five Atlas connections. Tool data lives in src/lib/tools/registry.ts, which is an in-memory array. If a tool genuinely needs persistence, it needs its own pool (minPoolSize: 0) and its own route outside (tools)."
+              },
+              {
+                "group": ["@/lib/utils"],
+                "message": "cn() is clsx + tailwind-merge, and tailwind-merge alone is ~21 kB of client JavaScript on a route whose entire purpose is search performance. Use cx() from @/components/tools/ui instead — see the rationale at the top of that file."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

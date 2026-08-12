@@ -15,10 +15,10 @@ import {
 type Mode = "password" | "passphrase";
 
 const BAND_STYLE: Record<string, string> = {
-  weak: "text-destructive",
-  fair: "text-amber-600",
-  strong: "text-emerald-600",
-  excellent: "text-emerald-600",
+  weak: "text-red-700 dark:text-red-400",
+  fair: "text-amber-700 dark:text-amber-400",
+  strong: "text-emerald-700 dark:text-emerald-400",
+  excellent: "text-emerald-700 dark:text-emerald-400",
 };
 
 const BAND_WIDTH: Record<string, string> = {
@@ -120,15 +120,24 @@ export default function PasswordGenerator() {
 
       <div className="p-4 sm:p-5" aria-live="polite">
         {nothingSelected ? (
-          <p className="text-sm text-destructive">
+          <p className="text-sm text-red-700 dark:text-red-400">
             Pick at least one character set.
           </p>
         ) : (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
+              {/* This placeholder is what the server renders, and — unlike the
+                  other sixteen tools — it is never replaced without JavaScript.
+                  That is deliberate and not a gap to "fix": the password comes
+                  from crypto.getRandomValues() in your tab. A server-generated
+                  one would be baked into the HTML, identical for every visitor,
+                  and sitting in every CDN cache along the way. So the honest
+                  copy says why it is waiting rather than implying a stall. */}
               <p className="min-w-0 flex-1 break-all font-mono text-lg sm:text-xl">
                 {result?.password ?? (
-                  <span className="text-muted-foreground">Generating…</span>
+                  <span className="text-base text-muted-foreground sm:text-lg">
+                    Generating in your browser…
+                  </span>
                 )}
               </p>
               {result ? <CopyButton value={result.password} /> : null}

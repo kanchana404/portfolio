@@ -125,7 +125,7 @@ export default function UuidGenerator() {
             <p
               className={cx(
                 "font-medium",
-                inspection.valid ? "text-emerald-600" : "text-destructive"
+                inspection.valid ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"
               )}
             >
               {inspection.valid

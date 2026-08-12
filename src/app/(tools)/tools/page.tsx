@@ -132,7 +132,21 @@ export default function ToolsHubPage() {
           </p>
         )}
 
-        <p className="mt-10 text-xs text-muted-foreground">
+        {/* Availability and privacy, stated once on the hub rather than
+            repeated on all seventeen tool pages. Every tool's meta row links to
+            /privacy, which carries the same terms in full. */}
+        <p className="mt-10 text-xs leading-relaxed text-muted-foreground">
+          These tools are free and provided as-is, with no guarantee of uptime
+          or accuracy — check anything that matters against a second source.
+          They run entirely in your browser and nothing you enter is uploaded or
+          stored; see{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            privacy
+          </Link>
+          .
+        </p>
+
+        <p className="mt-4 text-xs text-muted-foreground">
           Built by{" "}
           <Link href="/" className="underline underline-offset-2">
             {SITE_NAME}
