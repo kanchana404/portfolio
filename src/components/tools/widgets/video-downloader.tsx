@@ -98,6 +98,42 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * Turn a failed job's `error_code` into something true.
+ *
+ * Every failure used to read "The post may be private or removed", which blames
+ * the visitor's link for whatever went wrong. When our object storage was
+ * misconfigured, every download on the site failed with that message — so the
+ * one person who could have fixed it was told, repeatedly, that the problem was
+ * someone else's TikTok. A user who is told the truth retries a different link
+ * or comes back later; a user who is told a lie just leaves.
+ *
+ * Codes come from `ERROR_CODES` in the downloader repo's `app/errors.py`. An
+ * unrecognised one falls back to a neutral message rather than to the accusation.
+ */
+function jobFailureMessage(code: string | null): string {
+  switch (code) {
+    case "extractor_failed":
+      return "Could not read that link. The post may be private, deleted or region-locked.";
+    case "video_too_long":
+      return "That video is longer than this tool allows.";
+    case "file_too_large":
+      return "That file is larger than this tool allows. Try a smaller size.";
+    case "quota_exceeded":
+      return "You have reached today's download limit. Try again tomorrow.";
+    case "platform_degraded":
+      return "That platform is temporarily unavailable. Please try again in a few minutes.";
+    case "killswitch_active":
+      return "Downloads are paused right now. Please try again later.";
+    case "storage_failed":
+      return "We fetched your file but could not store it. That one is on us — please try again shortly.";
+    case "internal":
+      return "Something went wrong on our side. Please try again shortly.";
+    default:
+      return "The download did not finish. Please try again.";
+  }
+}
+
 /** Ask our own origin for a fresh single-use ticket. */
 async function getTicket(): Promise<string> {
   const res = await fetch("/api/tools/download-ticket", {
@@ -298,7 +334,7 @@ export function VideoDownloader({ platform }: { platform: DownloaderPlatform }) 
             return;
           }
           if (status.state === "failed") {
-            throw new Error("The download failed. The post may be private or removed.");
+            throw new Error(jobFailureMessage(status.error_code));
           }
         }
       } catch (e) {
