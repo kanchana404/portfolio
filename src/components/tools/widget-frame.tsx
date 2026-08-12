@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { cx } from "./ui";
 
 /**
  * Reserves vertical space for a tool widget before it exists.
@@ -35,7 +35,7 @@ export function WidgetFrame({
   // class extraction.
   const style: CSSProperties = { minHeight };
   return (
-    <div style={style} className={cn("w-full", className)}>
+    <div style={style} className={cx("w-full", className)}>
       {children}
     </div>
   );

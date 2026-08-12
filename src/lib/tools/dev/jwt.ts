@@ -121,7 +121,13 @@ function toDate(value: unknown): Date | null {
 function formatClaimValue(name: string, value: unknown): string {
   if (TIME_CLAIMS.has(name)) {
     const date = toDate(value);
-    if (date) return `${date.toISOString()} (${date.toLocaleString()})`;
+    // ISO/UTC only. `toLocaleString()` resolves against the host's locale and
+    // timezone, so the server and the browser produce different strings for the
+    // same claim and React reports a hydration mismatch. UTC is also the right
+    // answer for a developer tool: `exp` is a UTC instant, and showing it in
+    // whatever timezone the reader happens to be in invites off-by-hours
+    // debugging. The widget shows local time separately, after mount.
+    if (date) return date.toISOString();
   }
   if (Array.isArray(value)) return value.join(", ");
   if (value === null) return "null";

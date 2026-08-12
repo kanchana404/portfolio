@@ -102,13 +102,13 @@ export default function TextDiff() {
 
       <div className="border-t p-4 sm:p-5">
         {result.identical ? (
-          <p className="text-sm font-medium text-emerald-600">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
             The two texts are identical.
           </p>
         ) : (
           <>
             {result.truncated ? (
-              <p className="mb-3 text-sm text-amber-600">
+              <p className="mb-3 text-sm text-amber-700 dark:text-amber-400">
                 These are too large to align line by line, so the differing
                 middle is shown as a wholesale replacement rather than a
                 misleading alignment.
@@ -131,8 +131,8 @@ export default function TextDiff() {
                       aria-hidden="true"
                       className={cx(
                         "w-3 shrink-0 select-none",
-                        line.type === "insert" && "text-emerald-600",
-                        line.type === "delete" && "text-destructive"
+                        line.type === "insert" && "text-emerald-700 dark:text-emerald-400",
+                        line.type === "delete" && "text-red-700 dark:text-red-400"
                       )}
                     >
                       {MARK[line.type]}

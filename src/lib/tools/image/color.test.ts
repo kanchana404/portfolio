@@ -133,9 +133,12 @@ describe("rgbToHex", () => {
     expect(rgbToHex({ r: 1, g: 2, b: 3, a: 1 })).toBe("#010203");
   });
 
-  it("appends alpha only when it matters", () => {
+  it("appends alpha only when the caller asks for it", () => {
     expect(rgbToHex({ r: 255, g: 0, b: 0, a: 1 })).toBe("#ff0000");
-    expect(rgbToHex({ r: 255, g: 0, b: 0, a: 0.5 })).toBe("#ff000080");
+    // Translucent input must still yield six digits by default: this value is
+    // fed to <input type="color">, which rejects anything but #rrggbb.
+    expect(rgbToHex({ r: 255, g: 0, b: 0, a: 0.5 })).toBe("#ff0000");
+    expect(rgbToHex({ r: 255, g: 0, b: 0, a: 0.5 }, true)).toBe("#ff000080");
     expect(rgbToHex({ r: 255, g: 0, b: 0, a: 1 }, true)).toBe("#ff0000ff");
   });
 });
@@ -249,11 +252,50 @@ describe("contrastRatio", () => {
     expect(contrastRatio(BLACK, WHITE)).toBe(contrastRatio(WHITE, BLACK));
   });
 
+  // Regression: the ratio used to be rounded to 2dp and the WCAG thresholds
+  // were then compared against that rounded value. #168484 on white is
+  // 4.4988…, which rounded to 4.5 and reported "Passes AA" for a pairing a
+  // real audit fails. Truncating instead means the displayed number can never
+  // overstate the contrast, and the verdict now reads the exact value.
+  it("does not round a near-miss up across the AA threshold", () => {
+    const teal = { r: 22, g: 132, b: 132, a: 1 };
+    const verdict = checkContrast(teal, WHITE);
+
+    expect(verdict.ratio).toBe(4.49);
+    expect(verdict.aaNormal).toBe(false);
+    expect(verdict.aaaLarge).toBe(false);
+    // It still clears the large-text and UI-component bar at 3:1.
+    expect(verdict.aaLarge).toBe(true);
+    expect(verdict.uiComponents).toBe(true);
+    expect(verdict.summary).toContain("large text");
+  });
+
+  it("never displays a ratio higher than the true one", () => {
+    const teal = { r: 22, g: 132, b: 132, a: 1 };
+    // Displayed value must be <= exact, for every pairing we can cheaply check.
+    for (const bg of [WHITE, BLACK, RED, teal]) {
+      for (const fg of [WHITE, BLACK, RED, teal]) {
+        const shown = contrastRatio(fg, bg);
+        const verdict = checkContrast(fg, bg);
+        // A pass is never claimed for a ratio below the threshold.
+        if (verdict.aaNormal) expect(shown).toBeGreaterThanOrEqual(4.49);
+        if (verdict.aaaNormal) expect(shown).toBeGreaterThanOrEqual(6.99);
+      }
+    }
+  });
+
   it("agrees with the well-known grey-on-white boundary", () => {
     // #767676 is the lightest grey that passes AA on white; #777777 is the
     // first one that does not. Any error in the gamma maths moves this line.
+    // Exact ratios are 4.542225 and 4.478089; the displayed value truncates,
+    // so #777777 shows 4.47 rather than the 4.48 it would round to.
     expect(contrastRatio(parseHex("#767676")!, WHITE)).toBeCloseTo(4.54, 2);
-    expect(contrastRatio(parseHex("#777777")!, WHITE)).toBeCloseTo(4.48, 2);
+    expect(contrastRatio(parseHex("#777777")!, WHITE)).toBeCloseTo(4.47, 2);
+
+    // The boundary itself is the point of this test — assert it, not just the
+    // rendered number, so a future display change cannot quietly move it.
+    expect(checkContrast(parseHex("#767676")!, WHITE).aaNormal).toBe(true);
+    expect(checkContrast(parseHex("#777777")!, WHITE).aaNormal).toBe(false);
   });
 });
 

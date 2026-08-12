@@ -56,12 +56,17 @@ export function computeLoan(input: LoanInput): LoanResult | null {
   const n = Math.round(months);
   const r = annualRatePercent / 100 / 12;
 
-  const monthlyPayment =
+  const exactPayment =
     r === 0
       ? principal / n
       : (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
-  if (!Number.isFinite(monthlyPayment)) return null;
+  if (!Number.isFinite(exactPayment)) return null;
+
+  /** Round to the cent. Money is displayed to 2dp, so it must be computed to 2dp. */
+  const cents = (n: number): number => Math.round(n * 100) / 100;
+
+  const monthlyPayment = cents(exactPayment);
 
   // The schedule is generated rather than derived, because rounding each month
   // to the cent and carrying the remainder is what makes the final balance land
@@ -72,17 +77,22 @@ export function computeLoan(input: LoanInput): LoanResult | null {
   let totalInterest = 0;
 
   for (let month = 1; month <= n; month++) {
-    const interest = balance * r;
+    const interest = cents(balance * r);
     // Final instalment clears whatever is left, absorbing accumulated rounding.
-    const payment = month === n ? balance + interest : monthlyPayment;
-    const principalPart = payment - interest;
-    balance = Math.max(0, balance - principalPart);
-    totalPaid += payment;
-    totalInterest += interest;
+    const payment = month === n ? cents(balance + interest) : monthlyPayment;
+    // Every row is rounded before it is stored, so `payment` reconciles against
+    // `interest + principal` exactly as displayed. Rounding only at render time
+    // is what made 17 of 60 rows fail to add up.
+    const principalPart = cents(payment - interest);
+    balance = cents(Math.max(0, balance - principalPart));
+    totalPaid = cents(totalPaid + payment);
+    totalInterest = cents(totalInterest + interest);
     schedule.push({ month, payment, interest, principal: principalPart, balance });
   }
 
   return {
+    // Totals are accumulated from the already-rounded rows, so the summary tiles
+    // agree with the schedule instead of drifting a few cents away from it.
     monthlyPayment,
     totalPaid,
     totalInterest,

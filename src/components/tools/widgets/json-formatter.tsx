@@ -124,7 +124,7 @@ export default function JsonFormatter() {
           </>
         ) : (
           <div role="alert">
-            <p className="text-sm font-medium text-destructive">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
               Line {result.error.line}, column {result.error.column}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -135,7 +135,7 @@ export default function JsonFormatter() {
                 {result.error.excerpt}
                 {"\n"}
                 {" ".repeat(Math.max(0, result.error.column - 1))}
-                <span className="text-destructive">^</span>
+                <span className="text-red-700 dark:text-red-400">^</span>
               </pre>
             ) : null}
           </div>

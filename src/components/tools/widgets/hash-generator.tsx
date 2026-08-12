@@ -104,7 +104,7 @@ export default function HashGenerator() {
         ) : result.ok ? (
           <p className="mt-2 break-all font-mono text-sm">{value}</p>
         ) : (
-          <p role="alert" className="mt-2 text-sm text-destructive">
+          <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-400">
             {result.error}
           </p>
         )}

@@ -21,7 +21,11 @@ const FORMAT_ROWS = [
 
 export default function ColorConverter() {
   const id = useId();
-  const [input, setInput] = useState("#3b82f6");
+  // Defaults to a colour that passes AA on white (5.17:1). The sample below
+  // renders in whatever colour is entered, so a failing default would ship a
+  // genuine contrast violation on every load — the tool still demonstrates
+  // failures the moment you type one in, which is the point of it.
+  const [input, setInput] = useState("#2563eb");
   const [background, setBackground] = useState("#ffffff");
 
   const color = useMemo(() => parseColor(input), [input]);
@@ -44,7 +48,7 @@ export default function ColorConverter() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               spellCheck={false}
-              placeholder="#3b82f6, rebeccapurple, hsl(217 91% 60%)…"
+              placeholder="#2563eb, rebeccapurple, hsl(217 91% 60%)…"
               className="font-mono"
             />
             <input
@@ -80,8 +84,8 @@ export default function ColorConverter() {
 
       {color === null ? (
         <div className="p-4 sm:p-5" role="alert">
-          <p className="text-sm font-medium text-destructive">
-            That is not a color this understands. Try hex ({"#3b82f6"}), a CSS
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">
+            That is not a color this understands. Try hex ({"#2563eb"}), a CSS
             name, {"rgb()"}, {"hsl()"} or {"oklch()"}.
           </p>
         </div>
@@ -95,14 +99,20 @@ export default function ColorConverter() {
             />
             <dl className="min-w-0 flex-1 space-y-1.5" aria-live="polite">
               {FORMAT_ROWS.map(([label, key]) => (
+                // Inside a <dl>, a <div> wrapper may contain only <dt> and <dd>.
+                // The copy button used to sit here as their sibling, which is
+                // invalid and which axe flags — so it lives inside the <dd>,
+                // where it is also more accurately "part of the value".
                 <div key={key} className="flex items-center gap-3">
                   <dt className="w-24 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
                     {label}
                   </dt>
-                  <dd className="min-w-0 flex-1 truncate font-mono text-sm">
-                    {formats?.[key]}
+                  <dd className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="min-w-0 flex-1 truncate font-mono text-sm">
+                      {formats?.[key]}
+                    </span>
+                    <CopyButton value={formats?.[key] ?? ""} label="Copy" />
                   </dd>
-                  <CopyButton value={formats?.[key] ?? ""} label="Copy" />
                 </div>
               ))}
             </dl>
@@ -141,8 +151,8 @@ export default function ColorConverter() {
                     className={cx(
                       "rounded-full border px-3 py-1 text-xs font-medium",
                       pass
-                        ? "border-emerald-600/30 text-emerald-600"
-                        : "border-destructive/30 text-destructive"
+                        ? "border-emerald-600/30 text-emerald-700 dark:text-emerald-400"
+                        : "border-destructive/30 text-red-700 dark:text-red-400"
                     )}
                   >
                     {pass ? "Passes" : "Fails"} · {label}

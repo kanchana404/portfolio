@@ -44,6 +44,38 @@ describe("computeLoan", () => {
     expect(summed).toBeCloseTo(r!.totalPaid, 6);
   });
 
+  // Regression: the schedule used to carry full float precision and was only
+  // rounded at render time, so a row could display 8,884.88 = 833.33 + 8,051.54
+  // — which is 8,884.87. 17 of 60 rows failed to reconcile on the loan
+  // calculator's own default inputs. Every value is now rounded to the cent
+  // before it is stored, so what the user reads is what was computed.
+  it.each([
+    { principal: 1_000_000, annualRatePercent: 12, months: 60 },
+    { principal: 100_000, annualRatePercent: 12, months: 12 },
+    { principal: 250_000, annualRatePercent: 7.5, months: 60 },
+    { principal: 50_000, annualRatePercent: 0, months: 18 },
+  ])(
+    "every row reconciles as displayed: $principal at $annualRatePercent% over $months months",
+    (input) => {
+      const r = computeLoan(input)!;
+      const cents = (n: number) => Math.round(n * 100);
+
+      for (const row of r.schedule) {
+        // payment === interest + principal, to the cent, with no tolerance.
+        expect(cents(row.payment)).toBe(cents(row.interest) + cents(row.principal));
+      }
+
+      const summed = r.schedule.reduce((s, row) => s + cents(row.payment), 0);
+      expect(summed).toBe(cents(r.totalPaid));
+
+      const interestSum = r.schedule.reduce((s, row) => s + cents(row.interest), 0);
+      expect(interestSum).toBe(cents(r.totalInterest));
+
+      // The loan is fully repaid: the final balance is exactly zero, not ~1e-9.
+      expect(r.schedule[r.schedule.length - 1].balance).toBe(0);
+    },
+  );
+
   it("charges more interest over a longer term at the same rate", () => {
     const short = computeLoan({ principal: 100_000, annualRatePercent: 10, months: 12 })!;
     const long = computeLoan({ principal: 100_000, annualRatePercent: 10, months: 60 })!;

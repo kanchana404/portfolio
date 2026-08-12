@@ -34,6 +34,11 @@ export const WIDGET_SLUGS = [
   "csv-to-json-converter",
   "aspect-ratio-calculator",
   "color-converter",
+  "tiktok-video-downloader",
+  "youtube-video-downloader",
+  "instagram-video-downloader",
+  "facebook-video-downloader",
+  "loom-video-downloader",
 ] as const;
 
 export type WidgetSlug = (typeof WIDGET_SLUGS)[number];

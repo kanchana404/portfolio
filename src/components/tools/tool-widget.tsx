@@ -1,44 +1,85 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { WidgetSlug } from "@/lib/tools/widget-slugs";
+import AspectRatioCalculator from "./widgets/aspect-ratio-calculator";
+import Base64Converter from "./widgets/base64-converter";
+import CaseConverter from "./widgets/case-converter";
+import ColorConverter from "./widgets/color-converter";
+import CompoundInterestCalculator from "./widgets/compound-interest-calculator";
+import CsvJsonConverter from "./widgets/csv-json-converter";
+import HashGenerator from "./widgets/hash-generator";
+import JsonFormatter from "./widgets/json-formatter";
+import JwtDecoder from "./widgets/jwt-decoder";
+import LoanCalculator from "./widgets/loan-calculator";
+import PasswordGenerator from "./widgets/password-generator";
+import PercentageCalculator from "./widgets/percentage-calculator";
+import TextDiff from "./widgets/text-diff";
+import TimestampConverter from "./widgets/timestamp-converter";
+import UrlEncoder from "./widgets/url-encoder";
+import UuidGenerator from "./widgets/uuid-generator";
+import {
+  FacebookDownloader,
+  InstagramDownloader,
+  LoomDownloader,
+  TikTokDownloader,
+  YouTubeDownloader,
+} from "./widgets/video-downloader";
+import WordCounter from "./widgets/word-counter";
 
-// Nothing from `./widget-frame` is imported here on purpose: it uses `cn()`,
-// which is clsx + tailwind-merge, and tailwind-merge alone is ~21 kB of client
-// JavaScript. It stays on the server side of the boundary, in `ToolShell`.
+// Nothing from `./widget-frame` is imported here on purpose: it uses `cx` now,
+// but the rule that matters is that this module never reaches for `@/lib/utils`
+// — clsx + tailwind-merge is ~21 kB of client JavaScript. Enforced by
+// `src/components/tools/ui.test.ts`.
 
 /**
- * Slug → widget, one code-split chunk each.
+ * Slug → widget.
  *
- * ## Why this is a Client Component
+ * ## These imports are static, and that is a deliberate reversal
  *
- * `/tools/[slug]` is a single dynamic route, so its module graph is identical
- * for all seventeen tools. When the map lived in a Server Component, every
- * widget referenced from it landed in that route's client chunk regardless of
- * which tool was rendering — a visitor to the percentage calculator downloaded
- * the JWT decoder, the colour converter and fifteen others.
+ * They were `next/dynamic(() => import(...))` for one commit, which cut
+ * `/tools/[slug]` from 121.6 kB to 95.8 kB by giving each widget its own async
+ * chunk. That change was measured, documented in ADR 0003, and **wrong**.
  *
- * That was tolerable at twelve small widgets (15.1 kB) and stopped being
- * tolerable at seventeen (27.5 kB), which broke the bundle budget exactly as its
- * tripwire predicted. The cost grows linearly with the catalogue and the
- * catalogue is capped at thirty.
+ * `next/dynamic` inside a Client Component creates a Suspense boundary. During
+ * hydration, if the widget's chunk has not arrived yet, React swaps the
+ * server-rendered markup for the (empty) fallback and swaps it back when the
+ * chunk lands. `WidgetFrame` then collapses to its `minHeight` floor and springs
+ * back — everything below the widget jumps up and down.
  *
- * `next/dynamic` does nothing useful inside a Server Component — RSC resolves
- * client references eagerly, so it measured marginally *worse* for the wrapper
- * it added. Inside a Client Component it does what it says: webpack emits one
- * async chunk per widget and the browser fetches only the one it needs.
+ * On a warm localhost the chunk is already there and the gap never opens, so it
+ * measured **0.0000 on every tool** and the whole browser suite stayed green.
+ * Under Fast 3G with 4× CPU throttling — an ordinary mid-range phone, and what
+ * Lighthouse simulates — the same pages measured:
  *
- * ## Why the widget is still in the server-rendered HTML
+ * | tool                          | warm   | throttled |
+ * |-------------------------------|--------|-----------|
+ * | compound-interest-calculator  | 0.0000 | **0.2779**|
+ * | text-diff-checker             | 0.0000 | **0.2086**|
+ * | color-converter               | 0.0000 | **0.1740**|
+ * | json-formatter                | 0.0000 | **0.1334**|
  *
- * `ssr` is left at its default of `true`, so each widget still renders to static
- * HTML during prerender and a crawler — or anyone with JavaScript off — sees the
- * real tool rather than a spinner. That is non-negotiable on a platform whose
- * bottleneck is getting indexed, and `tests/browser/all-tools.spec.ts` asserts
- * it with JavaScript disabled for every tool in the registry.
+ * 0.25 is the boundary of Google's "poor" band for Cumulative Layout Shift, and
+ * mobile is the indexed viewport. Trading that for 26 kB of gzipped JavaScript
+ * on a platform whose entire purpose is search performance is a bad trade, and
+ * the measurement that made it look free was taken under conditions no real
+ * visitor experiences.
  *
- * `ssr: false` would break that, and would also throw here if this file were
- * ever imported by a Server Component.
+ * Static imports mean all seventeen widgets land in this route's client chunk
+ * regardless of which one renders — about 26 kB gzipped, roughly 1.5 kB each.
+ * That cost is constant per page load and, crucially, causes no shift: the
+ * server-rendered widget is never unmounted.
+ *
+ * ## The tripwire, restated
+ *
+ * This is linear in the size of the catalogue, capped at `MAX_TOOLS = 30`. The
+ * bundle budget caps the combined cost. **If it fires, do not re-split with
+ * `next/dynamic` and do not simply raise the number** — re-splitting reopens the
+ * hydration gap above. The fix is to make the widget genuinely absent from the
+ * initial render: a heavy widget (WASM, canvas) belongs behind its own
+ * `"use client"` wrapper with `dynamic(..., { ssr: false })` *and* a
+ * `<WidgetSkeleton>` reserving its settled height, so there is no server markup
+ * to lose in the first place.
  *
  * ## Adding a widget
  *
@@ -49,34 +90,32 @@ import type { WidgetSlug } from "@/lib/tools/widget-slugs";
  */
 const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
   // calculators
-  "percentage-calculator": dynamic(
-    () => import("./widgets/percentage-calculator")
-  ),
-  "loan-calculator": dynamic(() => import("./widgets/loan-calculator")),
-  "compound-interest-calculator": dynamic(
-    () => import("./widgets/compound-interest-calculator")
-  ),
+  "percentage-calculator": PercentageCalculator,
+  "loan-calculator": LoanCalculator,
+  "compound-interest-calculator": CompoundInterestCalculator,
   // text
-  "word-counter": dynamic(() => import("./widgets/word-counter")),
-  "case-converter": dynamic(() => import("./widgets/case-converter")),
-  "text-diff-checker": dynamic(() => import("./widgets/text-diff")),
+  "word-counter": WordCounter,
+  "case-converter": CaseConverter,
+  "text-diff-checker": TextDiff,
   // developer
-  "json-formatter": dynamic(() => import("./widgets/json-formatter")),
-  "base64-encoder-decoder": dynamic(() => import("./widgets/base64-converter")),
-  "uuid-generator": dynamic(() => import("./widgets/uuid-generator")),
-  "hash-generator": dynamic(() => import("./widgets/hash-generator")),
-  "url-encoder-decoder": dynamic(() => import("./widgets/url-encoder")),
-  "unix-timestamp-converter": dynamic(
-    () => import("./widgets/timestamp-converter")
-  ),
-  "jwt-decoder": dynamic(() => import("./widgets/jwt-decoder")),
-  "password-generator": dynamic(() => import("./widgets/password-generator")),
-  "csv-to-json-converter": dynamic(() => import("./widgets/csv-json-converter")),
+  "json-formatter": JsonFormatter,
+  "base64-encoder-decoder": Base64Converter,
+  "uuid-generator": UuidGenerator,
+  "hash-generator": HashGenerator,
+  "url-encoder-decoder": UrlEncoder,
+  "unix-timestamp-converter": TimestampConverter,
+  "jwt-decoder": JwtDecoder,
+  "password-generator": PasswordGenerator,
+  "csv-to-json-converter": CsvJsonConverter,
   // image
-  "aspect-ratio-calculator": dynamic(
-    () => import("./widgets/aspect-ratio-calculator")
-  ),
-  "color-converter": dynamic(() => import("./widgets/color-converter")),
+  "aspect-ratio-calculator": AspectRatioCalculator,
+  "color-converter": ColorConverter,
+  // video — the only widgets here that talk to a server; see video-downloader.tsx
+  "tiktok-video-downloader": TikTokDownloader,
+  "youtube-video-downloader": YouTubeDownloader,
+  "instagram-video-downloader": InstagramDownloader,
+  "facebook-video-downloader": FacebookDownloader,
+  "loom-video-downloader": LoomDownloader,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {

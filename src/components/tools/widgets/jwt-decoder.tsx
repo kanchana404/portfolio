@@ -26,9 +26,9 @@ const EXAMPLE = [
 ].join(".");
 
 const EXPIRY_STYLE: Record<string, string> = {
-  valid: "text-emerald-600",
-  expired: "text-destructive",
-  "not-yet-valid": "text-amber-600",
+  valid: "text-emerald-700 dark:text-emerald-400",
+  expired: "text-red-700 dark:text-red-400",
+  "not-yet-valid": "text-amber-700 dark:text-amber-400",
   unknown: "text-muted-foreground",
 };
 
@@ -41,7 +41,13 @@ const EXPIRY_LABEL: Record<string, string> = {
 
 export default function JwtDecoder() {
   const id = useId();
-  const [token, setToken] = useState("");
+  // Prefilled, like every other tool here. An empty box asks the visitor to
+  // supply a JWT before the page shows it can do anything, and it was the only
+  // one of the seventeen whose server-rendered HTML contained no worked example
+  // — so a crawler (and anyone without JS) saw an empty widget and no evidence
+  // the tool works. The header/payload split below is the whole product; show it
+  // immediately.
+  const [token, setToken] = useState(EXAMPLE);
 
   // Expiry is relative to the moment of viewing, so it cannot be computed during
   // render without the server and client disagreeing. Same pattern as the
@@ -51,10 +57,15 @@ export default function JwtDecoder() {
     setNow(new Date());
   }, []);
 
-  const result = useMemo(
-    () => (now ? decodeJwt(token, now) : null),
-    [token, now]
-  );
+  // Decode unconditionally. Splitting and JSON-parsing the header and payload
+  // does not need a clock — only the expiry verdict does — so gating the whole
+  // decode on `now` meant the server rendered an empty widget for the one tool
+  // whose entire value is showing you what is inside the token.
+  //
+  // `now ?? null` keeps the expiry field at "unknown" during SSR, and the block
+  // that displays it is gated on `now` below, so there is no hydration mismatch:
+  // the server never renders an expiry verdict at all.
+  const result = useMemo(() => decodeJwt(token, now ?? undefined), [token, now]);
 
   const hasToken = token.trim().length > 0;
 
@@ -65,10 +76,10 @@ export default function JwtDecoder() {
           <ToolLabel htmlFor={`${id}-token`}>Paste a JWT</ToolLabel>
           <button
             type="button"
-            onClick={() => setToken(EXAMPLE)}
+            onClick={() => setToken(token === EXAMPLE ? "" : EXAMPLE)}
             className="rounded-md border px-2.5 py-1 text-xs font-medium transition-colors hover:border-foreground/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            Load an example
+            {token === EXAMPLE ? "Clear" : "Load an example"}
           </button>
         </div>
         <ToolTextarea
@@ -88,7 +99,7 @@ export default function JwtDecoder() {
 
       {result?.error ? (
         <div className="border-t p-4 sm:p-5" role="alert">
-          <p className="text-sm font-medium text-destructive">{result.error}</p>
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">{result.error}</p>
         </div>
       ) : null}
 
@@ -101,10 +112,15 @@ export default function JwtDecoder() {
                 {result.algorithm ?? "not stated"}
               </span>
             </span>
-            <span className={cx("font-medium", EXPIRY_STYLE[result.expiry])}>
-              {EXPIRY_LABEL[result.expiry]}
-            </span>
-            {result.expiresAt ? (
+            {now ? (
+              <span className={cx("font-medium", EXPIRY_STYLE[result.expiry])}>
+                {EXPIRY_LABEL[result.expiry]}
+              </span>
+            ) : null}
+            {/* Local time, so it can only be rendered after mount — the server
+                has a different timezone and would hydrate-mismatch. The UTC
+                value is always present in the claims table above. */}
+            {now && result.expiresAt ? (
               <span className="text-muted-foreground">
                 Expires{" "}
                 <time dateTime={result.expiresAt.toISOString()}>
@@ -154,7 +170,7 @@ export default function JwtDecoder() {
                     <dd className="break-words">
                       {claim.display}
                       {claim.note ? (
-                        <span className="ml-2 text-xs font-medium text-destructive">
+                        <span className="ml-2 text-xs font-medium text-red-700 dark:text-red-400">
                           {claim.note}
                         </span>
                       ) : null}
@@ -179,7 +195,7 @@ export default function JwtDecoder() {
           {result.warnings.length > 0 ? (
             <ul className="border-t p-4 text-sm sm:p-5">
               {result.warnings.map((warning) => (
-                <li key={warning} className="text-amber-600 [&+&]:mt-2">
+                <li key={warning} className="text-amber-700 dark:text-amber-400 [&+&]:mt-2">
                   {warning}
                 </li>
               ))}

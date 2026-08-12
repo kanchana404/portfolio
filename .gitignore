@@ -44,3 +44,11 @@ temp_interactive_push.bat
 /playwright-report
 /blob-report
 /playwright/.cache
+.lighthouseci
+
+# Python virtualenvs (services/downloader)
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
