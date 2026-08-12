@@ -127,6 +127,8 @@ function jobFailureMessage(code: string | null): string {
       return "Downloads are paused right now. Please try again later.";
     case "storage_failed":
       return "We fetched your file but could not store it. That one is on us — please try again shortly.";
+    case "workspace_failed":
+      return "Our servers could not prepare your file. That one is on us — please try again shortly.";
     case "internal":
       return "Something went wrong on our side. Please try again shortly.";
     default:
