@@ -85,7 +85,10 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
     mime: "image/gif",
     extensions: ["gif"],
     alpha: true,
-    encodable: false,
+    // `toBlob("image/gif")` returns a PNG, so GIF is written by `gifenc` (MIT,
+    // 3.5 kB) in ./animation — which also means a GIF written here keeps its
+    // animation rather than collapsing to frame one.
+    encodable: true,
   },
   bmp: {
     label: "BMP",

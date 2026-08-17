@@ -18,6 +18,14 @@ import {
   canEncode,
   convertImage,
 } from "@/lib/tools/image/pipeline";
+import {
+  ANIMATED_FORMATS,
+  AnimationError,
+  decodeAnimation,
+  detectAnimation,
+  encodeAnimation,
+  releaseFrames,
+} from "@/lib/tools/image/animation";
 import { FormatPicker } from "../format-picker";
 
 /** The only formats `canvas.toBlob` actually writes; everything else is ours. */
@@ -50,6 +58,8 @@ interface Item {
   message?: string;
   width?: number;
   height?: number;
+  /** Set when the result is animated, so the row can say so. */
+  frames?: number;
 }
 
 let nextId = 0;
@@ -142,6 +152,62 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
         }
 
         try {
+          // An animated input is kept animated whenever the target can hold
+          // more than one frame. Silently flattening a GIF to its first frame
+          // is the single most common complaint about browser converters, so
+          // it only happens when the chosen format genuinely cannot animate —
+          // and then the row says so rather than leaving it to be discovered.
+          const animatedIn =
+            item.from !== null &&
+            ANIMATED_FORMATS.includes(item.from) &&
+            (await detectAnimation(item.file, item.from));
+
+          // GIF always takes this path, animated or not: `toBlob` cannot write
+          // GIF at all, so even a single frame needs the real encoder.
+          if (
+            (animatedIn && ANIMATED_FORMATS.includes(target)) ||
+            target === "gif"
+          ) {
+            const frames = animatedIn
+              ? await decodeAnimation(item.file, item.from!)
+              : [
+                  {
+                    bitmap: await createImageBitmap(item.file, {
+                      imageOrientation: "from-image",
+                    }),
+                    delayMs: 100,
+                  },
+                ];
+            try {
+              const animated = await encodeAnimation(frames, {
+                to: target,
+                from: item.from,
+                quality: lossy ? quality : undefined,
+              });
+              const url = URL.createObjectURL(animated.blob);
+              urls.current.push(url);
+              setItems((c) =>
+                c.map((i) =>
+                  i.id === item.id
+                    ? {
+                        ...i,
+                        status: "done",
+                        url,
+                        outBlob: animated.blob,
+                        outName: outputName(item.file.name, target),
+                        width: animated.width,
+                        height: animated.height,
+                        frames: animated.frameCount,
+                      }
+                    : i
+                )
+              );
+            } finally {
+              releaseFrames(frames);
+            }
+            continue;
+          }
+
           const result = await convertImage(item.file, {
             to: target,
             from: item.from,
@@ -173,7 +239,8 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                     ...i,
                     status: "error",
                     message:
-                      error instanceof ImageConvertError
+                      error instanceof ImageConvertError ||
+                      error instanceof AnimationError
                         ? error.message
                         : "Could not convert this image.",
                   }
@@ -362,6 +429,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                           {formatBytes(item.file.size)} →{" "}
                           {formatBytes(item.outBlob?.size ?? 0)}
                           {item.width ? ` · ${item.width}×${item.height}` : ""}
+                          {item.frames ? ` · ${item.frames} frames` : ""}
                           {item.message ? ` · ${item.message}` : ""}
                         </>
                       )}

@@ -50,7 +50,7 @@ describe("what may be produced", () => {
     // have hand-written encoders in ./codecs/raster — so `toBlob` returning a
     // PNG for them is irrelevant: it is never asked.
     expect([...TARGET_FORMATS]).toEqual([
-      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm",
+      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm", "gif",
     ]);
   });
 
@@ -61,11 +61,12 @@ describe("what may be produced", () => {
     expect(TARGET_FORMATS).not.toContain("avif");
   });
 
-  it("keeps AVIF and GIF as input-only", () => {
-    // Both would need a WASM encoder shipped to the visitor: ~1 MB for AVIF,
-    // and GIF's value is animation, which a single-frame path cannot deliver.
+  it("keeps AVIF as input-only", () => {
+    // The only one left out, and for a reason no amount of care fixes: any
+    // browser AVIF encoder is ~1 MB of WASM, against demand that runs roughly
+    // 100:1 the other way. GIF used to sit here too, until `gifenc` (3.5 kB)
+    // made writing it — with animation intact — genuinely cheap.
     expect(TARGET_FORMATS).not.toContain("avif");
-    expect(TARGET_FORMATS).not.toContain("gif");
   });
 
   it("declares which formats it decodes itself", () => {

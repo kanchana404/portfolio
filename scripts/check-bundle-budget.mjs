@@ -120,9 +120,16 @@ const FORBIDDEN_IN_TOOL_ROUTES = [
   "mediabunny",
   "tesseract",
   "lamejs",
-  "gifenc",
   "omggif",
   "heic-to",
+  // GIF codecs. Matched on strings only their *bodies* contain, not their
+  // package names: webpack replaces a dynamic import's specifier with a chunk
+  // id, so "gifenc" never appears in a first-load chunk either way — while
+  // "GIFEncoder" and "decompressFrames" do, because they are the names this
+  // project destructures from `await import(...)`. Matching those would fail
+  // the build for code that is correctly split.
+  "NETSCAPE2.0",
+  "prequantize",
   // The docstring above has always claimed this was here. It was not — only
   // `src/components/tools/ui.test.ts` caught it, and that reads import
   // specifiers in the widgets directory, so it cannot see the library arriving
