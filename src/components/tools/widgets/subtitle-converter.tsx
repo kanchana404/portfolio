@@ -17,16 +17,26 @@ import { CopyButton } from "../copy-button";
 import { ToolInput, ToolLabel, cx } from "../ui";
 
 /**
- * SRT <-> VTT converter, with a jump-to-cue box.
+ * SRT <-> VTT converter and cue editor.
  *
- * Statically imported like every other widget here: it is pure string work with
- * no dependency, so there is nothing to defer and `lazyWidget` would cost a
- * chunk request to save nothing. `lazyWidget` is for the WASM tools.
+ * Statically imported like every other widget here: pure string work, no
+ * dependency, nothing to defer. `lazyWidget` is for the WASM tools.
  *
- * The output is a **cue list rather than a blob of text**. The exact file is
- * still one click away on Copy or Download, but a subtitle file is a list of
- * timed rows, and rendering it as one is what makes it searchable, scrollable
- * and addressable. A `<pre>` can only be read top to bottom.
+ * ## One panel, because finding a line and fixing it is one job
+ *
+ * This had two: a raw textarea you pasted into, and a read-only list of the
+ * converted result below it. Searching found the line in the lower one and then
+ * left you to hunt for it again in the upper one to change anything, which is
+ * the whole task and the part that did not work.
+ *
+ * So the list *is* the input. Each cue's text is an editable field, edits flow
+ * straight into what Copy and Download produce, and jumping to a search hit
+ * focuses that field with the matched word already selected — type and it is
+ * replaced. The raw textarea only exists in the empty state, where there is
+ * nothing to edit yet.
+ *
+ * Cue numbers are not shown. SRT indices are positional and regenerated on
+ * write, so displaying them invites someone to treat them as data.
  */
 
 type Target = "vtt" | "srt";
@@ -37,12 +47,12 @@ Drop a file, or paste here.
 
 2
 00:00:05,500 --> 00:00:09,250
-Both directions work.
+Edit any line right in the list.
 
 3
 00:00:11,000 --> 00:00:14,400
-Search the text, or type a
-timecode like 0:12 to jump.
+Search a word to jump to it,
+or type a timecode like 0:12.
 `;
 
 /** Splits text around a matched range so the hit can be marked. */
@@ -61,7 +71,14 @@ function mark(text: string, range?: readonly [number, number]) {
 }
 
 export default function SubtitleConverter() {
-  const [input, setInput] = useState("");
+  /** Raw text, used only until it parses. */
+  const [raw, setRaw] = useState("");
+  /** The document being edited. Null until something parses. */
+  const [cues, setCues] = useState<Cue[] | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const [sourceFormat, setSourceFormat] = useState<Target | null>(null);
   const [target, setTarget] = useState<Target | null>(null);
   const [shiftSeconds, setShiftSeconds] = useState("0");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -73,94 +90,106 @@ export default function SubtitleConverter() {
   const [flashed, setFlashed] = useState<number | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLOListElement>(null);
-  const rowRefs = useRef(new Map<number, HTMLLIElement>());
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowRefs = useRef(new Map<number, HTMLDivElement>());
+  const fieldRefs = useRef(new Map<number, HTMLTextAreaElement>());
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (flashTimer.current) clearTimeout(flashTimer.current);
-  }, []);
-
-  // Direction defaults to "the other one" from whatever was pasted, which is
-  // what someone wants ~always, but stays overridable — shifting a file's
-  // timing without changing its format is a real use.
-  const detected = useMemo(
-    () => (input.trim() ? detectFormat(input) : null),
-    [input]
+  useEffect(
+    () => () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    },
+    []
   );
-  const effectiveTarget: Target = target ?? (detected === "vtt" ? "srt" : "vtt");
 
-  const result = useMemo(() => {
-    if (!input.trim()) return null;
+  const load = useCallback((text: string) => {
+    setRaw(text);
+    if (text.trim() === "") {
+      setCues(null);
+      setParseError(null);
+      setWarnings([]);
+      return;
+    }
     try {
-      const { cues, warnings } = parseSubtitles(input);
-      const offset = Math.round((Number(shiftSeconds) || 0) * 1000);
-      const shifted = offset === 0 ? cues : shiftCues(cues, offset);
-      return {
-        ok: true as const,
-        cues: shifted,
-        output: effectiveTarget === "vtt" ? toVtt(shifted) : toSrt(shifted),
-        warnings,
-      };
+      const parsed = parseSubtitles(text);
+      setCues(parsed.cues);
+      setWarnings(parsed.warnings);
+      setParseError(null);
+      setSourceFormat(detectFormat(text));
     } catch (error) {
-      const message =
+      setCues(null);
+      setWarnings([]);
+      setParseError(
         error instanceof SubtitleError
           ? error.line
             ? `Line ${error.line}: ${error.message}`
             : error.message
-          : "Could not read this file.";
-      return { ok: false as const, message };
+          : "Could not read this file."
+      );
     }
-  }, [input, effectiveTarget, shiftSeconds]);
+  }, []);
 
-  const cues: readonly Cue[] = result?.ok ? result.cues : [];
-  const matches = useMemo(() => searchCues(cues, query), [cues, query]);
+  // Target defaults to "the other one", but stays overridable — shifting a
+  // file's timing without changing its format is a real use.
+  const effectiveTarget: Target = target ?? (sourceFormat === "vtt" ? "srt" : "vtt");
 
-  /** Marked ranges keyed by cue index, so the list highlights as you type. */
-  const ranges = useMemo(() => {
-    const map = new Map<number, readonly [number, number]>();
-    for (const m of matches) if (m.range) map.set(m.index, m.range);
-    return map;
-  }, [matches]);
+  const offsetMs = Math.round((Number(shiftSeconds) || 0) * 1000);
+
+  /**
+   * What gets written out. The shift is a view over the edited cues rather than
+   * a mutation of them, so it stays adjustable and edits keep landing on the
+   * base document. Order is untouched, so indices still line up.
+   */
+  const outCues = useMemo(
+    () => (cues === null ? [] : offsetMs === 0 ? cues : shiftCues(cues, offsetMs)),
+    [cues, offsetMs]
+  );
+
+  const output = useMemo(
+    () => (effectiveTarget === "vtt" ? toVtt(outCues) : toSrt(outCues)),
+    [outCues, effectiveTarget]
+  );
+
+  const matches = useMemo(() => searchCues(outCues, query), [outCues, query]);
+  const matched = useMemo(() => new Set(matches.map((m) => m.index)), [matches]);
+
+  const editCue = useCallback((index: number, text: string) => {
+    setCues((current) =>
+      current === null
+        ? current
+        : current.map((cue, i) => (i === index ? { ...cue, text } : cue))
+    );
+  }, []);
 
   const jumpTo = useCallback((match: CueMatch) => {
     const row = rowRefs.current.get(match.index);
     const list = listRef.current;
     if (!row || !list) return;
 
-    // The search box sits with the file, in the panel above, so the list can be
-    // off-screen when a suggestion is picked — and scrolling a list nobody can
-    // see looks exactly like a broken button. Bring the page to it first, and
-    // only when it is actually out of view, so using the search while the list
-    // is already visible does not yank the page around.
+    // Bring the page to the list only when it is actually off-screen, so using
+    // the search while it is already visible does not yank the page around.
     const listBox = list.getBoundingClientRect();
-    const offScreen = listBox.top < 0 || listBox.bottom > window.innerHeight;
-    if (offScreen) {
+    if (listBox.top < 0 || listBox.bottom > window.innerHeight) {
       list.scrollIntoView({ block: "center" });
     }
 
-    // Then scroll within the list. Measured with rects rather than `offsetTop`,
-    // which is relative to the nearest *positioned* ancestor and not to the
-    // list. The list is not positioned, so the two offsets came from different
-    // origins, the target went negative, and the browser clamped it to 0 — the
-    // right row highlighted while the list sat still. Rect deltas have no such
-    // dependency on the positioning context, and re-reading them here also
-    // picks up the page scroll above.
+    // Rects, not `offsetTop` — that is relative to the nearest *positioned*
+    // ancestor rather than to the list, which put the two measurements on
+    // different origins and produced a negative target the browser clamped to
+    // 0. Re-read here so they also account for the page scroll above.
     const rowRect = row.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
-    const centred =
+    list.scrollTop +=
       rowRect.top - listRect.top - (listRect.height - rowRect.height) / 2;
 
-    // Assigned rather than `scrollTo({ behavior: "smooth" })`, which was tried
-    // first and measured landing at scrollTop 0 while the same call with
-    // `behavior: "auto"` reached 1791 — the smooth animation simply never ran.
-    // A jump that silently does nothing is the worst outcome here.
-    //
-    // Instant is also the better interaction: animating past thirty-odd rows to
-    // reach a search result wastes the reader's time and loses their place, and
-    // the amber flash below is what actually says "it is this one". It needs no
-    // prefers-reduced-motion branch for the same reason.
-    list.scrollTop = list.scrollTop + centred;
+    // The point of the jump: put the caret on the matched word with it already
+    // selected, so the next keystroke replaces it. Finding a line you cannot
+    // then edit was the original complaint.
+    const field = fieldRefs.current.get(match.index);
+    if (field && match.range) {
+      field.focus({ preventScroll: true });
+      field.setSelectionRange(match.range[0], match.range[1]);
+    }
 
     setFlashed(match.index);
     setOpen(false);
@@ -186,28 +215,42 @@ export default function SubtitleConverter() {
     }
   };
 
-  const readFile = useCallback((file: File) => {
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setInput(String(reader.result ?? ""));
-    reader.readAsText(file);
-  }, []);
+  const readFile = useCallback(
+    (file: File) => {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = () => load(String(reader.result ?? ""));
+      reader.readAsText(file);
+    },
+    [load]
+  );
 
   const download = useCallback(() => {
-    if (!result?.ok) return;
     const base = (fileName ?? "subtitles").replace(/\.[^.]+$/, "");
-    const blob = new Blob([result.output], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([output], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${base}.${effectiveTarget}`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [result, fileName, effectiveTarget]);
+  }, [output, fileName, effectiveTarget]);
+
+  const clear = useCallback(() => {
+    setRaw("");
+    setCues(null);
+    setParseError(null);
+    setWarnings([]);
+    setFileName(null);
+    setQuery("");
+    fieldRefs.current.clear();
+    rowRefs.current.clear();
+  }, []);
+
+  const loaded = cues !== null;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Drop zone doubles as the input. One surface, not two. */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -221,16 +264,19 @@ export default function SubtitleConverter() {
           if (file) readFile(file);
         }}
         className={cx(
-          "rounded-lg border border-dashed transition-colors",
+          "rounded-lg border transition-colors",
+          loaded ? "" : "border-dashed",
           dragging ? "border-foreground/40 bg-muted/50" : "border-border"
         )}
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
-          <ToolLabel htmlFor="subtitle-input">
-            {fileName ?? "Your subtitles"}
-            {detected ? (
+          <ToolLabel htmlFor={loaded ? "subtitle-search" : "subtitle-input"}>
+            <span className="max-w-[22ch] truncate align-bottom sm:max-w-none">
+              {fileName ?? "Your subtitles"}
+            </span>
+            {sourceFormat && loaded ? (
               <span className="ml-2 font-normal text-muted-foreground">
-                {detected.toUpperCase()} detected
+                {sourceFormat.toUpperCase()} detected · {outCues.length} cues
               </span>
             ) : null}
           </ToolLabel>
@@ -242,110 +288,157 @@ export default function SubtitleConverter() {
             >
               Choose file
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setInput(SAMPLE);
-                setFileName(null);
-              }}
-              className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Try a sample
-            </button>
+            {loaded ? (
+              <button
+                type="button"
+                onClick={clear}
+                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Clear
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setFileName(null);
+                  load(SAMPLE);
+                }}
+                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Try a sample
+              </button>
+            )}
           </div>
         </div>
 
-        <textarea
-          id="subtitle-input"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            setFileName(null);
-          }}
-          spellCheck={false}
-          rows={6}
-          placeholder="Drop a .srt or .vtt file here, or paste its contents."
-          className="w-full resize-y bg-transparent p-3 font-mono text-sm outline-none placeholder:text-muted-foreground"
-        />
-        {/*
-          Find-a-cue lives with the file it searches, in the same panel, rather
-          than above the results further down. You load a subtitle file and look
-          for a line in it — that is one action, and splitting it across two
-          boxes made the search read as a step you take afterwards.
+        {loaded ? (
+          <>
+            {/* Search sits with the cues it searches and edits. */}
+            <div className="relative border-b p-2">
+              <ToolInput
+                id="subtitle-search"
+                type="search"
+                role="combobox"
+                aria-expanded={open && matches.length > 0}
+                aria-controls="subtitle-suggestions"
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  open && matches[active]
+                    ? `cue-option-${matches[active].index}`
+                    : undefined
+                }
+                autoComplete="off"
+                value={query}
+                placeholder="Find a word to edit, or jump to a timecode like 0:12"
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                  setOpen(true);
+                }}
+                onFocus={() => setOpen(true)}
+                onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+                onKeyDown={onSearchKeyDown}
+              />
 
-          The consequence is handled in `jumpTo`: the cue list it scrolls is now
-          well below this box, so the page has to be brought to it first or the
-          click appears to do nothing.
-        */}
-        {cues.length > 0 ? (
-          <div className="relative border-t p-2">
-            <ToolInput
-              id="subtitle-search"
-              type="search"
-              role="combobox"
-              aria-expanded={open && matches.length > 0}
-              aria-controls="subtitle-suggestions"
-              aria-autocomplete="list"
-              aria-activedescendant={
-                open && matches[active]
-                  ? `cue-option-${matches[active].index}`
-                  : undefined
-              }
-              autoComplete="off"
-              value={query}
-              placeholder="Find a line, or jump to a timecode like 0:12"
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setActive(0);
-                setOpen(true);
-              }}
-              onFocus={() => setOpen(true)}
-              onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-              onKeyDown={onSearchKeyDown}
-            />
-
-            {open && query.trim() !== "" ? (
-              <ul
-                id="subtitle-suggestions"
-                role="listbox"
-                aria-label="Matching cues"
-                className="absolute left-2 right-2 z-10 mt-1 max-h-56 overflow-auto rounded-lg border bg-background shadow-md"
-              >
-                {matches.length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">
-                    Nothing matches “{query.trim()}”.
-                  </li>
-                ) : (
-                  matches.map((match, i) => (
-                    <li
-                      key={match.index}
-                      id={`cue-option-${match.index}`}
-                      role="option"
-                      aria-selected={i === active}
-                      onMouseDown={(e) => {
-                        e.preventDefault(); // keep focus; blur would close first
-                        jumpTo(match);
-                      }}
-                      onMouseEnter={() => setActive(i)}
-                      className={cx(
-                        "cursor-pointer px-3 py-2 text-sm",
-                        i === active ? "bg-muted" : ""
-                      )}
-                    >
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {displayTime(match.cue.start, effectiveTarget)}
-                        {match.reason === "time" ? " · at this time" : ""}
-                      </span>
-                      <span className="mt-0.5 block truncate">
-                        {mark(match.cue.text.replace(/\n/g, " "), match.range)}
-                      </span>
+              {open && query.trim() !== "" ? (
+                <ul
+                  id="subtitle-suggestions"
+                  role="listbox"
+                  aria-label="Matching cues"
+                  className="absolute left-2 right-2 z-10 mt-1 max-h-56 overflow-auto rounded-lg border bg-background shadow-md"
+                >
+                  {matches.length === 0 ? (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">
+                      Nothing matches “{query.trim()}”.
                     </li>
-                  ))
-                )}
-              </ul>
+                  ) : (
+                    matches.map((match, i) => (
+                      <li
+                        key={match.index}
+                        id={`cue-option-${match.index}`}
+                        role="option"
+                        aria-selected={i === active}
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // keep focus; blur would close first
+                          jumpTo(match);
+                        }}
+                        onMouseEnter={() => setActive(i)}
+                        className={cx(
+                          "cursor-pointer px-3 py-2 text-sm",
+                          i === active ? "bg-muted" : ""
+                        )}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {displayTime(match.cue.start, effectiveTarget)}
+                          {match.reason === "time" ? " · at this time" : ""}
+                        </span>
+                        <span className="mt-0.5 block truncate">
+                          {mark(match.cue.text.replace(/\n/g, " "), match.range)}
+                        </span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              ) : null}
+            </div>
+
+            {/* The document itself: every line editable in place. */}
+            <div ref={listRef} className="max-h-[26rem] overflow-auto rounded-b-lg">
+              {outCues.map((cue, index) => (
+                <div
+                  key={index}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(index, el);
+                    else rowRefs.current.delete(index);
+                  }}
+                  className={cx(
+                    "border-b px-3 py-2 last:border-b-0 transition-colors duration-500",
+                    flashed === index
+                      ? "bg-amber-200/40 dark:bg-amber-400/15"
+                      : matched.has(index)
+                        ? "bg-muted/60"
+                        : ""
+                  )}
+                >
+                  <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {displayTime(cue.start, effectiveTarget)} →{" "}
+                    {displayTime(cue.end, effectiveTarget)}
+                  </p>
+                  <textarea
+                    ref={(el) => {
+                      if (el) fieldRefs.current.set(index, el);
+                      else fieldRefs.current.delete(index);
+                    }}
+                    value={cue.text}
+                    onChange={(e) => editCue(index, e.target.value)}
+                    spellCheck={false}
+                    rows={Math.max(1, cue.text.split("\n").length)}
+                    aria-label={`Cue at ${displayTime(cue.start, effectiveTarget)}`}
+                    className="mt-0.5 w-full resize-none bg-transparent text-sm outline-none focus:ring-0"
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <textarea
+              id="subtitle-input"
+              value={raw}
+              onChange={(e) => {
+                setFileName(null);
+                load(e.target.value);
+              }}
+              spellCheck={false}
+              rows={8}
+              placeholder="Drop a .srt or .vtt file here, or paste its contents."
+              className="w-full resize-y bg-transparent p-3 font-mono text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {parseError ? (
+              <p className="border-t px-3 py-2 text-sm">{parseError}</p>
             ) : null}
-          </div>
-        ) : null}
+          </>
+        )}
 
         <input
           ref={fileRef}
@@ -359,112 +452,68 @@ export default function SubtitleConverter() {
         />
       </div>
 
-      {/* Controls: direction and timing. Two decisions, one row. */}
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex flex-col gap-1.5">
-          <ToolLabel>Convert to</ToolLabel>
-          <div role="group" aria-label="Output format" className="flex gap-1">
-            {(["vtt", "srt"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={effectiveTarget === option}
-                onClick={() => setTarget(option)}
-                className={cx(
-                  "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                  effectiveTarget === option
-                    ? "border-foreground/20 bg-foreground text-background"
-                    : "hover:bg-muted"
-                )}
-              >
-                .{option}
-              </button>
-            ))}
-          </div>
-        </div>
+      {loaded ? (
+        <>
+          {warnings.length > 0 ? (
+            <ul className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+              {warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          ) : null}
 
-        <div className="flex flex-col gap-1.5">
-          <ToolLabel htmlFor="subtitle-shift">Shift timing (seconds)</ToolLabel>
-          <ToolInput
-            id="subtitle-shift"
-            type="number"
-            step="0.1"
-            value={shiftSeconds}
-            onChange={(e) => setShiftSeconds(e.target.value)}
-            className="w-32"
-          />
-        </div>
-      </div>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-col gap-1.5">
+                <ToolLabel>Convert to</ToolLabel>
+                <div role="group" aria-label="Output format" className="flex gap-1">
+                  {(["vtt", "srt"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={effectiveTarget === option}
+                      onClick={() => setTarget(option)}
+                      className={cx(
+                        "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                        effectiveTarget === option
+                          ? "border-foreground/20 bg-foreground text-background"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      .{option}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-      <div aria-live="polite">
-        {result === null ? null : result.ok ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                {cues.length} cue{cues.length === 1 ? "" : "s"} converted to .
-                {effectiveTarget}
-              </p>
-              <div className="flex items-center gap-2">
-                <CopyButton value={result.output} />
-                <button
-                  type="button"
-                  onClick={download}
-                  className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
-                >
-                  Download .{effectiveTarget}
-                </button>
+              <div className="flex flex-col gap-1.5">
+                <ToolLabel htmlFor="subtitle-shift">
+                  Shift timing (seconds)
+                </ToolLabel>
+                <ToolInput
+                  id="subtitle-shift"
+                  type="number"
+                  step="0.1"
+                  value={shiftSeconds}
+                  onChange={(e) => setShiftSeconds(e.target.value)}
+                  className="w-32"
+                />
               </div>
             </div>
 
-            {result.warnings.length > 0 ? (
-              <ul className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
-                {result.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            ) : null}
-
-            {/* The converted file, as the list of timed rows it actually is. */}
-            <ol
-              ref={listRef}
-              className="max-h-72 overflow-auto rounded-lg border bg-muted/30"
-            >
-              {cues.map((cue, index) => (
-                <li
-                  key={index}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(index, el);
-                    else rowRefs.current.delete(index);
-                  }}
-                  className={cx(
-                    "flex gap-3 border-b px-3 py-2 last:border-b-0 transition-colors duration-500",
-                    flashed === index ? "bg-amber-200/40 dark:bg-amber-400/15" : ""
-                  )}
-                >
-                  <span className="w-6 shrink-0 pt-0.5 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                      {displayTime(cue.start, effectiveTarget)} →{" "}
-                      {displayTime(cue.end, effectiveTarget)}
-                    </p>
-                    <p className="whitespace-pre-wrap break-words text-sm">
-                      {mark(cue.text, ranges.get(index)) || (
-                        <span className="text-muted-foreground">(empty)</span>
-                      )}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <div className="flex items-center gap-2">
+              <CopyButton value={output} />
+              <button
+                type="button"
+                onClick={download}
+                className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              >
+                Download .{effectiveTarget}
+              </button>
+            </div>
           </div>
-        ) : (
-          <p className="rounded-md border border-dashed px-3 py-2 text-sm">
-            {result.message}
-          </p>
-        )}
-      </div>
+        </>
+      ) : null}
     </div>
   );
 }
