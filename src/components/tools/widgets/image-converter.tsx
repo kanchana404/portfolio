@@ -17,6 +17,7 @@ import {
   canEncode,
   convertImage,
 } from "@/lib/tools/image/pipeline";
+import { FormatPicker } from "../format-picker";
 import { ToolLabel, cx } from "../ui";
 
 /**
@@ -191,6 +192,16 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
 
   const loaded = items.length > 0;
 
+  // What the "From" card shows: the route's own format, else whatever was
+  // actually dropped, else "Any". Reading it off the files means the hub stops
+  // claiming "Any" the moment it knows better.
+  const detected = items.length > 0 ? items[items.length - 1].from : null;
+  const fromLabel = from
+    ? FORMATS[from].label
+    : detected
+      ? FORMATS[detected].label
+      : "Any";
+
   return (
     <div className="flex flex-col gap-4">
       <div
@@ -208,109 +219,143 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
           if (files.length) run(files);
         }}
         className={cx(
-          "rounded-lg border transition-colors",
-          loaded ? "" : "border-dashed",
-          dragging ? "border-foreground/40 bg-muted/50" : "border-border"
+          "rounded-xl border transition-colors",
+          dragging ? "border-foreground/40 bg-muted/40" : "border-border"
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
-          <ToolLabel>
-            {loaded ? (
-              <>
-                {items.length} image{items.length === 1 ? "" : "s"}
-                <span className="ml-2 font-normal text-muted-foreground">
-                  → {FORMATS[target].label}
-                </span>
-              </>
-            ) : (
-              "Your images"
-            )}
-          </ToolLabel>
-          <div className="flex items-center gap-2">
+        {/*
+          The hero: what goes in, what comes out, and where to drop it — the
+          three things the page is for, all above the fold and none of them
+          requiring a scroll to discover.
+        */}
+        <div className="flex flex-col items-center gap-5 px-4 py-6">
+          <FormatPicker
+            fromLabel={fromLabel}
+            toLabel={FORMATS[target].label}
+            toOptions={availableTargets.map((f) => ({
+              value: f,
+              label: FORMATS[f].label,
+            }))}
+            onToChange={(v) => setTarget(v as ImageFormat)}
+          />
+
+          <div className="flex flex-col items-center gap-2 text-center">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] active:scale-100"
             >
-              Choose files
+              Choose {from ? FORMATS[from].label : "image"} files
             </button>
-            {loaded ? (
-              <button
-                type="button"
-                onClick={clear}
-                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Clear
-              </button>
-            ) : null}
+            <p className="text-sm text-muted-foreground">
+              or drop them anywhere in this box
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Converted on your device · nothing is uploaded · no file limit
+            </p>
           </div>
+
+          {lossy ? (
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="image-quality"
+                className="text-xs text-muted-foreground"
+              >
+                Quality {Math.round(quality * 100)}%
+              </label>
+              <input
+                id="image-quality"
+                type="range"
+                min={0.3}
+                max={1}
+                step={0.05}
+                value={quality}
+                onChange={(e) => setQuality(Number(e.target.value))}
+                className="w-36 accent-foreground"
+              />
+            </div>
+          ) : null}
         </div>
 
         {loaded ? (
-          <div className="max-h-[26rem] overflow-auto rounded-b-lg">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 border-b px-3 py-2 last:border-b-0"
-              >
-                {item.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.url}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 shrink-0 rounded border object-cover"
-                  />
-                ) : (
-                  <div className="h-10 w-10 shrink-0 animate-pulse rounded border bg-muted" />
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">
-                    {item.outName ?? item.file.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.status === "error" ? (
-                      item.message
-                    ) : item.status === "pending" ? (
-                      "Converting…"
-                    ) : (
-                      <>
-                        {formatBytes(item.file.size)} →{" "}
-                        {formatBytes(item.outBlob?.size ?? 0)}
-                        {item.width ? ` · ${item.width}×${item.height}` : ""}
-                        {item.message ? ` · ${item.message}` : ""}
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {item.status === "done" && item.url && item.outName ? (
-                  <a
-                    href={item.url}
-                    download={item.outName}
-                    className="shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+          <div className="border-t">
+            <div className="flex items-center justify-between px-3 py-2">
+              <ToolLabel>
+                {items.length} file{items.length === 1 ? "" : "s"}
+              </ToolLabel>
+              <div className="flex items-center gap-2">
+                {done.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={downloadAll}
+                    className="rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
                   >
-                    Save
-                  </a>
+                    Save all {done.length}
+                  </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={clear}
+                  className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Clear
+                </button>
               </div>
-            ))}
+            </div>
+
+            <div className="max-h-72 overflow-auto">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 border-t px-3 py-2"
+                >
+                  {item.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.url}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 shrink-0 rounded border object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 shrink-0 animate-pulse rounded border bg-muted" />
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">
+                      {item.outName ?? item.file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.status === "error" ? (
+                        item.message
+                      ) : item.status === "pending" ? (
+                        "Converting…"
+                      ) : (
+                        <>
+                          {formatBytes(item.file.size)} →{" "}
+                          {formatBytes(item.outBlob?.size ?? 0)}
+                          {item.width ? ` · ${item.width}×${item.height}` : ""}
+                          {item.message ? ` · ${item.message}` : ""}
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  {item.status === "done" && item.url && item.outName ? (
+                    <a
+                      href={item.url}
+                      download={item.outName}
+                      className="shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      Save
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="w-full px-3 py-10 text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Drop {from ? `${FORMATS[from].label} files` : "images"} here, or click
-            to choose.
-            <span className="mt-1 block text-xs">
-              They are converted on this device — nothing is uploaded.
-            </span>
-          </button>
-        )}
+        ) : null}
 
         <input
           ref={fileRef}
@@ -324,60 +369,6 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
             e.target.value = "";
           }}
         />
-      </div>
-
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="flex flex-col gap-1.5">
-            <ToolLabel>Convert to</ToolLabel>
-            <div role="group" aria-label="Output format" className="flex gap-1">
-              {availableTargets.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={target === option}
-                  onClick={() => setTarget(option)}
-                  className={cx(
-                    "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                    target === option
-                      ? "border-foreground/20 bg-foreground text-background"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {FORMATS[option].label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {lossy ? (
-            <div className="flex flex-col gap-1.5">
-              <ToolLabel htmlFor="image-quality">
-                Quality {Math.round(quality * 100)}%
-              </ToolLabel>
-              <input
-                id="image-quality"
-                type="range"
-                min={0.3}
-                max={1}
-                step={0.05}
-                value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
-                className="w-40 accent-foreground"
-              />
-            </div>
-          ) : null}
-        </div>
-
-        {done.length > 1 ? (
-          <button
-            type="button"
-            onClick={downloadAll}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
-          >
-            Save all {done.length}
-          </button>
-        ) : null}
       </div>
 
       {unsupported.length > 0 ? (
