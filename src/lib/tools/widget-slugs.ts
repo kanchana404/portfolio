@@ -31,6 +31,12 @@ export const WIDGET_SLUGS = [
   "csv-to-json-converter",
   "aspect-ratio-calculator",
   "srt-to-vtt",
+  // Served by the shared image-converter widget; see
+  // `@/lib/tools/image/spec` for what each one converts.
+  "image-converter",
+  "png-to-jpg",
+  "avif-to-jpg",
+  "avif-to-png",
 ] as const;
 
 export type WidgetSlug = (typeof WIDGET_SLUGS)[number];

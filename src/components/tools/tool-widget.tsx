@@ -2,11 +2,13 @@
 
 import type { ComponentType } from "react";
 import type { WidgetSlug } from "@/lib/tools/widget-slugs";
+import { type ConversionSlug, conversionFor } from "@/lib/tools/image/spec";
 import AspectRatioCalculator from "./widgets/aspect-ratio-calculator";
 import Base64Converter from "./widgets/base64-converter";
 import CaseConverter from "./widgets/case-converter";
 import CsvJsonConverter from "./widgets/csv-json-converter";
 import HashGenerator from "./widgets/hash-generator";
+import ImageConverter from "./widgets/image-converter";
 import JsonFormatter from "./widgets/json-formatter";
 import JwtDecoder from "./widgets/jwt-decoder";
 import LoanCalculator from "./widgets/loan-calculator";
@@ -82,7 +84,7 @@ import WordCounter from "./widgets/word-counter";
  * `widget-slugs.ts` separately cross-checks the list against the registry at
  * build time.
  */
-const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
+const TOOL_WIDGETS: Record<Exclude<WidgetSlug, ConversionSlug>, ComponentType> = {
   // calculators
   "percentage-calculator": PercentageCalculator,
   "loan-calculator": LoanCalculator,
@@ -105,7 +107,13 @@ const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {
-  const Widget = TOOL_WIDGETS[slug as WidgetSlug];
+  // Conversion routes share one widget, parameterised by the slug. Checked
+  // before the map because those slugs are deliberately absent from it — the
+  // `Exclude` above is what keeps the map exhaustive over everything else.
+  const conversion = conversionFor(slug);
+  if (conversion) return <ImageConverter {...conversion} />;
+
+  const Widget = TOOL_WIDGETS[slug as Exclude<WidgetSlug, ConversionSlug>];
 
   // Unreachable: widget-slugs.ts throws at module scope if a buildable tool has
   // no widget, so the build fails before this can render. Kept because an

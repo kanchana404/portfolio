@@ -97,11 +97,29 @@ export interface ConversionSpec {
 }
 
 /**
+ * Every route served by the shared converter widget.
+ *
+ * Declared `as const` so the slugs form a union: `tool-widget.tsx` subtracts
+ * them from its exhaustive widget map, which is what lets one component answer
+ * many slugs without losing the compile-time check that every *other* tool has
+ * a widget.
+ */
+export const CONVERSION_SLUGS = [
+  "image-converter",
+  "png-to-jpg",
+  "avif-to-jpg",
+  "avif-to-png",
+] as const;
+
+export type ConversionSlug = (typeof CONVERSION_SLUGS)[number];
+
+/**
  * Slug → what that page converts.
  *
- * Adding a route is a line here plus a registry entry. No component work.
+ * Adding a route is a line here, a slug above, and a registry entry with its
+ * own copy. No component work at all.
  */
-export const CONVERSIONS: Record<string, ConversionSpec> = {
+export const CONVERSIONS: Record<ConversionSlug, ConversionSpec> = {
   "image-converter": { from: null, to: "png" },
   "png-to-jpg": { from: "png", to: "jpg" },
   "avif-to-jpg": { from: "avif", to: "jpg" },
@@ -109,7 +127,7 @@ export const CONVERSIONS: Record<string, ConversionSpec> = {
 };
 
 export function conversionFor(slug: string): ConversionSpec | undefined {
-  return CONVERSIONS[slug];
+  return (CONVERSIONS as Record<string, ConversionSpec>)[slug];
 }
 
 /** Format implied by a filename, or null if the extension means nothing here. */
