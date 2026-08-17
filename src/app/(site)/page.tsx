@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DATA } from "@/data/resume";
 import { toolsByRecency } from "@/lib/tools/registry";
+import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -273,6 +274,7 @@ export default function Page() {
           Imports only the registry — never the widget map — so nothing here can
           drag widget code into the homepage bundle.
         */}
+        {TOOLS_SECTION_LIVE && (
         <section id="tools" className="scroll-mt-24">
           <div className="flex flex-col gap-y-4">
             <BlurFade delay={BLUR_FADE_DELAY * 11}>
@@ -313,6 +315,7 @@ export default function Page() {
             </BlurFade>
           </div>
         </section>
+        )}
 
         {/* Open Source — contributions activity */}
         <section id="open-source" className="scroll-mt-24">

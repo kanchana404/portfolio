@@ -7,6 +7,7 @@ import {
   isCategoryIndexable,
   publicTools,
 } from "@/lib/tools/registry";
+import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
 
 // Regenerate the sitemap hourly so newly published posts appear automatically.
 export const revalidate = 3600;
@@ -23,12 +24,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
-    {
-      url: `${base}/tools`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
+    // The tools hub is listed only while the section is live. Advertising a URL
+    // that answers 410 is the fastest way to earn a Search Console error.
+    ...(TOOLS_SECTION_LIVE
+      ? [
+          {
+            url: `${base}/tools`,
+            lastModified: now,
+            changeFrequency: "weekly" as const,
+            priority: 0.9,
+          },
+        ]
+      : []),
     {
       url: `${base}/privacy`,
       lastModified: now,
@@ -43,21 +50,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // are excluded here exactly as they are excluded from the index by their
   // `robots` metadata. A sitemap listing a noindex URL is a Search Console
   // warning and burns crawl budget this site does not have.
-  const toolRoutes: MetadataRoute.Sitemap = publicTools().map((tool) => ({
-    url: `${base}/tools/${tool.slug}`,
-    lastModified: new Date(`${tool.updatedAt}T00:00:00Z`),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  }));
+  const toolRoutes: MetadataRoute.Sitemap = !TOOLS_SECTION_LIVE
+    ? []
+    : publicTools().map((tool) => ({
+        url: `${base}/tools/${tool.slug}`,
+        lastModified: new Date(`${tool.updatedAt}T00:00:00Z`),
+        changeFrequency: "monthly",
+        priority: 0.8,
+      }));
 
-  const categoryRoutes: MetadataRoute.Sitemap = activeCategories()
-    .filter(isCategoryIndexable)
-    .map((category) => ({
-      url: `${base}/tools/category/${category}`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    }));
+  const categoryRoutes: MetadataRoute.Sitemap = !TOOLS_SECTION_LIVE
+    ? []
+    : activeCategories()
+        .filter(isCategoryIndexable)
+        .map((category) => ({
+          url: `${base}/tools/category/${category}`,
+          lastModified: now,
+          changeFrequency: "monthly",
+          priority: 0.5,
+        }));
 
   let postRoutes: MetadataRoute.Sitemap = [];
   try {

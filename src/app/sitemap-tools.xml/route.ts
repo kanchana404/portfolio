@@ -4,6 +4,7 @@ import {
   isCategoryIndexable,
   publicTools,
 } from "@/lib/tools/registry";
+import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
 
 /**
  * A sitemap containing *only* the tools cohort.
@@ -47,6 +48,18 @@ function escapeXml(value: string): string {
 }
 
 function toXml(entries: Entry[]): string {
+  // An empty urlset is valid per the sitemaps.org schema, and is the right
+  // answer while the section is dark: the sitemap stays submitted and parseable
+  // in Search Console, so the cohort's history is not lost, and it simply lists
+  // nothing. Removing the file instead would 404 a submitted sitemap.
+  if (entries.length === 0) {
+    return (
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      `</urlset>\n`
+    );
+  }
+
   const urls = entries
     .map(
       (e) =>
@@ -70,7 +83,7 @@ function toXml(entries: Entry[]): string {
 export function GET(): Response {
   const today = new Date().toISOString().slice(0, 10);
 
-  const entries: Entry[] = [
+  const entries: Entry[] = !TOOLS_SECTION_LIVE ? [] : [
     {
       loc: `${SITE_URL}/tools`,
       lastmod: today,

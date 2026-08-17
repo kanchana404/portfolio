@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { TOOLS_SECTION_LIVE } from "../../../src/lib/tools/section-flag";
 import { getTool } from "../../../src/lib/tools/registry";
+
+test.skip(
+  !TOOLS_SECTION_LIVE,
+  "the /tools section is retired — see src/lib/tools/section-flag.ts"
+);
 
 /**
  * Behaviour of one widget: the percentage calculator.

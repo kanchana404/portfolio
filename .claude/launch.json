@@ -7,6 +7,14 @@
       "runtimeArgs": ["dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "//": "Serves the existing production build. Use this to check anything that behaves differently in a real build — middleware responses, static generation, prerendered HTML. Calls the local next binary directly because pnpm 11 on this machine runs an install first and fails on the build-script approval prompt, while CI is pinned to pnpm 10. Run `next build` first.",
+      "name": "portfolio-prod",
+      "runtimeExecutable": "./node_modules/.bin/next",
+      "runtimeArgs": ["start", "--port", "3200"],
+      "port": 3200,
+      "autoPort": true
     }
   ]
 }

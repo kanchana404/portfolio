@@ -8,15 +8,26 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
+import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+
+/**
+ * `DATA.navbar` stays pure data, so the retired section is filtered here at the
+ * render site — the same place the homepage makes the decision. The Dock is a
+ * real `<Link>` on every page of the site, so leaving it in would point every
+ * crawl and every visitor at a 410.
+ */
+const NAV_ITEMS = DATA.navbar.filter(
+  (item) => TOOLS_SECTION_LIVE || !item.href.startsWith("/tools")
+);
 
 export default function Navbar() {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto mb-2 sm:mb-4 flex origin-bottom h-full max-h-12 sm:max-h-14">
       <div className="fixed bottom-0 inset-x-0 h-14 sm:h-16 w-full bg-background to-transparent backdrop-blur-lg [-webkit-mask-image:linear-gradient(to_top,black,transparent)] dark:bg-background"></div>
       <Dock className="z-50 pointer-events-auto relative mx-auto flex min-h-full h-full items-center px-1 sm:px-2 bg-background [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset] ">
-        {DATA.navbar.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <DockIcon key={item.href}>
             <Tooltip>
               <TooltipTrigger asChild>

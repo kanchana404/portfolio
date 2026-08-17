@@ -1,10 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { TOOLS_SECTION_LIVE } from "../../src/lib/tools/section-flag";
 import {
   MIN_TOOLS_FOR_INDEXABLE_CATEGORY,
   activeCategories,
   getToolsByCategory,
   publicTools,
 } from "../../src/lib/tools/registry";
+
+test.skip(
+  !TOOLS_SECTION_LIVE,
+  "the /tools section is retired — see src/lib/tools/section-flag.ts"
+);
 
 /**
  * Guarantees that must hold for **every** tool, driven off the registry itself.
