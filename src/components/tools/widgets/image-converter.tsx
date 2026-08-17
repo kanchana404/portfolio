@@ -5,6 +5,7 @@ import {
   type ConversionSpec,
   type ImageFormat,
   FORMATS,
+  IMAGE_FORMATS,
   TARGET_FORMATS,
   formatBytes,
   formatFromMime,
@@ -50,7 +51,10 @@ interface Item {
 
 let nextId = 0;
 
-export default function ImageConverter({ from, to }: ConversionSpec) {
+export default function ImageConverter({ from: initialFrom, to }: ConversionSpec) {
+  // Both sides live in state: one page, you pick what goes in and what comes
+  // out. `null` means "Any", which is the default and the common case.
+  const [source, setSource] = useState<ImageFormat | null>(initialFrom);
   const [target, setTarget] = useState<ImageFormat>(to);
   const [quality, setQuality] = useState(0.9);
   const [items, setItems] = useState<Item[]>([]);
@@ -168,9 +172,9 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
   );
 
   const accept = useMemo(() => {
-    if (from) return FORMATS[from].extensions.map((e) => `.${e}`).join(",");
+    if (source) return FORMATS[source].extensions.map((e) => `.${e}`).join(",");
     return "image/*";
-  }, [from]);
+  }, [source]);
 
   const done = items.filter((i) => i.status === "done" && i.outBlob);
 
@@ -192,15 +196,11 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
 
   const loaded = items.length > 0;
 
+
   // What the "From" card shows: the route's own format, else whatever was
   // actually dropped, else "Any". Reading it off the files means the hub stops
   // claiming "Any" the moment it knows better.
-  const detected = items.length > 0 ? items[items.length - 1].from : null;
-  const fromLabel = from
-    ? FORMATS[from].label
-    : detected
-      ? FORMATS[detected].label
-      : "Any";
+  const fromLabel = source ? FORMATS[source].label : "Any";
 
   return (
     <div className="flex flex-col gap-4">
@@ -231,6 +231,13 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
         <div className="flex flex-col items-center gap-5 px-4 py-6">
           <FormatPicker
             fromLabel={fromLabel}
+            fromOptions={[
+              { value: "any", label: "Any" },
+              ...IMAGE_FORMATS.map((f) => ({ value: f, label: FORMATS[f].label })),
+            ]}
+            onFromChange={(v) =>
+              setSource(v === "any" ? null : (v as ImageFormat))
+            }
             toLabel={FORMATS[target].label}
             toOptions={availableTargets.map((f) => ({
               value: f,
@@ -245,7 +252,7 @@ export default function ImageConverter({ from, to }: ConversionSpec) {
               onClick={() => fileRef.current?.click()}
               className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] active:scale-100"
             >
-              Choose {from ? FORMATS[from].label : "image"} files
+              Choose {source ? FORMATS[source].label : "image"} files
             </button>
             <p className="text-sm text-muted-foreground">
               or drop them anywhere in this box

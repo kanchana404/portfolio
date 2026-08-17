@@ -128,9 +128,11 @@ describe("the pixel budget", () => {
 });
 
 describe("the route table", () => {
-  it("resolves a known slug and rejects an unknown one", () => {
-    expect(conversionFor("png-to-jpg")).toEqual({ from: "png", to: "jpg" });
-    expect(conversionFor("png-to-tiff")).toBeUndefined();
+  it("resolves the converter route and rejects anything else", () => {
+    // One page now. Both formats are chosen in the UI rather than encoded in
+    // the URL, so there is a single route rather than a slug per pair.
+    expect(conversionFor("image-converter")).toEqual({ from: null, to: "png" });
+    expect(conversionFor("png-to-jpg")).toBeUndefined();
   });
 
   it("only ever targets an encodable format", () => {
@@ -139,14 +141,8 @@ describe("the route table", () => {
     }
   });
 
-  it("names every slug after what it does", () => {
-    for (const [slug, spec] of Object.entries(CONVERSIONS)) {
-      if (spec.from === null) continue;
-      expect(slug, `${slug} should read "<from>-to-<to>"`).toBe(
-        `${spec.from}-to-${spec.to}`
-      );
-    }
-  });
+
+
 });
 
 describe("formatBytes", () => {

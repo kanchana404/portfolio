@@ -124,27 +124,35 @@ function Card({
 }
 
 /**
- * No swap button, deliberately.
+ * Both sides are chosen here, the way CloudConvert does it.
  *
- * CloudConvert has one because you choose both sides there. Here the source is
- * whatever file you drop — it is observed, not chosen — so "swap" can only set
- * the target to the source, which on `/tools/png-to-jpg` produced PNG → PNG.
- * A control whose only effect is a no-op rename is worse than no control.
+ * "From" is a filter rather than a claim: it decides what the file picker
+ * offers and what the page says it is for. Whatever you actually drop is still
+ * detected per file, so choosing wrongly cannot produce a wrong conversion.
  */
 export function FormatPicker({
   fromLabel,
+  fromOptions,
+  onFromChange,
   toLabel,
   toOptions,
   onToChange,
 }: {
   fromLabel: string;
+  fromOptions: readonly FormatOption[];
+  onFromChange: (value: string) => void;
   toLabel: string;
   toOptions: readonly FormatOption[];
   onToChange: (value: string) => void;
 }) {
   return (
     <div className="flex items-center justify-center gap-3 sm:gap-5">
-      <Card caption="From" label={fromLabel} />
+      <Card
+        caption="From"
+        label={fromLabel}
+        options={fromOptions}
+        onChange={onFromChange}
+      />
 
       <span aria-hidden className="text-xl text-muted-foreground">
         →

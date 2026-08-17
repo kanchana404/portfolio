@@ -104,12 +104,7 @@ export interface ConversionSpec {
  * many slugs without losing the compile-time check that every *other* tool has
  * a widget.
  */
-export const CONVERSION_SLUGS = [
-  "image-converter",
-  "png-to-jpg",
-  "avif-to-jpg",
-  "avif-to-png",
-] as const;
+export const CONVERSION_SLUGS = ["image-converter"] as const;
 
 export type ConversionSlug = (typeof CONVERSION_SLUGS)[number];
 
@@ -121,9 +116,6 @@ export type ConversionSlug = (typeof CONVERSION_SLUGS)[number];
  */
 export const CONVERSIONS: Record<ConversionSlug, ConversionSpec> = {
   "image-converter": { from: null, to: "png" },
-  "png-to-jpg": { from: "png", to: "jpg" },
-  "avif-to-jpg": { from: "avif", to: "jpg" },
-  "avif-to-png": { from: "avif", to: "png" },
 };
 
 export function conversionFor(slug: string): ConversionSpec | undefined {
