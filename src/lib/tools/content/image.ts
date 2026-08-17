@@ -53,10 +53,10 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
   {
     slug: "image-converter",
     title: "Image Converter",
-    metaTitle: "Free Image Converter — PNG, JPG, WebP",
+    metaTitle: "Image Converter — PNG, JPG, ICO",
     description:
-      "Change images between PNG, JPG and WebP in one place. Reads AVIF, GIF " +
-      "and BMP too, and every file is processed on your own device.",
+      "Change images between PNG, JPG, WebP and ICO in one place. Reads AVIF, " +
+      "GIF and BMP too, and every file is handled on your own device.",
     category: "image",
     audience: ["general", "designers", "developers"],
     compute: "browser",
@@ -77,7 +77,7 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       "on how many you convert.",
     howToUse: [
       "Pick the format going in, or leave it on Any.",
-      "Pick the format you want out: PNG, JPG or WebP.",
+      "Pick the format you want out: PNG, JPG, WebP or ICO.",
       "Drop your images in. Mixed formats in one batch are fine.",
       "For JPG and WebP, set the quality you want before or after dropping.",
       "Save the files individually, or all at once.",
@@ -86,6 +86,10 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       {
         q: "Which formats can this read?",
         a: "Anything your browser decodes: PNG, JPG, WebP, AVIF, GIF and BMP. Animated GIFs convert their first frame only, since the output formats hold a single image.",
+      },
+      {
+        q: "Why can I only save as PNG, JPG, WebP or ICO?",
+        a: "Because those are what a browser can write. Asked for AVIF or TIFF it silently returns a PNG instead of refusing, so offering them would hand you a mislabelled file. ICO works because it is a wrapper around PNGs.",
       },
       {
         q: "Why is WebP missing from the options?",

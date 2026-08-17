@@ -10,7 +10,15 @@
  * which encoders a browser really has) are testable in Node.
  */
 
-export const IMAGE_FORMATS = ["png", "jpg", "webp", "avif", "gif", "bmp"] as const;
+export const IMAGE_FORMATS = [
+  "png",
+  "jpg",
+  "webp",
+  "ico",
+  "avif",
+  "gif",
+  "bmp",
+] as const;
 export type ImageFormat = (typeof IMAGE_FORMATS)[number];
 
 interface FormatInfo {
@@ -83,12 +91,39 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
     alpha: false,
     encodable: false,
   },
+  ico: {
+    label: "ICO",
+    mime: "image/x-icon",
+    extensions: ["ico"],
+    alpha: true,
+    // `canvas.toBlob("image/x-icon")` returns a PNG, like every other type the
+    // browser cannot write. But ICO is the one format that does not need an
+    // encoder: since Vista an .ico may hold PNG data verbatim, so the file is a
+    // 6-byte header, a 16-byte directory entry per size, and PNGs the browser
+    // already produces. `encodeIco` in ./pipeline builds it in ~30 lines.
+    encodable: true,
+  },
 };
 
-/** Formats that can be produced, in the order a picker should list them. */
+/**
+ * Formats that can be produced, in the order a picker should list them.
+ *
+ * Short on purpose. A browser encodes exactly three things through
+ * `canvas.toBlob` — PNG, JPEG and WebP — and *silently returns a PNG* for
+ * anything else rather than refusing, which is how converters end up handing
+ * over mislabelled files. ICO joins them only because it needs no encoder at
+ * all; see the note on its entry above.
+ *
+ * Adding AVIF, TIFF, GIF or HEIC output means shipping a WASM codec to every
+ * visitor. `@jsquash/avif` alone is ~1 MB gzipped and encodes slowly, against
+ * demand that runs roughly 100:1 the other way — people want AVIF *decoded*.
+ */
 export const TARGET_FORMATS: readonly ImageFormat[] = IMAGE_FORMATS.filter(
   (f) => FORMATS[f].encodable
 );
+
+/** Sizes packed into a generated .ico, which is what a favicon wants. */
+export const ICO_SIZES = [16, 32, 48, 256] as const;
 
 export interface ConversionSpec {
   /** `null` on the hub route, which accepts anything. */

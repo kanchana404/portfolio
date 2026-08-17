@@ -42,8 +42,12 @@ describe("recognising a format", () => {
 });
 
 describe("what may be produced", () => {
-  it("offers only formats browsers genuinely encode", () => {
-    expect([...TARGET_FORMATS]).toEqual(["png", "jpg", "webp"]);
+  it("offers only what can actually be produced", () => {
+    // PNG, JPG and WebP are what `canvas.toBlob` writes. ICO is here despite
+    // `toBlob("image/x-icon")` returning a PNG, because it needs no encoder —
+    // an .ico may hold PNG data verbatim, so it is assembled rather than
+    // encoded. Verified in a browser: 4 entries at 16/32/48/256.
+    expect([...TARGET_FORMATS]).toEqual(["png", "jpg", "webp", "ico"]);
   });
 
   it("never offers AVIF as a target", () => {

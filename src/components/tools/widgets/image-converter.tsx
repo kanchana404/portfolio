@@ -68,7 +68,13 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
   useEffect(() => {
     let cancelled = false;
     Promise.all(
-      TARGET_FORMATS.map(async (f) => ({ f, ok: await canEncode(f) }))
+      // ICO is exempt: it is assembled from PNGs rather than written by
+      // `toBlob`, so probing it would ask the browser about a path this tool
+      // never takes — and get "no", hiding a format that does work.
+      TARGET_FORMATS.map(async (f) => ({
+        f,
+        ok: f === "ico" ? true : await canEncode(f),
+      }))
     ).then((results) => {
       if (cancelled) return;
       setUnsupported(results.filter((r) => !r.ok).map((r) => r.f));
@@ -92,7 +98,9 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
     [unsupported]
   );
 
-  const lossy = FORMATS[target].mime !== "image/png";
+  // Quality applies to the lossy encoders only. ICO is a wrapper around PNGs,
+  // so a quality slider there would be a control that changes nothing.
+  const lossy = target === "jpg" || target === "webp";
 
   const run = useCallback(
     async (files: File[]) => {
