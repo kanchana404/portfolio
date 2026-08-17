@@ -88,6 +88,10 @@ async function decode(file: Blob, name?: string): Promise<ImageBitmap> {
     return rasterToBitmap(raster);
   }
 
+  // Ask the browser before fetching anything. This is the whole reason AVIF
+  // costs nothing to open on a current browser and JPEG XL costs nothing on
+  // Safari 17+: the engine already has the decoder, and a capability check that
+  // guessed from the user agent would download a megabyte to duplicate it.
   try {
     return await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
@@ -101,6 +105,15 @@ async function decode(file: Blob, name?: string): Promise<ImageBitmap> {
         /* fall through to the shared message */
       }
     }
+
+    // The browser genuinely cannot read it, so now the download is justified.
+    if (declared === "avif" || declared === "jxl") {
+      const { decodeWasm } = await import("./codecs/wasm");
+      return rasterToBitmap(
+        await decodeWasm(declared, new Uint8Array(await file.arrayBuffer()))
+      );
+    }
+
     throw new ImageConvertError(
       "This file could not be read as an image. It may be corrupt, or in a format this browser cannot open."
     );
@@ -253,6 +266,25 @@ export async function convertImage(
       const bytes = await encodeTiff(pixelsOf(canvas));
       return {
         blob: new Blob([bytes], { type: FORMATS.tiff.mime }),
+        width: canvas.width,
+        height: canvas.height,
+      };
+    }
+
+    // The two formats no browser will write at any price, so libaom and libjxl
+    // are fetched to do it. Everything above this point is free; this is the
+    // only branch that costs the visitor a download, which is why the size is
+    // printed on the option that leads here.
+    if (options.to === "avif" || options.to === "jxl") {
+      const { encodeOffThread } = await import("./codecs/wasm");
+      const { data, width, height } = pixelsOf(canvas);
+      const bytes = await encodeOffThread(
+        options.to,
+        new ImageData(data, width, height),
+        options.quality
+      );
+      return {
+        blob: new Blob([bytes], { type: FORMATS[options.to].mime }),
         width: canvas.width,
         height: canvas.height,
       };

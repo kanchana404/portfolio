@@ -21,6 +21,7 @@ export const IMAGE_FORMATS = [
   "ppm",
   "tiff",
   "avif",
+  "jxl",
   "gif",
 ] as const;
 export type ImageFormat = (typeof IMAGE_FORMATS)[number];
@@ -77,9 +78,21 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
     mime: "image/avif",
     extensions: ["avif"],
     alpha: true,
-    // Decode is ~95% of traffic; encode is effectively nowhere, and Chrome
-    // returns a PNG instead of refusing. Never offered as a target.
-    encodable: false,
+    // No browser writes AVIF — `toBlob` returns a PNG rather than refusing —
+    // so this is encoded by libaom in ./codecs/wasm. Decoding stays native:
+    // Chrome 85+, Firefox 93+ and Safari 16.4+ all read AVIF, so the 261 kB
+    // decoder is carried only as a fallback and almost never fetched.
+    encodable: true,
+  },
+  jxl: {
+    label: "JPEG XL",
+    mime: "image/jxl",
+    extensions: ["jxl"],
+    alpha: true,
+    // Encoded by libjxl in ./codecs/wasm. Decoding is native on Safari 17+ and
+    // nowhere else — Chrome removed its implementation in 110 — so unlike AVIF
+    // the fallback decoder here is the usual path rather than the rare one.
+    encodable: true,
   },
   gif: {
     label: "GIF",
@@ -150,15 +163,19 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
 /**
  * Formats that can be produced, in the order a picker should list them.
  *
- * Short on purpose. A browser encodes exactly three things through
- * `canvas.toBlob` — PNG, JPEG and WebP — and *silently returns a PNG* for
- * anything else rather than refusing, which is how converters end up handing
- * over mislabelled files. ICO joins them only because it needs no encoder at
- * all; see the note on its entry above.
+ * A browser encodes exactly three of these itself through `canvas.toBlob` —
+ * PNG, JPEG and WebP — and *silently returns a PNG* for anything else rather
+ * than refusing, which is how converters end up handing over mislabelled files.
+ * Every other entry here had to be written or fetched:
  *
- * Adding AVIF, TIFF, GIF or HEIC output means shipping a WASM codec to every
- * visitor. `@jsquash/avif` alone is ~1 MB gzipped and encodes slowly, against
- * demand that runs roughly 100:1 the other way — people want AVIF *decoded*.
+ * - ICO, BMP, TGA, QOI, PPM and TIFF are written by hand, cheaply, because the
+ *   browser already owns the hard part. ICO holds PNGs verbatim; TIFF's
+ *   compressor is `CompressionStream("deflate")`. Container work, not codecs.
+ * - GIF costs 3.5 kB of `gifenc`, and keeps animation rather than collapsing to
+ *   frame one.
+ * - AVIF and JPEG XL are the only real downloads, because no browser will write
+ *   them at any price. Their cost is declared in `CODEC_BYTES` and shown on the
+ *   option, so the choice is made with the number visible.
  */
 export const TARGET_FORMATS: readonly ImageFormat[] = IMAGE_FORMATS.filter(
   (f) => FORMATS[f].encodable
@@ -186,7 +203,23 @@ export const SELF_DECODED: readonly ImageFormat[] = ["tga", "qoi", "ppm", "tiff"
  */
 export const CODEC_BYTES: Partial<Record<ImageFormat, number>> = {
   tiff: 35_000, // utif2 + pako, decode only; writing is free
+  // Brotli-compressed sizes of the single-threaded builds, which are the ones
+  // that actually run — the multi-threaded variants need SharedArrayBuffer, and
+  // the COOP/COEP headers that requires would break the site's embeds.
+  avif: 822_000, // libaom encoder
+  jxl: 378_000, // libjxl encoder
 };
+
+/**
+ * Formats encoded by WebAssembly rather than by the browser.
+ *
+ * The distinction is what makes these the only two targets that stall before
+ * producing anything: a megabyte has to arrive before the first byte is
+ * written. The pipeline uses this to report "fetching the encoder" separately
+ * from "encoding", so a slow connection looks like a download rather than a
+ * hang.
+ */
+export const WASM_ENCODED: readonly ImageFormat[] = ["avif", "jxl"];
 
 /** Human-readable download cost, or null when there is nothing to fetch. */
 export function codecCost(format: ImageFormat): string | null {

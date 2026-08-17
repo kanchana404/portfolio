@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CONVERSIONS,
   FORMATS,
+  WASM_ENCODED,
   TARGET_FORMATS,
   conversionFor,
   exceedsPixelBudget,
@@ -52,23 +53,33 @@ describe("what may be produced", () => {
     // have hand-written encoders in ./codecs/raster — so `toBlob` returning a
     // PNG for them is irrelevant: it is never asked.
     expect([...TARGET_FORMATS]).toEqual([
-      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm", "tiff", "gif",
+      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm", "tiff", "avif",
+      "jxl", "gif",
     ]);
   });
 
-  it("never offers AVIF as a target", () => {
-    // Chrome returns a PNG when asked for AVIF rather than failing, so
-    // offering it would hand over a mislabelled file.
-    expect(FORMATS.avif.encodable).toBe(false);
-    expect(TARGET_FORMATS).not.toContain("avif");
+  it("offers AVIF and JPEG XL, which no browser writes, from WASM", () => {
+    // `toBlob` returns a PNG when asked for either rather than refusing, so
+    // these are the two targets that genuinely required shipping an encoder.
+    for (const f of WASM_ENCODED) {
+      expect(TARGET_FORMATS, `${f} is a target`).toContain(f);
+      expect(FORMATS[f].encodable, `${f} is encodable`).toBe(true);
+    }
   });
 
-  it("keeps AVIF as input-only", () => {
-    // The only one left out, and for a reason no amount of care fixes: any
-    // browser AVIF encoder is ~1 MB of WASM, against demand that runs roughly
-    // 100:1 the other way. GIF used to sit here too, until `gifenc` (3.5 kB)
-    // made writing it — with animation intact — genuinely cheap.
-    expect(TARGET_FORMATS).not.toContain("avif");
+  it("puts a price on every format that costs a download, and only those", () => {
+    // A cost quoted here is shown to the reader on the option itself. One that
+    // drifts from reality is worse than no number at all, and a missing one
+    // turns a megabyte into an unexplained stall.
+    for (const f of WASM_ENCODED) {
+      expect(CODEC_BYTES[f], `${f} declares its size`).toBeGreaterThan(100_000);
+    }
+    // The hand-written formats are free precisely because the browser already
+    // owns the codec and only the container had to be written. If one of these
+    // ever acquires a cost, it means a dependency crept in.
+    for (const f of ["png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm"] as const) {
+      expect(codecCost(f), `${f} is free`).toBeNull();
+    }
   });
 
   it("declares which formats it decodes itself", () => {

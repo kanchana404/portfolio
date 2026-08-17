@@ -53,10 +53,10 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
   {
     slug: "image-converter",
     title: "Image Converter",
-    metaTitle: "Image Converter — 8 Formats Out",
+    metaTitle: "Image Converter — AVIF, JPEG XL, PNG",
     description:
-      "Convert images to PNG, JPG, WebP, ICO, BMP, TGA, QOI or PPM in one " +
-      "place. Reads AVIF and GIF too, and every file is handled on your device.",
+      "Convert images to PNG, JPG, WebP, AVIF, JPEG XL, TIFF, GIF, ICO and " +
+      "more. Animated GIFs keep moving, and nothing is uploaded anywhere.",
     category: "image",
     audience: ["general", "designers", "developers"],
     compute: "browser",
@@ -65,11 +65,13 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
     updatedAt: "2026-08-17",
     keywords: [
       "image converter",
-      "convert image format",
+      "convert to avif",
+      "png to jpg",
       "jpg to png",
       "webp converter",
-      "image format converter",
-      "free image converter",
+      "avif converter",
+      "jpeg xl converter",
+      "png to ico",
     ],
     intro:
       "One page for the common format changes. Pick a target, drop images in, " +
@@ -77,27 +79,27 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       "on how many you convert.",
     howToUse: [
       "Pick the format going in, or leave it on Any.",
-      "Pick the format you want out — eight are available, including ICO for favicons.",
+      "Pick the format you want out — twelve are available, including ICO for favicons and AVIF for the web.",
       "Drop your images in. Mixed formats in one batch are fine.",
-      "For JPG and WebP, set the quality you want before or after dropping.",
+      "For JPG, WebP, AVIF and JPEG XL, set the quality you want before or after dropping.",
       "Save the files individually, or all at once.",
     ],
     faqs: [
       {
         q: "Which formats can this read?",
-        a: "PNG, JPG, WebP, AVIF, GIF and BMP through your browser, plus TGA, QOI and PPM which this page decodes itself. Animated GIFs convert their first frame only.",
+        a: "PNG, JPG, WebP, AVIF, GIF and BMP through your browser, plus TGA, QOI, PPM and TIFF this page decodes itself. JPEG XL is native on Safari 17 and fetched elsewhere.",
       },
       {
-        q: "Why is AVIF missing from the output list?",
-        a: "A browser writes only PNG, JPG and WebP, and asked for AVIF it silently returns a PNG rather than refusing. ICO, BMP, TGA, QOI and PPM are written by this page directly, which is why they are offered and AVIF is not.",
+        q: "Why do AVIF and JPEG XL cost a download?",
+        a: "No browser can write either one, so the encoder has to be fetched — 822 kB for AVIF, 378 kB for JPEG XL. Once, and only if you pick it. Every other format here is free.",
       },
       {
-        q: "Why is WebP missing from the options?",
-        a: "Then your browser cannot write it — Safari is the usual case. The tool asks the browser what it can encode and hides anything it cannot, rather than saving a mislabelled file.",
+        q: "Is AVIF actually smaller than JPG?",
+        a: "Usually by a lot. A test photo came out at 94 kB as AVIF against 366 kB as JPG at matching quality — about a quarter the size. That is what the encoder download buys you.",
       },
       {
-        q: "Is there a file size or count limit?",
-        a: "No imposed limit. The practical ceiling is your device's memory, and very large images are refused with an explanation rather than producing a blank file.",
+        q: "Should I use AVIF or JPEG XL?",
+        a: "AVIF, unless you have a reason. Every current browser shows AVIF; JPEG XL only Safari, since Chrome dropped it in 2023. JPEG XL is the better archive format, the worse web one.",
       },
       {
         q: "Are my images uploaded?",

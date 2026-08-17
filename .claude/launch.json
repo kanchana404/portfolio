@@ -23,6 +23,15 @@
       "autoPort": true
     },
     {
+      "//": "Production build with /tools switched on. The only way to verify the WASM codecs honestly: dev serves them through webpack's on-the-fly asset pipeline, while a real build hashes and emits them as static files, and it is the second one that ships. Build with NEXT_PUBLIC_TOOLS_LIVE=1 first or every /tools route answers 410.",
+      "name": "portfolio-tools-prod",
+      "runtimeExecutable": "./node_modules/.bin/next",
+      "runtimeArgs": ["start", "--port", "3400"],
+      "port": 3400,
+      "autoPort": true,
+      "env": { "NEXT_PUBLIC_TOOLS_LIVE": "1" }
+    },
+    {
       "//": "Dev server with the retired /tools section switched on, so it can be worked on and clicked through locally while production stays dark. Calls the local next binary directly: pnpm 11 runs an install first and CI is pinned to pnpm 10.",
       "name": "portfolio-tools",
       "runtimeExecutable": "./node_modules/.bin/next",
