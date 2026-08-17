@@ -7,8 +7,19 @@
  * the whole surface is switched off at the edge and hidden from crawlers, and
  * the code stays in the tree.
  *
- * **Flip this to `true` to bring the section back.** Nothing else needs editing:
- * every consumer below reads this flag rather than hardcoding the decision.
+ * **Set `NEXT_PUBLIC_TOOLS_LIVE=1` to bring the section back.** Nothing else
+ * needs editing: every consumer below reads this flag rather than hardcoding
+ * the decision.
+ *
+ * An environment variable rather than a hardcoded boolean, so the section can
+ * be worked on and clicked through locally while production stays dark:
+ *
+ *     NEXT_PUBLIC_TOOLS_LIVE=1 pnpm dev
+ *
+ * It defaults to off, which is the safe direction — a tool ships publicly only
+ * when someone deliberately sets the variable in Vercel, never because a local
+ * default leaked into a build. `NEXT_PUBLIC_` is required: the flag is read in
+ * the browser bundle (the homepage section, the Dock) as well as on the server.
  *
  * - `src/middleware.ts` returns 410 for `/tools` and everything beneath it
  * - `src/app/sitemap.ts` drops the hub, the tool URLs and the category URLs
@@ -33,4 +44,5 @@
  * and the type-level widget map all keep running on every CI pass, so the
  * platform cannot rot silently while the section is dark.
  */
-export const TOOLS_SECTION_LIVE = false;
+export const TOOLS_SECTION_LIVE =
+  process.env.NEXT_PUBLIC_TOOLS_LIVE === "1";

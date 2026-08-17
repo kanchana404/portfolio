@@ -12,6 +12,7 @@ import JwtDecoder from "./widgets/jwt-decoder";
 import LoanCalculator from "./widgets/loan-calculator";
 import PasswordGenerator from "./widgets/password-generator";
 import PercentageCalculator from "./widgets/percentage-calculator";
+import SubtitleConverter from "./widgets/subtitle-converter";
 import TextDiff from "./widgets/text-diff";
 import UrlEncoder from "./widgets/url-encoder";
 import WordCounter from "./widgets/word-counter";
@@ -58,14 +59,14 @@ import WordCounter from "./widgets/word-counter";
  * the measurement that made it look free was taken under conditions no real
  * visitor experiences.
  *
- * Static imports mean all thirteen widgets land in this route's client chunk
+ * Static imports mean all fourteen widgets land in this route's client chunk
  * regardless of which one renders — about 19 kB gzipped, roughly 1.5 kB each.
  * That cost is constant per page load and, crucially, causes no shift: the
  * server-rendered widget is never unmounted.
  *
  * ## The tripwire, restated
  *
- * This is linear in the size of the catalogue, capped at `MAX_TOOLS = 30`. The
+ * This is linear in the size of the catalogue, capped at `MAX_TOOLS`. The
  * bundle budget caps the combined cost. **If it fires, do not re-split with
  * `next/dynamic` and do not simply raise the number** — re-splitting reopens the
  * hydration gap above. The fix is to make the widget genuinely absent from the
@@ -99,6 +100,8 @@ const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
   "csv-to-json-converter": CsvJsonConverter,
   // image
   "aspect-ratio-calculator": AspectRatioCalculator,
+  // video
+  "srt-to-vtt": SubtitleConverter,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {

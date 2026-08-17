@@ -4,17 +4,38 @@
     {
       "name": "portfolio-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
     },
     {
-      "//": "Serves the existing production build. Use this to check anything that behaves differently in a real build — middleware responses, static generation, prerendered HTML. Calls the local next binary directly because pnpm 11 on this machine runs an install first and fails on the build-script approval prompt, while CI is pinned to pnpm 10. Run `next build` first.",
+      "//": "Serves the existing production build. Use this to check anything that behaves differently in a real build \u2014 middleware responses, static generation, prerendered HTML. Calls the local next binary directly because pnpm 11 on this machine runs an install first and fails on the build-script approval prompt, while CI is pinned to pnpm 10. Run `next build` first.",
       "name": "portfolio-prod",
       "runtimeExecutable": "./node_modules/.bin/next",
-      "runtimeArgs": ["start", "--port", "3200"],
+      "runtimeArgs": [
+        "start",
+        "--port",
+        "3200"
+      ],
       "port": 3200,
       "autoPort": true
+    },
+    {
+      "//": "Dev server with the retired /tools section switched on, so it can be worked on and clicked through locally while production stays dark. Calls the local next binary directly: pnpm 11 runs an install first and CI is pinned to pnpm 10.",
+      "name": "portfolio-tools",
+      "runtimeExecutable": "./node_modules/.bin/next",
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "3300"
+      ],
+      "port": 3300,
+      "autoPort": true,
+      "env": {
+        "NEXT_PUBLIC_TOOLS_LIVE": "1"
+      }
     }
   ]
 }

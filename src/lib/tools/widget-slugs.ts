@@ -30,6 +30,7 @@ export const WIDGET_SLUGS = [
   "password-generator",
   "csv-to-json-converter",
   "aspect-ratio-calculator",
+  "srt-to-vtt",
 ] as const;
 
 export type WidgetSlug = (typeof WIDGET_SLUGS)[number];

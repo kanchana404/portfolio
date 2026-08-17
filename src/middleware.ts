@@ -61,7 +61,14 @@ const GONE_PAGE = `<!doctype html>
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!TOOLS_SECTION_LIVE && (pathname === '/tools' || pathname.startsWith('/tools/'))) {
+  // Note the early `return` on the live path as well as the retired one. Both
+  // branches must terminate: the matcher covers /tools *and* /admin, so falling
+  // through here sends every tool request into the admin gate below and
+  // redirects the visitor to a login page. That is exactly what happened the
+  // first time this ran with the flag on.
+  if (pathname === '/tools' || pathname.startsWith('/tools/')) {
+    if (TOOLS_SECTION_LIVE) return NextResponse.next();
+
     return new NextResponse(GONE_PAGE, {
       status: 410,
       headers: {
