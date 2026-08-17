@@ -34,7 +34,7 @@
  * Next prints; compare against the budgets in this file, not against the build
  * table.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import path from "node:path";
 
@@ -115,6 +115,60 @@ const FORBIDDEN_IN_TOOL_ROUTES = [
   "jszip",
   "mediapipe",
   "opencv",
+  // Media engines. Same reason as the rest: megabytes that must not load until
+  // the visitor asks for them.
+  "mediabunny",
+  "tesseract",
+  "lamejs",
+  "gifenc",
+  "omggif",
+  "heic-to",
+];
+
+/**
+ * Modules that must never reach a browser **at all** — not in a first-load
+ * chunk, not in an async one, not on any route.
+ *
+ * This is a different rule from the list above and it is enforced differently.
+ * `FORBIDDEN_IN_TOOL_ROUTES` is about **weight**: those modules are fine to
+ * ship, just not before the visitor clicks. This list is about **licence**, and
+ * for it there is no correct chunk.
+ *
+ * Serving a file to a browser is *conveying* it under GPL §0 / AGPL §5(c). The
+ * FSF's own FAQ addresses exactly this case: a site that distributes GPL
+ * programs to visitors must release the source of what it distributes under the
+ * GPL. This repository's root LICENSE is MIT and carries a third party's
+ * copyright (Dillion Verma, the upstream template author), so it cannot be
+ * relicensed to GPL as an escape hatch — the option simply does not exist here.
+ *
+ * Server-side is a different question entirely and these are fine there: GPL
+ * obligations trigger on conveying, and GPL-2 has no network clause (that is
+ * AGPL §13). `ffmpeg` is already installed in the Railway image for exactly
+ * this reason. The rule is about the browser, not about the licence in general.
+ *
+ * Two of these are actively deceptive and are the reason this check scans built
+ * output rather than trusting package metadata:
+ *
+ * - `@ffmpeg/core` was relicensed MIT → GPL-2.0-or-later at 0.12.8 (2024-12-25).
+ *   Only the `@ffmpeg/ffmpeg` wrapper is still MIT, and it is a loader with no
+ *   engine — so a licence scanner reading the top-level dependency sees MIT.
+ * - `@ffmpeg.wasm/*` (the "maintained fork") declares MIT on npm while its
+ *   shipped binary is built `--enable-gpl --enable-nonfree --enable-libfdk-aac`,
+ *   a combination FFmpeg states produces a binary that cannot be redistributed
+ *   under any terms. Metadata says one thing; the artefact says another.
+ *
+ * Use `mediabunny` (MPL-2.0) instead of ffmpeg.wasm, `gifenc` (MIT) instead of
+ * gifski-wasm, and `Xenova/modnet` (Apache-2.0) instead of anything RMBG.
+ */
+const NEVER_SHIP_TO_BROWSER = [
+  "@ffmpeg/core",
+  "@ffmpeg/ffmpeg",
+  "@ffmpeg.wasm",
+  "gifski-wasm",
+  "@imgly/background-removal",
+  "mupdf",
+  "pandoc-wasm",
+  "esm-potrace-wasm",
 ];
 
 const gzKb = (file) => {
@@ -204,6 +258,64 @@ if (forbiddenHits === 0) {
   console.log(
     `ok    no forbidden module in any /(tools) first-load chunk (${FORBIDDEN_IN_TOOL_ROUTES.length} checked)`
   );
+}
+
+// --- 4. absolute browser ban ----------------------------------------------
+//
+// Scans EVERY built client chunk, not just the first-load ones, because an
+// async chunk is still served to the visitor and conveying is conveying. This
+// walks the static chunk directory rather than the route manifest for the same
+// reason: a chunk reachable only through a dynamic import never appears in
+// `manifest.pages`, which is precisely where a GPL engine would end up if
+// someone followed the ordinary "put it behind dynamic(ssr:false)" advice.
+const CHUNK_DIR = path.join(NEXT_DIR, "static", "chunks");
+
+function allChunkFiles(dir) {
+  const out = [];
+  let entries = [];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...allChunkFiles(full));
+    else if (entry.name.endsWith(".js")) out.push(full);
+  }
+  return out;
+}
+
+const chunkFiles = allChunkFiles(CHUNK_DIR);
+let bannedHits = 0;
+
+if (chunkFiles.length === 0) {
+  fail(
+    `no client chunks found under ${CHUNK_DIR} — the licence ban check scanned nothing, which is a false pass`
+  );
+} else {
+  for (const file of chunkFiles) {
+    let source = "";
+    try {
+      source = readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+    for (const needle of NEVER_SHIP_TO_BROWSER) {
+      if (source.includes(needle)) {
+        bannedHits += 1;
+        fail(
+          `${path.relative(NEXT_DIR, file)} contains "${needle}" — this module is GPL/AGPL and must never be served to a browser. ` +
+            `There is no correct chunk for it. Run it server-side, or use the permissive alternative.`
+        );
+      }
+    }
+  }
+  if (bannedHits === 0) {
+    console.log(
+      `ok    no GPL/AGPL module in any client chunk (${NEVER_SHIP_TO_BROWSER.length} checked across ${chunkFiles.length} files)`
+    );
+  }
 }
 
 console.log("");

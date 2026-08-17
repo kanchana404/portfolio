@@ -219,11 +219,37 @@ export const RESERVED_SLUGS: readonly string[] = [
 ];
 
 /**
- * Anti-content-farm cap.
+ * Anti-content-farm cap on the number of **routes**.
  *
  * This is a policy, not a technical limit. Ideas are free and live in the
- * backlog; slots are scarce and live in the registry. Tool #31 does not exist
- * until tool #7 is deleted, or until a PR that raises this number explains why
+ * backlog; slots are scarce and live in the registry. Tool #61 does not exist
+ * until another is deleted, or until a PR that raises this number explains why
  * in its title and cites a green phase gate.
+ *
+ * ## What this does and does not govern
+ *
+ * It governs **indexable surface** — how many URLs this site asks Google to
+ * take seriously. That is the number the helpful-content and doorway-page
+ * policies care about, and it is why the cap is a content decision rather than
+ * an engineering one.
+ *
+ * It does **not** govern bundle cost. `scripts/check-bundle-budget.mjs` owns
+ * that, and owns it better: it measures gzipped bytes on the built output
+ * instead of counting entries and hoping. Keep the two separate. Raising this
+ * number cannot break the budget, and passing the budget is not permission to
+ * raise this number.
+ *
+ * ## Why 60 and not 30
+ *
+ * 30 was set when one tool meant one widget, so the count was a usable proxy
+ * for weight. That stopped being true: a single shared converter widget can
+ * serve a dozen `{from}-to-{to}` routes, each a legitimate page answering a
+ * distinct exact-match query, at no extra bundle cost beyond its registry
+ * entry. Under the old cap the catalogue would have failed the build for
+ * reasons that had nothing to do with page weight or page quality.
+ *
+ * The real per-route cost is the copy — `validate.ts` mandates original prose,
+ * how-to steps and FAQs per tool — and that cost is what stops this becoming a
+ * content farm, far more effectively than a number ever did.
  */
-export const MAX_TOOLS = 30;
+export const MAX_TOOLS = 60;

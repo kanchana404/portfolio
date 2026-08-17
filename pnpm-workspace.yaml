@@ -1,0 +1,20 @@
+# Build-script approvals for pnpm 11+.
+#
+# pnpm 10 reads this from `pnpm.onlyBuiltDependencies` in package.json; pnpm 11
+# stopped reading that field and looks here instead, printing
+# ERR_PNPM_IGNORED_BUILDS and exiting 1 when it finds neither. CI is pinned to
+# pnpm 10 (.github/workflows/ci.yml) while a developer machine running 11 via
+# corepack would fail on every `pnpm install`, `pnpm dev` and `pnpm test` —
+# green in CI, broken locally, which is the worst way round.
+#
+# Both files are kept deliberately. Whichever pnpm you have, one of them
+# applies, and neither version errors on the other's config. If you drop the
+# package.json field, pnpm 10 stops approving these builds and esbuild silently
+# ships without its platform binary.
+#
+# esbuild is vite/vitest's bundler and unrs-resolver is eslint's module
+# resolver: both are build-time only, neither runs in production, and both need
+# a postinstall to fetch their native binary.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
