@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseTimeQuery,
+  searchCues,
   SubtitleError,
   detectFormat,
   parseSubtitles,
@@ -177,6 +179,79 @@ describe("shifting", () => {
     const shifted = shiftCues(parseSubtitles(SRT).cues, -5000);
     expect(shifted[0].start).toBe(0);
     expect(shifted[0].end).toBe(0);
+  });
+});
+
+describe("time queries", () => {
+  it("accepts the loose forms a person actually types", () => {
+    expect(parseTimeQuery("1:30")).toBe(90_000);
+    expect(parseTimeQuery("01:30")).toBe(90_000);
+    expect(parseTimeQuery("1:01:30")).toBe(3_690_000);
+    expect(parseTimeQuery("1:30.500")).toBe(90_500);
+    expect(parseTimeQuery("1:30,500")).toBe(90_500);
+  });
+
+  it("requires a colon, so a bare number stays a text search", () => {
+    // "90" is both a plausible timecode and a perfectly ordinary thing to look
+    // for in subtitle text. Guessing silently returns the wrong cue.
+    expect(parseTimeQuery("90")).toBeNull();
+    expect(parseTimeQuery("hello")).toBeNull();
+  });
+
+  it("rejects out-of-range minutes and seconds", () => {
+    expect(parseTimeQuery("1:75")).toBeNull();
+  });
+});
+
+describe("searching cues", () => {
+  const { cues } = parseSubtitles(SRT);
+
+  it("returns nothing for an empty query", () => {
+    expect(searchCues(cues, "   ")).toEqual([]);
+  });
+
+  it("finds text case-insensitively and reports the matched range", () => {
+    const [hit] = searchCues(cues, "HELLO");
+    expect(hit.index).toBe(0);
+    expect(hit.reason).toBe("text");
+    expect(cues[0].text.slice(...(hit.range as [number, number]))).toBe("Hello");
+  });
+
+  it("finds a phrase that is broken across two rows", () => {
+    // "line spans" only exists if the newline is treated as a space.
+    const [hit] = searchCues(cues, "line spans");
+    expect(hit.index).toBe(1);
+  });
+
+  it("keeps the range pointing into the original text", () => {
+    // Flattening newlines must be length-preserving or the highlight drifts.
+    const [hit] = searchCues(cues, "spans");
+    expect(cues[1].text.slice(...(hit.range as [number, number]))).toBe("spans");
+  });
+
+  it("returns the cue playing at a given time", () => {
+    const [hit] = searchCues(cues, "0:02");
+    expect(hit.index).toBe(0);
+    expect(hit.reason).toBe("time");
+  });
+
+  it("returns the next cue when the time lands in a gap", () => {
+    // 00:04.5 is after cue 1 ends and before cue 2 starts. Returning nothing
+    // for a time that falls in silence would look broken.
+    const [hit] = searchCues(cues, "0:04.500");
+    expect(hit.index).toBe(1);
+  });
+
+  it("returns nothing for a time past the last cue", () => {
+    expect(searchCues(cues, "9:99:99")).toEqual([]);
+    expect(searchCues(cues, "1:00:00")).toEqual([]);
+  });
+
+  it("honours the result limit", () => {
+    const many = parseSubtitles(
+      Array.from({ length: 20 }, (_, i) => `${i + 1}\n00:00:0${i % 9},000 --> 00:00:0${(i % 9) + 1},000\nsame text\n`).join("\n")
+    ).cues;
+    expect(searchCues(many, "same", 5)).toHaveLength(5);
   });
 });
 

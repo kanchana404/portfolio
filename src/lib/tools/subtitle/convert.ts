@@ -255,3 +255,98 @@ export function shiftCues(cues: readonly Cue[], offsetMs: number): Cue[] {
 export function detectFormat(input: string): "vtt" | "srt" {
   return /^﻿?WEBVTT/.test(input) ? "vtt" : "srt";
 }
+
+export interface CueMatch {
+  /** Position in the cue array, so the caller can scroll to it. */
+  index: number;
+  cue: Cue;
+  /** `[start, end)` character range inside `cue.text` that matched a text query. */
+  range?: readonly [number, number];
+  reason: "text" | "time";
+}
+
+/**
+ * Parses a timecode *query* — deliberately looser than `parseTimestamp`.
+ *
+ * Someone looking for the line around ninety seconds types `1:30`, not
+ * `00:01:30,000`. Accepts `M:SS`, `MM:SS`, `H:MM:SS` and an optional
+ * `.mmm`/`,mmm` tail.
+ *
+ * A colon is required. Without one, `90` would be a time query *and* a
+ * perfectly ordinary thing to search for in the subtitle text, and guessing
+ * wrong silently returns the wrong cue.
+ */
+export function parseTimeQuery(query: string): number | null {
+  const m = /^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?$/.exec(query.trim());
+  if (!m) return null;
+
+  const [, h, mm, ss, frac] = m;
+  const minutes = Number(mm);
+  const seconds = Number(ss);
+  if (minutes > 59 || seconds > 59) return null;
+
+  return (
+    (h ? Number(h) : 0) * 3_600_000 +
+    minutes * 60_000 +
+    seconds * 1000 +
+    (frac ? Number(frac.padEnd(3, "0")) : 0)
+  );
+}
+
+/**
+ * Finds cues matching a query, for the jump-to-cue box.
+ *
+ * Two query kinds, chosen by shape rather than by a mode toggle the user would
+ * have to think about:
+ *
+ * - **A timecode** (`1:30`) returns the cue playing at that moment, or the next
+ *   one if the timestamp falls in a gap between cues. Returning nothing for a
+ *   time that lands in silence would look broken.
+ * - **Anything else** is a case-insensitive substring search over cue text,
+ *   returning the character range so the caller can mark the hit rather than
+ *   just highlighting the whole line.
+ *
+ * Newlines inside a cue are flattened to spaces before matching, so a phrase
+ * broken across two displayed rows — which is most of them — is still found.
+ */
+export function searchCues(
+  cues: readonly Cue[],
+  query: string,
+  limit = 8
+): CueMatch[] {
+  const trimmed = query.trim();
+  if (trimmed === "") return [];
+
+  const time = parseTimeQuery(trimmed);
+  if (time !== null) {
+    const playing = cues.findIndex((c) => time >= c.start && time <= c.end);
+    const index = playing === -1 ? cues.findIndex((c) => c.start >= time) : playing;
+    return index === -1 ? [] : [{ index, cue: cues[index], reason: "time" }];
+  }
+
+  const needle = trimmed.toLowerCase();
+  const matches: CueMatch[] = [];
+
+  for (let i = 0; i < cues.length && matches.length < limit; i += 1) {
+    const cue = cues[i];
+    // Flattened for searching, but the offset still points into the original
+    // string: replacing newlines with spaces is length-preserving.
+    const haystack = cue.text.replace(/\n/g, " ").toLowerCase();
+    const at = haystack.indexOf(needle);
+    if (at !== -1) {
+      matches.push({
+        index: i,
+        cue,
+        range: [at, at + needle.length] as const,
+        reason: "text",
+      });
+    }
+  }
+
+  return matches;
+}
+
+/** Formats a cue time for display, in the dialect being written. */
+export function displayTime(ms: number, format: "srt" | "vtt"): string {
+  return formatTimestamp(ms, format === "srt" ? "," : ".");
+}
