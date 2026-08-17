@@ -53,10 +53,10 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
   {
     slug: "image-converter",
     title: "Image Converter",
-    metaTitle: "Image Converter — PNG, JPG, ICO",
+    metaTitle: "Image Converter — 8 Formats Out",
     description:
-      "Change images between PNG, JPG, WebP and ICO in one place. Reads AVIF, " +
-      "GIF and BMP too, and every file is handled on your own device.",
+      "Convert images to PNG, JPG, WebP, ICO, BMP, TGA, QOI or PPM in one " +
+      "place. Reads AVIF and GIF too, and every file is handled on your device.",
     category: "image",
     audience: ["general", "designers", "developers"],
     compute: "browser",
@@ -77,7 +77,7 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       "on how many you convert.",
     howToUse: [
       "Pick the format going in, or leave it on Any.",
-      "Pick the format you want out: PNG, JPG, WebP or ICO.",
+      "Pick the format you want out — eight are available, including ICO for favicons.",
       "Drop your images in. Mixed formats in one batch are fine.",
       "For JPG and WebP, set the quality you want before or after dropping.",
       "Save the files individually, or all at once.",
@@ -85,11 +85,11 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
     faqs: [
       {
         q: "Which formats can this read?",
-        a: "Anything your browser decodes: PNG, JPG, WebP, AVIF, GIF and BMP. Animated GIFs convert their first frame only, since the output formats hold a single image.",
+        a: "PNG, JPG, WebP, AVIF, GIF and BMP through your browser, plus TGA, QOI and PPM which this page decodes itself. Animated GIFs convert their first frame only.",
       },
       {
-        q: "Why can I only save as PNG, JPG, WebP or ICO?",
-        a: "Because those are what a browser can write. Asked for AVIF or TIFF it silently returns a PNG instead of refusing, so offering them would hand you a mislabelled file. ICO works because it is a wrapper around PNGs.",
+        q: "Why is AVIF missing from the output list?",
+        a: "A browser writes only PNG, JPG and WebP, and asked for AVIF it silently returns a PNG rather than refusing. ICO, BMP, TGA, QOI and PPM are written by this page directly, which is why they are offered and AVIF is not.",
       },
       {
         q: "Why is WebP missing from the options?",

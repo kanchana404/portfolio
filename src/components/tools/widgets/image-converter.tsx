@@ -19,6 +19,9 @@ import {
   convertImage,
 } from "@/lib/tools/image/pipeline";
 import { FormatPicker } from "../format-picker";
+
+/** The only formats `canvas.toBlob` actually writes; everything else is ours. */
+const BROWSER_ENCODED: readonly ImageFormat[] = ["png", "jpg", "webp"];
 import { ToolLabel, cx } from "../ui";
 
 /**
@@ -71,9 +74,12 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
       // ICO is exempt: it is assembled from PNGs rather than written by
       // `toBlob`, so probing it would ask the browser about a path this tool
       // never takes — and get "no", hiding a format that does work.
+      // Only the three `toBlob` formats are probed. ICO, BMP, TGA, QOI and PPM
+      // are written by this project, so asking the browser about them would ask
+      // about a path none of them takes — and get "no".
       TARGET_FORMATS.map(async (f) => ({
         f,
-        ok: f === "ico" ? true : await canEncode(f),
+        ok: BROWSER_ENCODED.includes(f) ? await canEncode(f) : true,
       }))
     ).then((results) => {
       if (cancelled) return;
@@ -139,6 +145,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
           const result = await convertImage(item.file, {
             to: target,
             from: item.from,
+            name: item.file.name,
             quality: lossy ? quality : undefined,
           });
           const url = URL.createObjectURL(result.blob);

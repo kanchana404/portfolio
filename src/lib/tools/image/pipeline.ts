@@ -2,9 +2,26 @@ import {
   type ImageFormat,
   FORMATS,
   ICO_SIZES,
+  SELF_DECODED,
   exceedsPixelBudget,
+  formatFromName,
   needsMatte,
 } from "./spec";
+import type { RasterImage } from "./codecs/raster";
+
+/**
+ * The hand-written codecs, fetched on demand.
+ *
+ * Statically imported they cost ~2.4 kB gzipped on every tool page, which took
+ * the widget budget to 28.8 / 30 kB — for code the overwhelming majority of
+ * visitors, converting PNG to JPG, never execute. Behind a dynamic import they
+ * cost nothing until someone actually picks BMP, TGA, QOI or PPM.
+ *
+ * This is the same shape step 2 needs for the WASM codecs, where the numbers
+ * are hundreds of kilobytes rather than two. Establishing it here, where it is
+ * cheap to get right, is deliberate.
+ */
+const rasterCodecs = () => import("./codecs/raster");
 
 /**
  * Decode → orient → guard → matte → encode → verify.
@@ -25,6 +42,8 @@ export interface ConvertOptions {
   quality?: number;
   /** Painted behind the image when alpha is dropped. */
   background?: string;
+  /** Original filename, used to recognise formats the browser cannot decode. */
+  name?: string;
 }
 
 export interface ConvertResult {
@@ -48,14 +67,54 @@ export class ImageConvertError extends Error {
  * in browser image tools. `imageOrientation: "from-image"` is what fixes it,
  * and it is why this uses `createImageBitmap` over an `<img>`.
  */
-async function decode(file: Blob): Promise<ImageBitmap> {
+async function decode(file: Blob, name?: string): Promise<ImageBitmap> {
+  // Formats no browser decodes are read here first, then handed to a canvas as
+  // raw pixels. Without this the tool would refuse files it can read perfectly
+  // well — `createImageBitmap` simply rejects a TGA or a QOI.
+  const declared = name ? formatFromName(name) : null;
+  if (declared && SELF_DECODED.includes(declared)) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const codecs = await rasterCodecs();
+    const raster =
+      declared === "tga"
+        ? codecs.decodeTga(bytes)
+        : declared === "qoi"
+          ? codecs.decodeQoi(bytes)
+          : codecs.decodePnm(bytes);
+    return rasterToBitmap(raster);
+  }
+
   try {
     return await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
+    // A .bmp that the browser refused is worth one more attempt: our reader
+    // handles 24- and 32-bit files that some engines still decline.
+    if (declared === "bmp") {
+      try {
+        const { decodeBmp } = await rasterCodecs();
+        return rasterToBitmap(decodeBmp(new Uint8Array(await file.arrayBuffer())));
+      } catch {
+        /* fall through to the shared message */
+      }
+    }
     throw new ImageConvertError(
       "This file could not be read as an image. It may be corrupt, or in a format this browser cannot open."
     );
   }
+}
+
+/** Turns decoded pixels into an ImageBitmap so the rest of the pipeline is uniform. */
+async function rasterToBitmap(raster: RasterImage): Promise<ImageBitmap> {
+  const image = new ImageData(raster.data, raster.width, raster.height);
+  return createImageBitmap(image);
+}
+
+/** Reads a canvas back as RGBA, for the hand-written encoders. */
+function pixelsOf(canvas: HTMLCanvasElement): RasterImage {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new ImageConvertError("This browser refused to provide a canvas.");
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return { data, width, height };
 }
 
 /**
@@ -145,7 +204,7 @@ export async function convertImage(
   file: Blob,
   options: ConvertOptions
 ): Promise<ConvertResult> {
-  const bitmap = await decode(file);
+  const bitmap = await decode(file, options.name);
 
   try {
     // Canvas has per-browser dimension and area ceilings, and exceeding them
@@ -182,6 +241,26 @@ export async function convertImage(
     }
 
     ctx.drawImage(bitmap, 0, 0);
+
+    // Formats written here rather than by the browser. `toBlob` cannot produce
+    // any of these — it would return a PNG — so they never reach it.
+    if (options.to === "bmp" || options.to === "tga" || options.to === "qoi" || options.to === "ppm") {
+      const codecs = await rasterCodecs();
+      const writer: (r: RasterImage) => Uint8Array =
+        options.to === "bmp"
+          ? codecs.encodeBmp
+          : options.to === "tga"
+            ? codecs.encodeTga
+            : options.to === "qoi"
+              ? codecs.encodeQoi
+              : codecs.encodePpm;
+      const bytes = writer(pixelsOf(canvas));
+      return {
+        blob: new Blob([bytes], { type: FORMATS[options.to].mime }),
+        width: canvas.width,
+        height: canvas.height,
+      };
+    }
 
     const mime = FORMATS[options.to].mime;
     const blob = await new Promise<Blob | null>((resolve) =>

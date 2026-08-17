@@ -15,9 +15,12 @@ export const IMAGE_FORMATS = [
   "jpg",
   "webp",
   "ico",
+  "bmp",
+  "tga",
+  "qoi",
+  "ppm",
   "avif",
   "gif",
-  "bmp",
 ] as const;
 export type ImageFormat = (typeof IMAGE_FORMATS)[number];
 
@@ -87,9 +90,34 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
   bmp: {
     label: "BMP",
     mime: "image/bmp",
-    extensions: ["bmp"],
+    extensions: ["bmp", "dib"],
+    alpha: true,
+    // Hand-written BITMAPV5HEADER writer in ./codecs/raster — `toBlob` cannot
+    // write BMP, but the format is simple enough that implementing it costs
+    // less than depending on something that has.
+    encodable: true,
+  },
+  tga: {
+    label: "TGA",
+    mime: "image/x-tga",
+    extensions: ["tga", "targa", "icb", "vda", "vst"],
+    alpha: true,
+    encodable: true,
+  },
+  qoi: {
+    label: "QOI",
+    mime: "image/qoi",
+    extensions: ["qoi"],
+    alpha: true,
+    encodable: true,
+  },
+  ppm: {
+    label: "PPM",
+    mime: "image/x-portable-pixmap",
+    extensions: ["ppm", "pgm", "pnm"],
+    // The PNM family has no alpha channel at all, so a matte is required.
     alpha: false,
-    encodable: false,
+    encodable: true,
   },
   ico: {
     label: "ICO",
@@ -121,6 +149,16 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
 export const TARGET_FORMATS: readonly ImageFormat[] = IMAGE_FORMATS.filter(
   (f) => FORMATS[f].encodable
 );
+
+/**
+ * Formats a browser cannot decode, which this project reads itself.
+ *
+ * `createImageBitmap` refuses these, so the pipeline runs its own reader first
+ * and hands the resulting pixels to a canvas. Without this list the tool would
+ * report "this file could not be read as an image" for files it can in fact
+ * read perfectly well.
+ */
+export const SELF_DECODED: readonly ImageFormat[] = ["tga", "qoi", "ppm"];
 
 /** Sizes packed into a generated .ico, which is what a favicon wants. */
 export const ICO_SIZES = [16, 32, 48, 256] as const;

@@ -12,6 +12,7 @@ import {
   MAX_MEGAPIXELS,
   needsMatte,
   outputName,
+  SELF_DECODED,
 } from "./spec";
 
 describe("recognising a format", () => {
@@ -44,11 +45,13 @@ describe("recognising a format", () => {
 
 describe("what may be produced", () => {
   it("offers only what can actually be produced", () => {
-    // PNG, JPG and WebP are what `canvas.toBlob` writes. ICO is here despite
-    // `toBlob("image/x-icon")` returning a PNG, because it needs no encoder —
-    // an .ico may hold PNG data verbatim, so it is assembled rather than
-    // encoded. Verified in a browser: 4 entries at 16/32/48/256.
-    expect([...TARGET_FORMATS]).toEqual(["png", "jpg", "webp", "ico"]);
+    // Three of these are what `canvas.toBlob` writes. The rest are written by
+    // this project — ICO assembles PNGs into its container, and BMP/TGA/QOI/PPM
+    // have hand-written encoders in ./codecs/raster — so `toBlob` returning a
+    // PNG for them is irrelevant: it is never asked.
+    expect([...TARGET_FORMATS]).toEqual([
+      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm",
+    ]);
   });
 
   it("never offers AVIF as a target", () => {
@@ -58,9 +61,19 @@ describe("what may be produced", () => {
     expect(TARGET_FORMATS).not.toContain("avif");
   });
 
-  it("keeps GIF and BMP as input-only", () => {
+  it("keeps AVIF and GIF as input-only", () => {
+    // Both would need a WASM encoder shipped to the visitor: ~1 MB for AVIF,
+    // and GIF's value is animation, which a single-frame path cannot deliver.
+    expect(TARGET_FORMATS).not.toContain("avif");
     expect(TARGET_FORMATS).not.toContain("gif");
-    expect(TARGET_FORMATS).not.toContain("bmp");
+  });
+
+  it("declares which formats it decodes itself", () => {
+    // `createImageBitmap` rejects these outright, so the pipeline reads them
+    // before touching a canvas. A format missing here is reported to the user
+    // as unreadable despite being perfectly readable.
+    expect([...SELF_DECODED]).toEqual(["tga", "qoi", "ppm"]);
+    for (const f of SELF_DECODED) expect(FORMATS[f].encodable).toBe(true);
   });
 });
 
