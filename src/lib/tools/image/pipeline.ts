@@ -60,6 +60,27 @@ export class ImageConvertError extends Error {
 }
 
 /**
+ * Thrown when this browser cannot read a file but the server could.
+ *
+ * Deliberately not an automatic fallback. The page promises that files stay on
+ * the device, so the upload needs a yes to that specific file first — this
+ * error is how the pipeline says "there is an option here" without taking it.
+ * See ./server.
+ */
+export class NeedsServerError extends ImageConvertError {
+  /** A readable name for the format, for the prompt: "HEIC", "camera RAW". */
+  readonly format: string;
+
+  constructor(format: string) {
+    super(
+      `This browser cannot read ${format} files. They can be converted on the server instead.`
+    );
+    this.name = "NeedsServerError";
+    this.format = format;
+  }
+}
+
+/**
  * Decodes a file, honouring its EXIF orientation.
  *
  * Photos off a phone carry an orientation flag, and a naive `drawImage` ignores
@@ -112,6 +133,15 @@ async function decode(file: Blob, name?: string): Promise<ImageBitmap> {
       return rasterToBitmap(
         await decodeWasm(declared, new Uint8Array(await file.arrayBuffer()))
       );
+    }
+
+    // Not a failure yet, if a server is configured that reads this format.
+    // The caller decides whether to offer the upload; nothing is sent from here.
+    if (name) {
+      const { couldServerDecode, serverFormatLabel } = await import("./server");
+      if (couldServerDecode(name)) {
+        throw new NeedsServerError(serverFormatLabel(name));
+      }
     }
 
     throw new ImageConvertError(

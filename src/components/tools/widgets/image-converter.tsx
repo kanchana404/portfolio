@@ -16,6 +16,7 @@ import {
 } from "@/lib/tools/image/spec";
 import {
   ImageConvertError,
+  NeedsServerError,
   canEncode,
   convertImage,
 } from "@/lib/tools/image/pipeline";
@@ -52,7 +53,13 @@ interface Item {
   id: number;
   file: File;
   from: ImageFormat | null;
-  status: "pending" | "done" | "error";
+  /**
+   * `needs-server` is not a failure. It means this browser cannot read the
+   * file but the server can, and the row is waiting to be told whether to send
+   * it — the page promises files stay on the device, so that has to be asked
+   * rather than assumed.
+   */
+  status: "pending" | "done" | "error" | "needs-server" | "uploading";
   url?: string;
   outBlob?: Blob;
   outName?: string;
@@ -61,6 +68,8 @@ interface Item {
   height?: number;
   /** Set when the result is animated, so the row can say so. */
   frames?: number;
+  /** Format name for the upload prompt: "HEIC", "camera RAW". */
+  serverFormat?: string;
 }
 
 let nextId = 0;
@@ -236,6 +245,18 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
             )
           );
         } catch (error) {
+          // Not an error — an offer. Nothing has been sent, and nothing will be
+          // until the row's button is pressed.
+          if (error instanceof NeedsServerError) {
+            setItems((c) =>
+              c.map((i) =>
+                i.id === item.id
+                  ? { ...i, status: "needs-server", serverFormat: error.format }
+                  : i
+              )
+            );
+            continue;
+          }
           setItems((c) =>
             c.map((i) =>
               i.id === item.id
@@ -257,9 +278,81 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
     [target, quality, lossy]
   );
 
+  /**
+   * Sends one file to the server decoder, having been told to.
+   *
+   * The server returns a PNG and nothing else, which is what makes this cheap:
+   * the result re-enters the ordinary pipeline, so HEIC and RAW inherit every
+   * output format, the quality slider and batch handling without any of that
+   * logic existing twice.
+   */
+  const convertOnServer = useCallback(
+    async (id: number) => {
+      const item = items.find((i) => i.id === id);
+      if (!item) return;
+      setItems((c) => c.map((i) => (i.id === id ? { ...i, status: "uploading" } : i)));
+
+      try {
+        const { decodeOnServer } = await import("@/lib/tools/image/server");
+        const png = await decodeOnServer(item.file, item.file.name);
+        const result = await convertImage(png, {
+          to: target,
+          from: "png", // it is a PNG now, whatever it arrived as
+          name: "decoded.png",
+          quality: lossy ? quality : undefined,
+        });
+        const url = URL.createObjectURL(result.blob);
+        urls.current.push(url);
+        setItems((c) =>
+          c.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  status: "done",
+                  url,
+                  outBlob: result.blob,
+                  outName: outputName(item.file.name, target),
+                  width: result.width,
+                  height: result.height,
+                }
+              : i
+          )
+        );
+      } catch (error) {
+        setItems((c) =>
+          c.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  status: "error",
+                  message:
+                    error instanceof ImageConvertError
+                      ? error.message
+                      : "The server could not convert this file.",
+                }
+              : i
+          )
+        );
+      }
+    },
+    [items, target, quality, lossy]
+  );
+
   const accept = useMemo(() => {
     if (source) return FORMATS[source].extensions.map((e) => `.${e}`).join(",");
-    return "image/*";
+    // `image/*` alone hides exactly the files this tool exists for. macOS and
+    // Windows register no MIME type for .cr2, .nef, .arw or .qoi, so the picker
+    // greys them out and the person concludes the tool cannot take them — while
+    // the drag-and-drop path accepts the same file happily. Listing the
+    // extensions alongside the wildcard makes both routes agree.
+    return [
+      "image/*",
+      ...IMAGE_FORMATS.flatMap((f) => FORMATS[f].extensions.map((e) => `.${e}`)),
+      ".heic", ".heif", ".hif",
+      ".cr2", ".cr3", ".crw", ".nef", ".nrw", ".arw", ".sr2", ".dng",
+      ".raf", ".orf", ".rw2", ".pef", ".srw", ".3fr", ".mrw",
+      ".psd",
+    ].join(",");
   }, [source]);
 
   const done = items.filter((i) => i.status === "done" && i.outBlob);
@@ -431,6 +524,17 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                         item.message
                       ) : item.status === "pending" ? (
                         "Converting…"
+                      ) : item.status === "uploading" ? (
+                        "Sending to the server…"
+                      ) : item.status === "needs-server" ? (
+                        // Says exactly what would happen, before it happens.
+                        // "Process on our server" without naming the upload is
+                        // how a local-only promise quietly stops being true.
+                        <>
+                          This browser cannot read {item.serverFormat}. Send this
+                          file to the server to convert it? It is decoded and
+                          returned without being stored.
+                        </>
                       ) : (
                         <>
                           {formatBytes(item.file.size)} →{" "}
@@ -442,6 +546,16 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                       )}
                     </p>
                   </div>
+
+                  {item.status === "needs-server" ? (
+                    <button
+                      type="button"
+                      onClick={() => convertOnServer(item.id)}
+                      className="shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      Send and convert
+                    </button>
+                  ) : null}
 
                   {item.status === "done" && item.url && item.outName ? (
                     <a
