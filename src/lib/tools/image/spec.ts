@@ -19,6 +19,7 @@ export const IMAGE_FORMATS = [
   "tga",
   "qoi",
   "ppm",
+  "tiff",
   "avif",
   "gif",
 ] as const;
@@ -122,6 +123,16 @@ export const FORMATS: Record<ImageFormat, FormatInfo> = {
     alpha: false,
     encodable: true,
   },
+  tiff: {
+    label: "TIFF",
+    mime: "image/tiff",
+    extensions: ["tiff", "tif"],
+    alpha: true,
+    // Written by hand in ./codecs/tiff — the compressor is the browser's own
+    // `CompressionStream("deflate")`, which emits exactly TIFF Compression=8.
+    // Reading needs utif2 (MIT), loaded on demand.
+    encodable: true,
+  },
   ico: {
     label: "ICO",
     mime: "image/x-icon",
@@ -161,7 +172,30 @@ export const TARGET_FORMATS: readonly ImageFormat[] = IMAGE_FORMATS.filter(
  * report "this file could not be read as an image" for files it can in fact
  * read perfectly well.
  */
-export const SELF_DECODED: readonly ImageFormat[] = ["tga", "qoi", "ppm"];
+export const SELF_DECODED: readonly ImageFormat[] = ["tga", "qoi", "ppm", "tiff"];
+
+/**
+ * What a format costs the visitor to use, in bytes fetched on demand.
+ *
+ * Surfaced on the format option itself, so the price is visible *before* the
+ * choice rather than discovered as a stalled progress bar. Zero means the
+ * browser already has everything needed.
+ *
+ * These are measured wire sizes, not estimates. A number here that drifts from
+ * reality is worse than no number, because it is quoted to the reader.
+ */
+export const CODEC_BYTES: Partial<Record<ImageFormat, number>> = {
+  tiff: 35_000, // utif2 + pako, decode only; writing is free
+};
+
+/** Human-readable download cost, or null when there is nothing to fetch. */
+export function codecCost(format: ImageFormat): string | null {
+  const bytes = CODEC_BYTES[format];
+  if (!bytes) return null;
+  return bytes >= 1_000_000
+    ? `${(bytes / 1_000_000).toFixed(1)} MB once`
+    : `${Math.round(bytes / 1000)} kB once`;
+}
 
 /** Sizes packed into a generated .ico, which is what a favicon wants. */
 export const ICO_SIZES = [16, 32, 48, 256] as const;

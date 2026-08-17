@@ -74,6 +74,10 @@ async function decode(file: Blob, name?: string): Promise<ImageBitmap> {
   const declared = name ? formatFromName(name) : null;
   if (declared && SELF_DECODED.includes(declared)) {
     const bytes = new Uint8Array(await file.arrayBuffer());
+    if (declared === "tiff") {
+      const { decodeTiff } = await import("./codecs/tiff");
+      return rasterToBitmap(await decodeTiff(bytes));
+    }
     const codecs = await rasterCodecs();
     const raster =
       declared === "tga"
@@ -244,6 +248,16 @@ export async function convertImage(
 
     // Formats written here rather than by the browser. `toBlob` cannot produce
     // any of these — it would return a PNG — so they never reach it.
+    if (options.to === "tiff") {
+      const { encodeTiff } = await import("./codecs/tiff");
+      const bytes = await encodeTiff(pixelsOf(canvas));
+      return {
+        blob: new Blob([bytes], { type: FORMATS.tiff.mime }),
+        width: canvas.width,
+        height: canvas.height,
+      };
+    }
+
     if (options.to === "bmp" || options.to === "tga" || options.to === "qoi" || options.to === "ppm") {
       const codecs = await rasterCodecs();
       const writer: (r: RasterImage) => Uint8Array =

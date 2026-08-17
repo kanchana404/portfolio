@@ -13,6 +13,8 @@ import {
   needsMatte,
   outputName,
   SELF_DECODED,
+  CODEC_BYTES,
+  codecCost,
 } from "./spec";
 
 describe("recognising a format", () => {
@@ -50,7 +52,7 @@ describe("what may be produced", () => {
     // have hand-written encoders in ./codecs/raster — so `toBlob` returning a
     // PNG for them is irrelevant: it is never asked.
     expect([...TARGET_FORMATS]).toEqual([
-      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm", "gif",
+      "png", "jpg", "webp", "ico", "bmp", "tga", "qoi", "ppm", "tiff", "gif",
     ]);
   });
 
@@ -73,7 +75,7 @@ describe("what may be produced", () => {
     // `createImageBitmap` rejects these outright, so the pipeline reads them
     // before touching a canvas. A format missing here is reported to the user
     // as unreadable despite being perfectly readable.
-    expect([...SELF_DECODED]).toEqual(["tga", "qoi", "ppm"]);
+    expect([...SELF_DECODED]).toEqual(["tga", "qoi", "ppm", "tiff"]);
     for (const f of SELF_DECODED) expect(FORMATS[f].encodable).toBe(true);
   });
 });
@@ -174,6 +176,36 @@ describe("the route table", () => {
 
 
 
+});
+
+describe("codec download cost", () => {
+  it("quotes a cost only for formats that need a download", () => {
+    // PNG, JPG and WebP use the browser's own codecs, so there is nothing to
+    // fetch and nothing to warn about.
+    expect(codecCost("png")).toBeNull();
+    expect(codecCost("jpg")).toBeNull();
+    expect(codecCost("bmp")).toBeNull(); // hand-written, already in the bundle
+  });
+
+  it("quotes TIFF, which pulls a real decoder", () => {
+    expect(codecCost("tiff")).toBe("35 kB once");
+  });
+
+  it("switches to MB above a megabyte", () => {
+    // The AVIF encoder lands here next, at ~842 kB, and the RAW decoder above
+    // it. A four-digit kB figure reads as noise where "1.2 MB" reads as a cost.
+    expect(codecCost("png")).toBeNull();
+    const mb = (n: number) =>
+      n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} MB once` : `${Math.round(n / 1000)} kB once`;
+    expect(mb(1_200_000)).toBe("1.2 MB once");
+    expect(mb(35_000)).toBe("35 kB once");
+  });
+
+  it("every quoted format is one that can actually be chosen", () => {
+    for (const f of Object.keys(CODEC_BYTES) as (keyof typeof CODEC_BYTES)[]) {
+      expect(FORMATS[f], `${f} is quoted but not a known format`).toBeDefined();
+    }
+  });
 });
 
 describe("formatBytes", () => {

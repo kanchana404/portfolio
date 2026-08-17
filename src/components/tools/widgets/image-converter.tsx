@@ -9,6 +9,7 @@ import {
   TARGET_FORMATS,
   formatBytes,
   formatFromMime,
+  codecCost,
   formatFromName,
   isRenameOnly,
   outputName,
@@ -73,6 +74,8 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
   const [unsupported, setUnsupported] = useState<ImageFormat[]>([]);
+  /** Formats whose codec has been downloaded this session. */
+  const [fetched, setFetched] = useState<Set<ImageFormat>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Ask the browser what it can actually write, rather than assuming. Safari
@@ -214,6 +217,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
             name: item.file.name,
             quality: lossy ? quality : undefined,
           });
+          setFetched((f) => (f.has(target) ? f : new Set(f).add(target)));
           const url = URL.createObjectURL(result.blob);
           urls.current.push(url);
           setItems((c) =>
@@ -328,6 +332,9 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
             toOptions={availableTargets.map((f) => ({
               value: f,
               label: FORMATS[f].label,
+              // Suppressed once fetched: the chunk is cached, so quoting a
+              // download that will not happen would be misinformation.
+              cost: fetched.has(f) ? null : codecCost(f),
             }))}
             onToChange={(v) => setTarget(v as ImageFormat)}
           />

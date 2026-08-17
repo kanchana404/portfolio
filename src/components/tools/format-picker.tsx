@@ -20,6 +20,14 @@ import { cx } from "./ui";
 export interface FormatOption {
   value: string;
   label: string;
+  /**
+   * What picking this costs to download, e.g. "35 kB once".
+   *
+   * Shown on the option rather than after the click, so the price is known
+   * before the decision. A codec that has already been fetched should pass
+   * `null` — quoting a cost that will not be paid is its own kind of wrong.
+   */
+  cost?: string | null;
 }
 
 function Card({
@@ -97,7 +105,7 @@ function Card({
       {interactive && open ? (
         <div
           role="menu"
-          className="absolute left-1/2 z-20 mt-2 w-32 -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-lg"
+          className="absolute left-1/2 z-20 mt-2 w-44 -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-lg"
         >
           {options.map((option) => (
             <button
@@ -114,7 +122,14 @@ function Card({
                 option.label === label ? "font-medium" : ""
               )}
             >
-              {option.label}
+              <span className="flex items-baseline justify-between gap-2">
+                <span>{option.label}</span>
+                {option.cost ? (
+                  <span className="text-[0.65rem] font-normal text-muted-foreground">
+                    {option.cost}
+                  </span>
+                ) : null}
+              </span>
             </button>
           ))}
         </div>
