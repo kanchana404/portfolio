@@ -128,15 +128,24 @@ export default function SubtitleConverter() {
     const list = listRef.current;
     if (!row || !list) return;
 
-    // Scrolls the cue list only. `scrollIntoView` walks every scrollable
-    // ancestor, which would drag the whole page around under the reader.
-    //
-    // Measured with rects rather than `offsetTop`, which is relative to the
-    // nearest *positioned* ancestor — not to the list. The list is not
-    // positioned, so the two offsets were measured against different origins,
-    // the target came out negative, and the browser clamped it to 0: the right
-    // row highlighted and the list never moved. Rect deltas have no such
-    // dependency on the positioning context.
+    // The search box sits with the file, in the panel above, so the list can be
+    // off-screen when a suggestion is picked — and scrolling a list nobody can
+    // see looks exactly like a broken button. Bring the page to it first, and
+    // only when it is actually out of view, so using the search while the list
+    // is already visible does not yank the page around.
+    const listBox = list.getBoundingClientRect();
+    const offScreen = listBox.top < 0 || listBox.bottom > window.innerHeight;
+    if (offScreen) {
+      list.scrollIntoView({ block: "center" });
+    }
+
+    // Then scroll within the list. Measured with rects rather than `offsetTop`,
+    // which is relative to the nearest *positioned* ancestor and not to the
+    // list. The list is not positioned, so the two offsets came from different
+    // origins, the target went negative, and the browser clamped it to 0 — the
+    // right row highlighted while the list sat still. Rect deltas have no such
+    // dependency on the positioning context, and re-reading them here also
+    // picks up the page scroll above.
     const rowRect = row.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
     const centred =
@@ -258,6 +267,86 @@ export default function SubtitleConverter() {
           placeholder="Drop a .srt or .vtt file here, or paste its contents."
           className="w-full resize-y bg-transparent p-3 font-mono text-sm outline-none placeholder:text-muted-foreground"
         />
+        {/*
+          Find-a-cue lives with the file it searches, in the same panel, rather
+          than above the results further down. You load a subtitle file and look
+          for a line in it — that is one action, and splitting it across two
+          boxes made the search read as a step you take afterwards.
+
+          The consequence is handled in `jumpTo`: the cue list it scrolls is now
+          well below this box, so the page has to be brought to it first or the
+          click appears to do nothing.
+        */}
+        {cues.length > 0 ? (
+          <div className="relative border-t p-2">
+            <ToolInput
+              id="subtitle-search"
+              type="search"
+              role="combobox"
+              aria-expanded={open && matches.length > 0}
+              aria-controls="subtitle-suggestions"
+              aria-autocomplete="list"
+              aria-activedescendant={
+                open && matches[active]
+                  ? `cue-option-${matches[active].index}`
+                  : undefined
+              }
+              autoComplete="off"
+              value={query}
+              placeholder="Find a line, or jump to a timecode like 0:12"
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActive(0);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+              onKeyDown={onSearchKeyDown}
+            />
+
+            {open && query.trim() !== "" ? (
+              <ul
+                id="subtitle-suggestions"
+                role="listbox"
+                aria-label="Matching cues"
+                className="absolute left-2 right-2 z-10 mt-1 max-h-56 overflow-auto rounded-lg border bg-background shadow-md"
+              >
+                {matches.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-muted-foreground">
+                    Nothing matches “{query.trim()}”.
+                  </li>
+                ) : (
+                  matches.map((match, i) => (
+                    <li
+                      key={match.index}
+                      id={`cue-option-${match.index}`}
+                      role="option"
+                      aria-selected={i === active}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // keep focus; blur would close first
+                        jumpTo(match);
+                      }}
+                      onMouseEnter={() => setActive(i)}
+                      className={cx(
+                        "cursor-pointer px-3 py-2 text-sm",
+                        i === active ? "bg-muted" : ""
+                      )}
+                    >
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {displayTime(match.cue.start, effectiveTarget)}
+                        {match.reason === "time" ? " · at this time" : ""}
+                      </span>
+                      <span className="mt-0.5 block truncate">
+                        {mark(match.cue.text.replace(/\n/g, " "), match.range)}
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
         <input
           ref={fileRef}
           type="file"
@@ -335,87 +424,11 @@ export default function SubtitleConverter() {
               </ul>
             ) : null}
 
-            {/*
-              Output panel: the search is the panel's own header rather than a
-              control floating above it, so "find a line" reads as part of the
-              result you are looking at instead of a separate step.
-
-              No `overflow-hidden` on the wrapper — the suggestion list is
-              absolutely positioned and has to be able to overlay the rows below
-              it. The rounding is applied to the children instead.
-            */}
-            <div className="rounded-lg border">
-              <div className="relative border-b p-2">
-              <ToolInput
-                id="subtitle-search"
-                type="search"
-                role="combobox"
-                aria-expanded={open && matches.length > 0}
-                aria-controls="subtitle-suggestions"
-                aria-autocomplete="list"
-                aria-activedescendant={
-                  open && matches[active] ? `cue-option-${matches[active].index}` : undefined
-                }
-                autoComplete="off"
-                value={query}
-                placeholder="Find a line, or jump to a timecode like 0:12"
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setActive(0);
-                  setOpen(true);
-                }}
-                onFocus={() => setOpen(true)}
-                onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-                onKeyDown={onSearchKeyDown}
-              />
-
-              {open && query.trim() !== "" ? (
-                <ul
-                  id="subtitle-suggestions"
-                  role="listbox"
-                  aria-label="Matching cues"
-                  className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-background shadow-md"
-                >
-                  {matches.length === 0 ? (
-                    <li className="px-3 py-2 text-sm text-muted-foreground">
-                      Nothing matches “{query.trim()}”.
-                    </li>
-                  ) : (
-                    matches.map((match, i) => (
-                      <li
-                        key={match.index}
-                        id={`cue-option-${match.index}`}
-                        role="option"
-                        aria-selected={i === active}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // keep focus; blur would close first
-                          jumpTo(match);
-                        }}
-                        onMouseEnter={() => setActive(i)}
-                        className={cx(
-                          "cursor-pointer px-3 py-2 text-sm",
-                          i === active ? "bg-muted" : ""
-                        )}
-                      >
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {displayTime(match.cue.start, effectiveTarget)}
-                          {match.reason === "time" ? " · at this time" : ""}
-                        </span>
-                        <span className="mt-0.5 block truncate">
-                          {mark(match.cue.text.replace(/\n/g, " "), match.range)}
-                        </span>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              ) : null}
-              </div>
-
-              {/* The converted file, as the list of timed rows it actually is. */}
-              <ol
-                ref={listRef}
-                className="max-h-72 overflow-auto rounded-b-lg bg-muted/30"
-              >
+            {/* The converted file, as the list of timed rows it actually is. */}
+            <ol
+              ref={listRef}
+              className="max-h-72 overflow-auto rounded-lg border bg-muted/30"
+            >
               {cues.map((cue, index) => (
                 <li
                   key={index}
@@ -443,9 +456,8 @@ export default function SubtitleConverter() {
                     </p>
                   </div>
                 </li>
-                ))}
-              </ol>
-            </div>
+              ))}
+            </ol>
           </div>
         ) : (
           <p className="rounded-md border border-dashed px-3 py-2 text-sm">
