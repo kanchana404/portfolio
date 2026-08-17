@@ -25,15 +25,25 @@ export function WidgetFrame({
   className,
   children,
 }: {
-  /** Settled height of the loaded widget in CSS pixels, measured at 375px wide. */
-  minHeight: number;
+  /**
+   * Settled height in CSS pixels. Required only on the `ssr: false` path.
+   *
+   * Omitted for a server-rendered widget, and that is the normal case: every
+   * widget in `tool-widget.tsx` is a static import, so the server markup is
+   * never unmounted and the shift this guards against is structurally
+   * impossible. A floor here would then be pure dead air, which is exactly what
+   * it became when one hardcoded number was applied to all fifteen tools: the
+   * subtitle converter settles at 236px against a 360px floor, so a quarter of
+   * the panel's own height was empty space between it and the next section.
+   */
+  minHeight?: number;
   className?: string;
   children: ReactNode;
 }) {
   // Inline style rather than a Tailwind arbitrary value: the height is data that
   // varies per tool, and `min-h-[${n}px]` would not survive Tailwind's static
   // class extraction.
-  const style: CSSProperties = { minHeight };
+  const style: CSSProperties | undefined = minHeight ? { minHeight } : undefined;
   return (
     <div style={style} className={cx("w-full", className)}>
       {children}

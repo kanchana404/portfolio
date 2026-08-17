@@ -11,7 +11,7 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
   {
     slug: "word-counter",
     title: "Word Counter",
-    metaTitle: "Word Counter — Free, No Signup",
+    metaTitle: "Word Counter with Reading Time",
     description:
       "Count words, characters, sentences and paragraphs as you type, with " +
       "reading and speaking time. Handles Chinese and Sinhala. Nothing uploaded.",
@@ -35,10 +35,10 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
       "Sinhala, which space-splitting counters get wrong.",
     howToUse: [
       "Paste or type your text into the box. Counts update on every keystroke.",
-      "Read the word and character counts at the top — characters are shown both with and without spaces.",
+      "Read the word and character counts at the top. Characters are shown both with and without spaces.",
       "Check the reading time if you are writing something to be read, or the speaking time if you are writing a talk.",
       "For a word limit, watch the word count; for a social or SMS limit, watch characters with spaces.",
-      "Clear the box when you are done — nothing is saved, and reloading the page discards everything.",
+      "Clear the box when you are done. Nothing is saved, and reloading the page discards everything.",
     ],
     faqs: [
       {
@@ -60,7 +60,7 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
   {
     slug: "case-converter",
     title: "Case Converter",
-    metaTitle: "Case Converter — 12 Formats, Free",
+    metaTitle: "Case Converter: 12 Formats",
     description:
       "Switch text between camelCase, snake_case, kebab-case, Title Case and " +
       "eight more. Handles acronyms correctly. Includes a URL slug maker.",
@@ -79,15 +79,15 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
       "url slug generator",
     ],
     intro:
-      "Converts text between twelve cases — camelCase, snake_case, kebab-case, " +
-      "Title Case and the rest — and makes URL slugs. Acronyms like HTTP and XML " +
+      "Converts text between twelve cases (camelCase, snake_case, kebab-case, " +
+      "Title Case and the rest) and makes URL slugs. Acronyms like HTTP and XML " +
       "are handled properly rather than split letter by letter.",
     howToUse: [
       "Paste your text into the input box.",
-      "Every format is produced at once — scroll the list and copy the one you need.",
+      "Every format is produced at once. Scroll the list and copy the one you need.",
       "Use the copy button beside a format rather than selecting the text by hand.",
       "For a URL slug, use the slug row: it strips accents, punctuation and doubled hyphens.",
-      "Convert one identifier at a time for best results — a whole paragraph becomes one very long camelCase word.",
+      "Convert one identifier at a time for best results. A whole paragraph becomes one very long camelCase word.",
     ],
     faqs: [
       {
@@ -100,7 +100,7 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Can I convert a whole file?",
-        a: "Paste it in — there is no length limit beyond what your browser can hold. Very large documents feel slower to type into, since every keystroke recomputes, but nothing is truncated.",
+        a: "Paste it in. There is no length limit beyond what your browser can hold. Very large documents feel slower to type into, since every keystroke recomputes, but nothing is truncated.",
       },
     ],
     related: ["word-counter", "url-encoder-decoder", "text-diff-checker"],
@@ -109,7 +109,7 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
   {
     slug: "text-diff-checker",
     title: "Text Diff Checker",
-    metaTitle: "Text Diff Checker — Compare Texts",
+    metaTitle: "Text Diff Checker: Compare Texts",
     description:
       "Compare two texts and see exactly which lines were added, removed or " +
       "kept, aligned properly rather than line by line. Runs in your browser.",
@@ -132,7 +132,7 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
       "Inserting a line does not turn everything below it red.",
     howToUse: [
       "Paste the original into the left box and the changed version into the right.",
-      "Read the counts — added, removed, unchanged — then scroll the comparison below them.",
+      "Read the counts (added, removed, unchanged), then scroll the comparison below them.",
       "Turn on \"ignore leading and trailing spaces\" if indentation changes are cluttering the result.",
       "Turn on \"ignore case\" when only capitalisation differs and you do not care about it.",
       "If two lines look identical but show as different, an invisible character is usually the cause.",

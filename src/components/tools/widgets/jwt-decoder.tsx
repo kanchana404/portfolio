@@ -92,7 +92,7 @@ export default function JwtDecoder() {
           className="mt-2 break-all"
         />
         <p className="mt-2 text-xs text-muted-foreground">
-          Decoding happens in this tab. Nothing is uploaded — which matters,
+          Decoding happens in this tab. Nothing is uploaded, which matters
           because a JWT from a running system is a live credential.
         </p>
       </div>

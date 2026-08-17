@@ -118,9 +118,22 @@ export default function ToolsHubPage() {
                   <span className="mt-1.5 flex-1 text-xs leading-relaxed text-muted-foreground">
                     {tool.description}
                   </span>
-                  <span className="mt-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {/*
+                    Category only. "runs offline" used to sit here too, and
+                    every one of the fifteen tools is `compute: "browser"`, so
+                    it printed on 100% of the cards. A qualifier that is
+                    universally true carries no information: it cannot
+                    distinguish one card from another, so in the densest part of
+                    the page it was texture rather than a label. The claim still
+                    appears where it can actually be checked, on the tool page
+                    meta row, linked to the privacy page.
+
+                    If a tool ever ships that does *not* run offline, the useful
+                    label is the exception, not the rule.
+                  */}
+                  <span className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {CATEGORY_LABELS[tool.category]}
-                    {tool.compute === "browser" ? " · runs offline" : null}
+                    {tool.compute !== "browser" ? " · uses a server" : null}
                   </span>
                 </Link>
               </li>

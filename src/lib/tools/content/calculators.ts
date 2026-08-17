@@ -16,7 +16,7 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
   {
     slug: "percentage-calculator",
     title: "Percentage Calculator",
-    metaTitle: "Percentage Calculator — Free, No Signup",
+    metaTitle: "Percentage Calculator",
     description:
       "Work out a percentage of a number, what share one number is of another, " +
       "or the change between two values. Shows the working. Runs in your browser.",
@@ -40,7 +40,7 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
       "Each one shows the formula it used.",
     howToUse: [
       "Pick the calculation you need from the three tabs at the top.",
-      "Type your numbers into the two boxes. The answer updates as you type — there is no button to press.",
+      "Type your numbers into the two boxes. The answer updates as you type. There is no button to press.",
       "Read the working under the result if you need to show it or check it.",
       "Note that a change from 4% to 6% is both 2 percentage points and a 50% increase. Both are correct; pick the one you mean.",
       "Percentage changes do not cancel out: down 20% then up 20% leaves you at 96, not 100.",
@@ -89,15 +89,15 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
       "payment goes to interest and how much clears the balance.",
     howToUse: [
       "Enter the loan amount you are borrowing.",
-      "Enter the annual interest rate as a percentage — 12.5, not 0.125.",
+      "Enter the annual interest rate as a percentage (12.5, not 0.125).",
       "Set the term in years or months, whichever your lender quoted.",
       "Read the monthly instalment, then open the schedule to see the interest and principal split for each month.",
-      "Use the total interest figure to compare offers — a longer term lowers the monthly payment and raises what you pay overall.",
+      "Use the total interest figure to compare offers. A longer term lowers the monthly payment and raises what you pay overall.",
     ],
     faqs: [
       {
         q: "What is EMI?",
-        a: "Equated Monthly Instalment — a fixed monthly payment covering both interest and principal, so the loan clears exactly at the end of the term. It is the standard structure for personal, vehicle and home loans.",
+        a: "Equated Monthly Instalment: a fixed monthly payment covering both interest and principal, so the loan clears exactly at the end of the term. It is the standard structure for personal, vehicle and home loans.",
       },
       {
         q: "Why does the early payment barely reduce my balance?",

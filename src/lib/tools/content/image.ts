@@ -30,7 +30,7 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       "Enter the current width and height to see the simplified ratio.",
       "If it matches a standard like 16:9 or 4:3, the name is shown next to it.",
       "To resize, switch to the second panel and enter the ratio you want.",
-      "Fill in either the new width or the new height — the other is calculated to match.",
+      "Fill in either the new width or the new height. The other is calculated to match.",
       "Always let one dimension follow the other. Setting both by hand is what stretches an image.",
     ],
     faqs: [
@@ -53,7 +53,7 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
   {
     slug: "image-converter",
     title: "Image Converter",
-    metaTitle: "Image Converter — AVIF, JPEG XL, PNG",
+    metaTitle: "Image Converter: AVIF, JPEG XL, PNG",
     description:
       "Convert images to PNG, JPG, WebP, AVIF, JPEG XL, TIFF, GIF, ICO and " +
       "more. Animated GIFs keep moving, and nothing is uploaded anywhere.",
@@ -75,11 +75,11 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
     ],
     intro:
       "One page for the common format changes. Pick a target, drop images in, " +
-      "and take the results away — nothing is uploaded and there is no limit " +
+      "and take the results away. Nothing is uploaded and there is no limit " +
       "on how many you convert.",
     howToUse: [
       "Pick the format going in, or leave it on Any.",
-      "Pick the format you want out — twelve are available, including ICO for favicons and AVIF for the web.",
+      "Pick the format you want out. Twelve are available, including ICO for favicons and AVIF for the web.",
       "Drop your images in. Mixed formats in one batch are fine.",
       "For JPG, WebP, AVIF and JPEG XL, set the quality you want before or after dropping.",
       "Save the files individually, or all at once.",
@@ -91,11 +91,11 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Why do AVIF and JPEG XL cost a download?",
-        a: "No browser can write either one, so the encoder has to be fetched — 822 kB for AVIF, 378 kB for JPEG XL. Once, and only if you pick it. Every other format here is free.",
+        a: "No browser can write either one, so the encoder has to be fetched: 822 kB for AVIF, 378 kB for JPEG XL. Once, and only if you pick it. Every other format here is free.",
       },
       {
         q: "Is AVIF actually smaller than JPG?",
-        a: "Usually by a lot. A test photo came out at 94 kB as AVIF against 366 kB as JPG at matching quality — about a quarter the size. That is what the encoder download buys you.",
+        a: "Usually by a lot. A test photo came out at 94 kB as AVIF against 366 kB as JPG at matching quality, about a quarter the size. That is what the encoder download buys you.",
       },
       {
         q: "Should I use AVIF or JPEG XL?",

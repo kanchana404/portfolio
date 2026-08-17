@@ -11,7 +11,7 @@ import {
 
 const SAMPLE =
   "Paste or type anything here and the counts update as you go. " +
-  "Nothing is uploaded — the text stays in this tab.";
+  "Nothing is uploaded. The text stays in this tab.";
 
 export default function WordCounter() {
   const id = useId();

@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import { ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
 import {
   type EncodeMode,
   decodeUrl,
@@ -46,11 +46,10 @@ export default function UrlEncoder() {
               aria-pressed={direction === d}
               onClick={() => setDirection(d)}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                TOOL_CHIP_CLASS,
                 direction === d
-                  ? "border-foreground bg-foreground text-background"
-                  : "hover:border-foreground/30"
+                  ? TOOL_CHIP_ON_CLASS
+                  : TOOL_CHIP_OFF_CLASS
               )}
             >
               {label}
@@ -71,7 +70,7 @@ export default function UrlEncoder() {
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
               className={cx(
-                "rounded border px-2.5 py-1 text-[11px] transition-colors",
+                "rounded border px-2.5 py-1 text-xs transition-colors",
                 mode === m ? "bg-muted font-medium" : "hover:border-foreground/30"
               )}
             >
@@ -99,8 +98,8 @@ export default function UrlEncoder() {
         />
         <p className="mt-2 text-xs text-muted-foreground">
           {mode === "component"
-            ? "Escapes ? & = / # too — use this for a single value going into a query string."
-            : "Leaves ? & = / # alone — use this for an address you are encoding as a whole."}
+            ? "Escapes ? & = / # too. Use this for a single value going into a query string."
+            : "Leaves ? & = / # alone. Use this for an address you are encoding as a whole."}
         </p>
       </div>
 

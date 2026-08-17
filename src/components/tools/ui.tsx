@@ -1,4 +1,5 @@
 import type {
+  HTMLAttributes,
   InputHTMLAttributes,
   LabelHTMLAttributes,
   SelectHTMLAttributes,
@@ -68,6 +69,76 @@ export function ToolInput({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cx(TOOL_INPUT_CLASS, className)} {...props} />;
 }
+
+/**
+ * The small uppercase label that names a panel or a column.
+ *
+ * One constant because there were four: `text-xs uppercase tracking-wide`
+ * hand-copied into fourteen places, plus `text-[11px]` and `text-[0.65rem]`
+ * variants. Two of those are below DESIGN.md's 12px floor, and at 10.4px with
+ * wide tracking a word stops being read and becomes texture, which is exactly
+ * why the format picker's FROM and TO lines disappeared into the panel.
+ *
+ * Set at the DESIGN.md `badge` spec (12px / 500 / +0.2px tracking). The
+ * positive tracking is the point: every heading in the system is negatively
+ * tracked, so this is the only letter-spacing that opens up, and that alone
+ * makes it read as "category" rather than "content" without a second colour or
+ * a rule under it.
+ */
+export const TOOL_PANEL_LABEL_CLASS =
+  "text-xs font-medium uppercase tracking-wide text-muted-foreground";
+
+export function ToolPanelLabel({
+  className,
+  ...props
+}: HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cx(TOOL_PANEL_LABEL_CLASS, className)} {...props} />;
+}
+
+/**
+ * Exclusive choice, two to four options: a segmented control.
+ *
+ * This replaces one class string that was hand-copied into ten places across
+ * eight widgets, and two things were wrong with it. Its radius was `full`,
+ * which DESIGN.md reserves for avatars and skill pills and which was the only
+ * radius on the whole tools surface off the 8/6/4 ladder. Worse, its selected
+ * state was `bg-foreground text-background`, which *is* the button-primary
+ * token: every widget rendered a row of two to thirteen apparent primary
+ * buttons, so the one real action on the page had no contrast left to claim.
+ *
+ * Selection now carries three quieter cues at once (muted fill, ink text, and
+ * the group's own hairline) which frees solid black to mean exactly one thing
+ * per widget. Removing the highest-contrast element from a page that already
+ * reads austere is the contestable part; it is right anyway, because that
+ * contrast was being spent on a toggle.
+ *
+ * Heights are exact under border-box: segment 28px, group 28 + 2px padding +
+ * 2px border = 32px.
+ */
+export const TOOL_SEGMENT_GROUP_CLASS =
+  "inline-flex items-center gap-0.5 rounded-md border p-0.5";
+
+export const TOOL_SEGMENT_CLASS =
+  "inline-flex h-7 items-center rounded-sm px-3 text-xs font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1";
+
+export const TOOL_SEGMENT_ON_CLASS = "bg-muted text-foreground";
+export const TOOL_SEGMENT_OFF_CLASS =
+  "text-muted-foreground hover:text-foreground";
+
+/**
+ * Many options, or multi-select: a chip.
+ *
+ * A segmented control needs a fixed track, so thirteen case formats or eight
+ * character sets do not fit one. Chips wrap instead, and carry their own
+ * hairline at rest so a wrapped row still reads as a set of controls.
+ */
+export const TOOL_CHIP_CLASS =
+  "inline-flex h-7 items-center rounded-sm border px-2.5 text-xs font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
+export const TOOL_CHIP_ON_CLASS =
+  "border-foreground/20 bg-muted text-foreground";
+export const TOOL_CHIP_OFF_CLASS =
+  "text-muted-foreground hover:border-foreground/20 hover:text-foreground";
 
 /**
  * Multi-line input for the text and developer tools.

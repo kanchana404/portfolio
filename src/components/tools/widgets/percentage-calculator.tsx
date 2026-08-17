@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { ToolInput, ToolLabel, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolInput, ToolLabel, cx } from "@/components/tools/ui";
 import {
   formatNumber,
   formatPercent,
@@ -128,7 +128,7 @@ function emptyMessage(mode: Mode, rawA: string, rawB: string): string {
   const b = parseDecimal(rawB);
   if (a === null || b === null) return "Enter both numbers to see the answer.";
   if (mode === "share" && b === 0) {
-    return "Nothing is a meaningful percentage of zero — give the second number a value.";
+    return "Nothing is a meaningful percentage of zero. Give the second number a value.";
   }
   if (mode === "change" && a === 0) {
     return "Percentage change from zero is undefined, however large the new value is. Start from any non-zero number.";
@@ -190,11 +190,10 @@ export default function PercentageCalculator() {
               onClick={() => setMode(m.id)}
               title={m.hint}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                TOOL_CHIP_CLASS,
                 selected
-                  ? "border-foreground bg-foreground text-background"
-                  : "hover:border-foreground/30"
+                  ? TOOL_CHIP_ON_CLASS
+                  : TOOL_CHIP_OFF_CLASS
               )}
             >
               {m.label}

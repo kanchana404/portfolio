@@ -98,7 +98,7 @@ export default function AspectRatioCalculator() {
                 <p className="mt-3 text-sm text-muted-foreground">
                   {analysis.named.exact ? "This is " : "Close to "}
                   <strong className="text-foreground">{analysis.named.label}</strong>
-                  {analysis.named.exact ? "" : " (not exactly)"} — {analysis.named.note}.
+                  {analysis.named.exact ? "" : " (not exactly)"}. {analysis.named.note}.
                 </p>
               ) : (
                 <p className="mt-3 text-sm text-muted-foreground">

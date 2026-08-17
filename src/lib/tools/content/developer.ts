@@ -26,18 +26,18 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     intro:
       "Paste JSON and get it indented, minified, or with its keys sorted. When " +
       "it is broken you get a line number, a column and the offending line " +
-      "printed with a marker underneath — not a character offset.",
+      "printed with a marker underneath, not a character offset.",
     howToUse: [
       "Paste your JSON into the input box.",
       "Choose format, minify, or sort keys. Formatting re-serialises the parsed value, so the output is always canonical.",
       "If it fails to parse, read the line and column reported and look at the marked line below it.",
-      "Use sort keys before diffing two API responses — it removes false differences caused by key order.",
+      "Use sort keys before diffing two API responses. It removes false differences caused by key order.",
       "Copy the result with the button rather than selecting it by hand.",
     ],
     faqs: [
       {
         q: "Why does my JSON fail with a trailing comma?",
-        a: "The JSON specification forbids it, even though JavaScript allows it in object and array literals. It is the single most common cause of a parse failure — remove the comma before the closing brace.",
+        a: "The JSON specification forbids it, even though JavaScript allows it in object and array literals. It is the single most common cause of a parse failure. Remove the comma before the closing brace.",
       },
       {
         q: "Can I use comments in JSON?",
@@ -73,19 +73,19 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     ],
     intro:
       "Encodes and decodes Base64, including the URL-safe alphabet. Text is " +
-      "converted to UTF-8 bytes first, so emoji, Sinhala and Chinese survive — " +
+      "converted to UTF-8 bytes first, so emoji, Sinhala and Chinese survive. " +
       "many online tools wrap btoa and break on all three.",
     howToUse: [
       "Choose encode or decode with the toggle.",
       "Paste your text or your Base64 string into the box.",
-      "Switch on URL-safe if the value goes into a URL or a JWT — it swaps plus and slash for hyphen and underscore and drops padding.",
+      "Switch on URL-safe if the value goes into a URL or a JWT. It swaps plus and slash for hyphen and underscore and drops padding.",
       "Decoding accepts either alphabet and tolerates missing padding, so you can paste a JWT segment directly.",
-      "If decoding reports invalid UTF-8, the data is binary — an image or an archive — rather than text.",
+      "If decoding reports invalid UTF-8, the data is binary (an image or an archive) rather than text.",
     ],
     faqs: [
       {
         q: "Is Base64 encryption?",
-        a: "No. It is an encoding, fully reversible by anyone, with no key involved. Never use it to protect anything — it exists to move binary data safely through text-only channels.",
+        a: "No. It is an encoding, fully reversible by anyone, with no key involved. Never use it to protect anything. It exists to move binary data safely through text-only channels.",
       },
       {
         q: "Why do other Base64 tools break on emoji?",
@@ -125,9 +125,9 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       "given what people paste into hash tools.",
     howToUse: [
       "Paste the text you want to hash.",
-      "Pick an algorithm — SHA-256 is the right default unless something specific requires otherwise.",
+      "Pick an algorithm. SHA-256 is the right default unless something specific requires otherwise.",
       "The hash appears immediately; copy it with the button beside it.",
-      "Change a single character and watch the whole hash change — that is the property checksums rely on.",
+      "Change a single character and watch the whole hash change. That is the property checksums rely on.",
       "Use SHA-1 only to match a legacy system. It is broken for security purposes and labelled as such.",
     ],
     faqs: [
@@ -137,7 +137,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Can a hash be reversed?",
-        a: "Not directly — it is one-way. But short or common inputs can be found by brute force or a lookup table, which is why passwords must be hashed with a slow, salted algorithm like bcrypt or Argon2 instead.",
+        a: "Not directly: it is one-way. But short or common inputs can be found by brute force or a lookup table, which is why passwords must be hashed with a slow, salted algorithm like bcrypt or Argon2 instead.",
       },
       {
         q: "Is my text uploaded to hash it?",
@@ -174,7 +174,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     howToUse: [
       "Paste a URL or a fragment of one into the box.",
       "Choose encode or decode.",
-      "Use component encoding for a single query value — it escapes ampersands, slashes and question marks that would otherwise change the URL's structure.",
+      "Use component encoding for a single query value. It escapes ampersands, slashes and question marks that would otherwise change the URL's structure.",
       "Use full-URL encoding when you have an entire address and want to keep its separators intact.",
       "Paste a complete URL to see it split into scheme, host, path and each query parameter separately.",
     ],
@@ -189,7 +189,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Why does my decode fail with a malformed URI error?",
-        a: "A percent sign must be followed by two hex digits. A literal percent in text — a discount code, for instance — must itself be encoded as %25 before decoding will work.",
+        a: "A percent sign must be followed by two hex digits. A literal percent in text (a discount code, for instance) must itself be encoded as %25 before decoding will work.",
       },
     ],
     related: ["base64-encoder-decoder", "case-converter", "json-formatter"],
@@ -223,9 +223,9 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     howToUse: [
       "Paste the token into the box. A leading \"Bearer \" is stripped for you.",
       "Read the algorithm and expiry status on the row underneath.",
-      "Check the claims table — registered claims are labelled and exp, nbf and iat are shown as dates.",
+      "Check the claims table. Registered claims are labelled and exp, nbf and iat are shown as dates.",
       "Treat the signature as informational. Verifying it needs the signing key, so no browser tool can do it.",
-      "Rotate any production token you paste into any website, including this one — a JWT is a live credential.",
+      "Rotate any production token you paste into any website, including this one. A JWT is a live credential.",
     ],
     faqs: [
       {
@@ -270,7 +270,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       "from your browser's cryptographic random number generator.",
     howToUse: [
       "Choose password for something going into a password manager, or passphrase for something you will type by hand.",
-      "Drag the length slider — sixteen characters or more is comfortably beyond brute force.",
+      "Drag the length slider. Sixteen characters or more is comfortably beyond brute force.",
       "Toggle the character sets you need. Some sites reject symbols, which is the main reason to turn any off.",
       "Turn on \"leave out look-alikes\" only if you will read the password off a screen, since it costs entropy.",
       "Copy it straight into your password manager, then press generate again so the value on screen is not the one you kept.",
@@ -282,7 +282,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Is a passphrase as strong as a random password?",
-        a: "It can be, given enough words. Five words carry about thirty-nine bits, weaker than sixteen random characters, but far easier to type and remember — the right trade for a password you cannot store in a manager.",
+        a: "It can be, given enough words. Five words carry about thirty-nine bits, weaker than sixteen random characters, but far easier to type and remember: the right trade for a password you cannot store in a manager.",
       },
       {
         q: "Should I change my passwords regularly?",
@@ -315,10 +315,10 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     intro:
       "Turns a CSV into an array of objects, or an array of objects back into a " +
       "CSV. Quoted fields, escaped quotes and newlines inside cells are handled " +
-      "properly — the cases that silently corrupt data elsewhere.",
+      "properly: the cases that silently corrupt data elsewhere.",
     howToUse: [
       "Pick a direction, then paste your data into the left box.",
-      "Leave the delimiter on automatic unless the guess is wrong — comma, semicolon, tab and pipe are all detected.",
+      "Leave the delimiter on automatic unless the guess is wrong. Comma, semicolon, tab and pipe are all detected.",
       "Read the row and column count underneath to confirm it parsed the way you expected.",
       "Turn off \"convert numbers and booleans\" if you want every value kept as a string.",
       "Check any warnings shown: a ragged row or a duplicate column name means something will not survive the conversion intact.",
@@ -334,7 +334,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Is my file uploaded to a server?",
-        a: "No. Parsing and conversion both run in your browser, so the data never leaves your device — which matters, since most of what people convert is customer or financial records.",
+        a: "No. Parsing and conversion both run in your browser, so the data never leaves your device. That matters, since most of what people convert is customer or financial records.",
       },
     ],
     related: ["json-formatter", "text-diff-checker", "base64-encoder-decoder"],

@@ -48,7 +48,7 @@ import { jsonLdHtml } from "@/lib/json-ld";
 function privacyLine(compute: ToolCompute): string {
   switch (compute) {
     case "browser":
-      return "Runs in your browser — nothing uploaded";
+      return "Runs in your browser, nothing uploaded";
     case "vercel":
       return "Saved to my server only when you ask it to be";
     case "railway":
@@ -115,7 +115,23 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <main id="main-content">
+      {/*
+        `space-y-16` puts this page on the same 64px beat as the rest of the
+        site. It replaces five ad hoc top margins (mt-6, mt-10, mt-8, mt-8,
+        mt-10) that were not even monotonic, so nothing below the widget ran at
+        a spacing used anywhere else and the whole lower half read as one
+        undifferentiated column. DESIGN.md is explicit that the stack gap owns
+        the rhythm; sections must not bring their own.
+      */}
+      <main id="main-content" className="space-y-16">
+        {/*
+          Header and widget are ONE section, not five siblings. The 64px beat
+          belongs between a reader's stopping points, and the title, meta, intro
+          and the tool itself are a single stopping point: putting 64px between
+          the H1 and the thing the H1 names would push the tool below the fold
+          to buy rhythm nobody asked for. Internals stay tight at 8/16/24.
+        */}
+        <section className="scroll-mt-24">
         {/* 2 — H1, the exact target keyword */}
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           {tool.title}
@@ -154,35 +170,55 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
           ) : null}
         </div>
 
-        {/* 4 — intro */}
-        <p className="mt-4 text-sm leading-relaxed">{tool.intro}</p>
+        {/* 4 — intro. Capped at the measure: the tools layout is max-w-5xl, so
+             an uncapped 14px paragraph runs ~150 characters per line. */}
+        <p className="mt-4 max-w-prose text-sm leading-relaxed">{tool.intro}</p>
 
-        {/* 5 — THE WIDGET. Above the fold. Nothing goes between 4 and 5. */}
+        {/* 5 — THE WIDGET. Above the fold. Nothing goes between 4 and 5.
+             The one element allowed to break the measure, which is what makes
+             it read as the protagonist rather than another equal-width block. */}
         <section id="tool-widget" className="mt-6 scroll-mt-6">
           <h2 className="sr-only">{tool.title}</h2>
-          <WidgetFrame minHeight={360}>
+          <WidgetFrame>
             <ToolWidget slug={tool.slug} />
           </WidgetFrame>
         </section>
 
         {/* 6 — Honest limits, for anything that leaves the browser. One line,
              directly under the widget, because that is where someone who just
-             got a mediocre result actually looks. */}
+             got a mediocre result actually looks.
+
+             Neutral, not amber. This was the only chromatic panel in the whole
+             product, and it broke three DESIGN.md rules at once: a hue with no
+             token behind it in a system whose only chromatic value is the link
+             blue, a background fill where surface-1 is deliberately identical
+             to canvas, and a 4px rule among 1px hairlines. Emphasis now comes
+             from ink weight, which is the mechanism the rest of the site uses. */}
         {tool.caveats ? (
-          <p className="mt-6 rounded-lg border-l-4 border-amber-500/60 bg-amber-500/5 p-4 text-sm">
+          <p className="mt-6 max-w-prose rounded-lg border p-4 text-sm text-muted-foreground">
+            <strong className="font-medium text-foreground">Worth knowing.</strong>{" "}
             {tool.caveats}
           </p>
         ) : null}
+        </section>
 
         {/* 7 — How to use it.
              This replaced a pair of essay-length sections. A visitor who came
              from a search query wants the tool, then a short answer to "what do
              I put where" — not four paragraphs before either. */}
-        <section className="mt-10">
+        <section className="scroll-mt-24">
           <h2 className="text-lg font-semibold tracking-tight">How to use it</h2>
-          <ol className="mt-3 space-y-2.5">
+          {/* One hairline per row rather than a gap. Turns an undifferentiated
+              run of 14px text into a ledger, which is structure without adding
+              a card, a fill or a shadow. Set at 60% of the border token so
+              these internal rules sit a step below the widget's own outline
+              and the hierarchy of hairlines stays legible. */}
+          <ol className="mt-6 max-w-prose">
             {tool.howToUse.map((step, index) => (
-              <li key={step} className="flex gap-3 text-sm leading-relaxed">
+              <li
+                key={step}
+                className="flex gap-3 border-t border-border/60 py-4 text-sm leading-relaxed first:border-t-0 first:pt-0"
+              >
                 <span
                   aria-hidden="true"
                   className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-medium tabular-nums text-muted-foreground"
@@ -195,7 +231,7 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
           </ol>
 
           {tool.sources?.length ? (
-            <div className="mt-5 rounded-lg border p-4">
+            <div className="mt-6 max-w-prose rounded-lg border p-4">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Where these numbers come from
               </h3>
@@ -210,7 +246,7 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
                     >
                       {source.title}
                     </a>
-                    {" — "}
+                    {", "}
                     {source.publisher}
                     {source.reference ? `, ${source.reference}` : ""}, checked{" "}
                     <time dateTime={source.verifiedOn}>
@@ -225,13 +261,16 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
 
         {/* 9 — FAQ. Plain headings rather than <details>: no JavaScript, always
              present in the DOM, and it matches the FAQPage node exactly. */}
-        <section className="mt-8">
+        <section className="scroll-mt-24">
           <h2 className="text-lg font-semibold tracking-tight">
             Frequently asked questions
           </h2>
-          <dl className="mt-3 space-y-4">
+          <dl className="mt-6 max-w-prose">
             {tool.faqs.map((faq) => (
-              <div key={faq.q}>
+              <div
+                key={faq.q}
+                className="border-t border-border/60 py-4 first:border-t-0 first:pt-0"
+              >
                 <dt className="text-sm font-medium">{faq.q}</dt>
                 <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {faq.a}
@@ -243,9 +282,9 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
 
         {/* 10 — Related tools */}
         {related.length > 0 ? (
-          <section className="mt-8">
+          <section className="scroll-mt-24">
             <h2 className="text-lg font-semibold tracking-tight">Related tools</h2>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {related.map((r) => (
                 <li key={r.slug}>
                   <Link
@@ -264,7 +303,7 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
         ) : null}
 
         {/* 11 — Author card. The E-E-A-T signal, and a link back into the site. */}
-        <section className="mt-10 flex items-start gap-4 rounded-lg border p-4">
+        <section className="flex items-start gap-4 rounded-lg border p-4">
           {/*
             Plain <img>, deliberately, and this is a measured decision rather
             than a shortcut.

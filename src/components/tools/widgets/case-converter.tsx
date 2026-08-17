@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import { ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
 import { CASES, type CaseId, convertCase, slugify } from "@/lib/tools/text/case";
 
 const SAMPLE = "parseHTTPResponse handler_v2";
@@ -41,11 +41,10 @@ export default function CaseConverter() {
             onClick={() => setActive(c.id)}
             title={c.example}
             className={cx(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+              TOOL_CHIP_CLASS,
               active === c.id
-                ? "border-foreground bg-foreground text-background"
-                : "hover:border-foreground/30"
+                ? TOOL_CHIP_ON_CLASS
+                : TOOL_CHIP_OFF_CLASS
             )}
           >
             {c.label}
@@ -57,11 +56,10 @@ export default function CaseConverter() {
           onClick={() => setActive("slug")}
           title="url-slug-case"
           className={cx(
-            "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+            TOOL_CHIP_CLASS,
             active === "slug"
-              ? "border-foreground bg-foreground text-background"
-              : "hover:border-foreground/30"
+              ? TOOL_CHIP_ON_CLASS
+              : TOOL_CHIP_OFF_CLASS
           )}
         >
           URL slug
@@ -81,7 +79,7 @@ export default function CaseConverter() {
           <p className="mt-2 text-sm text-muted-foreground">
             {text.length === 0
               ? "Enter some text above."
-              : "Nothing survives this conversion — a URL slug keeps only letters and digits."}
+              : "Nothing survives this conversion. A URL slug keeps only letters and digits."}
           </p>
         )}
       </div>

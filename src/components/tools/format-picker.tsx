@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { cx } from "./ui";
+import { TOOL_PANEL_LABEL_CLASS, cx } from "./ui";
 
 /**
  * The from → to format pair, as two cards with an arrow between them.
@@ -77,28 +77,48 @@ function Card({
         className={cx(
           "group flex h-24 w-28 flex-col items-center justify-center gap-1 rounded-xl border bg-background transition-all sm:h-28 sm:w-32",
           interactive
-            ? "cursor-pointer hover:-translate-y-0.5 hover:border-foreground/30 hover:shadow-md"
+            ? // Border only. DESIGN.md gives cards a hairline and no shadow, and
+              // the lift-plus-shadow here was the one place on the tools surface
+              // that broke it.
+              "cursor-pointer hover:border-foreground/30"
             : "cursor-default"
         )}
       >
-        <span className="text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-          {caption}
-        </span>
+        <span className={TOOL_PANEL_LABEL_CLASS}>{caption}</span>
         <span className="text-xl font-semibold tracking-tight sm:text-2xl">
           {label}
         </span>
         {interactive ? (
+          /*
+            A chevron drawn with two borders rather than set as a glyph.
+            This was `▾` (U+25BE), whose name is literally BLACK DOWN-POINTING
+            *SMALL* TRIANGLE: it renders a 6px mark no matter what font-size it
+            is given, so it read as a stray dot under the format name and the
+            card never announced itself as a dropdown. Enlarging the type could
+            not fix a glyph that is small by definition.
+
+            Borders instead of an icon package because this widget lands on
+            every tool page and the bundle sits at 29.5 kB of a 30 kB cap.
+            `border-current` inherits the text colour, so both themes follow
+            without a second class.
+          */
           <span
             aria-hidden
-            className={cx(
-              "text-[0.6rem] text-muted-foreground transition-transform",
-              open ? "rotate-180" : ""
-            )}
-          >
-            ▾
-          </span>
+            className="mt-0.5 size-1.5 border-b border-r border-current text-muted-foreground transition-transform"
+            // Inline rather than `rotate-45` / `rotate-[225deg]`. Tailwind
+            // drives rotation through the `--tw-rotate` custom property, and
+            // with `transition-transform` on the same element Chrome updated
+            // the variable but kept resolving `transform` to the old matrix, so
+            // the chevron simply never flipped. Verified in the live page:
+            // --tw-rotate read 225deg while the computed transform stayed at
+            // 45deg. Setting transform directly removes the indirection the bug
+            // needs, and still transitions.
+            style={{ transform: open ? "rotate(225deg)" : "rotate(45deg)" }}
+          />
         ) : (
-          <span aria-hidden className="h-[0.9rem]" />
+          // Matches the chevron's box, so a non-interactive card sits at the
+          // same height as an interactive one.
+          <span aria-hidden className="mt-0.5 size-1.5" />
         )}
       </button>
 
@@ -125,7 +145,7 @@ function Card({
               <span className="flex items-baseline justify-between gap-2">
                 <span>{option.label}</span>
                 {option.cost ? (
-                  <span className="text-[0.65rem] font-normal text-muted-foreground">
+                  <span className="text-xs font-normal text-muted-foreground">
                     {option.cost}
                   </span>
                 ) : null}

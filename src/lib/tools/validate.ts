@@ -407,6 +407,44 @@ export function validateTools(
       }
     }
 
+    /**
+     * No em dashes in anything a reader sees.
+     *
+     * A house style rule, enforced here because it is the kind that decays:
+     * fifty-five of them had accumulated across the registry, in six different
+     * roles, and they are invisible in review because each one reads fine on
+     * its own. The character is also a reliable machine-writing tell, which is
+     * the actual reason to keep it out of copy that is meant to sound like a
+     * person maintaining fifteen tools.
+     *
+     * En dash is included: as a separator it is the same habit, and ranges
+     * (2018-2026) take a hyphen. Rewrite with a period, comma, colon or
+     * parentheses rather than reaching for a different dash.
+     */
+    const EM_OR_EN = /[—–]/;
+    const visibleStrings: Array<[string, string]> = [
+      ["title", t.title],
+      ["metaTitle", t.metaTitle],
+      ["description", t.description],
+      ["intro", t.intro],
+      ...t.howToUse.map((s, i) => [`howToUse[${i}]`, s] as [string, string]),
+      ...t.faqs.flatMap((f, i) => [
+        [`faqs[${i}].q`, f.q] as [string, string],
+        [`faqs[${i}].a`, f.a] as [string, string],
+      ]),
+      ...(t.caveats ? ([["caveats", t.caveats]] as Array<[string, string]>) : []),
+    ];
+    for (const [field, value] of visibleStrings) {
+      if (EM_OR_EN.test(value)) {
+        at(
+          t.slug,
+          field,
+          `contains an em or en dash. Rewrite with a period, comma, colon or ` +
+            `parentheses: "${value.slice(0, 60)}..."`
+        );
+      }
+    }
+
     const totalWords = pageWordCount(t);
     if (totalWords < LIMITS.pageWordsMin) {
       at(

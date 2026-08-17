@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import { ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
 import {
   HASH_ALGORITHMS,
   type HashAlgorithm,
@@ -44,11 +44,10 @@ export default function HashGenerator() {
             aria-pressed={algorithm === a.id}
             onClick={() => setAlgorithm(a.id)}
             className={cx(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+              TOOL_CHIP_CLASS,
               algorithm === a.id
-                ? "border-foreground bg-foreground text-background"
-                : "hover:border-foreground/30"
+                ? TOOL_CHIP_ON_CLASS
+                : TOOL_CHIP_OFF_CLASS
             )}
           >
             {a.label}
@@ -65,7 +64,7 @@ export default function HashGenerator() {
           rows={4}
           spellCheck={false}
           className="mt-2 resize-y"
-          placeholder="Anything — the digest updates as you type"
+          placeholder="Anything. The digest updates as you type"
         />
         {meta ? (
           <p className="mt-2 text-xs text-muted-foreground">{meta.note}</p>
@@ -87,7 +86,7 @@ export default function HashGenerator() {
                   aria-pressed={encoding === e}
                   onClick={() => setEncoding(e)}
                   className={cx(
-                    "rounded border px-2 py-0.5 text-[11px] transition-colors",
+                    "rounded border px-2 py-0.5 text-xs transition-colors",
                     encoding === e ? "bg-muted font-medium" : "hover:border-foreground/30"
                   )}
                 >

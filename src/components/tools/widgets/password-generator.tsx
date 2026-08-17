@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import { ToolInput, ToolLabel, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolInput, ToolLabel, cx } from "@/components/tools/ui";
 import {
   CHARSETS,
   type CharsetOption,
@@ -105,11 +105,10 @@ export default function PasswordGenerator() {
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                TOOL_CHIP_CLASS,
                 mode === m
-                  ? "border-foreground bg-foreground text-background"
-                  : "hover:border-foreground/30"
+                  ? TOOL_CHIP_ON_CLASS
+                  : TOOL_CHIP_OFF_CLASS
               )}
             >
               {label}
@@ -206,11 +205,12 @@ export default function PasswordGenerator() {
                 aria-pressed={charsets.includes(set.id)}
                 onClick={() => toggleCharset(set.id)}
                 className={cx(
-                  "rounded-full border px-3 py-1.5 font-mono text-xs transition-colors",
-                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                  TOOL_CHIP_CLASS,
+                  // Mono because the label *is* the character set it toggles.
+                  "font-mono",
                   charsets.includes(set.id)
-                    ? "border-foreground bg-foreground text-background"
-                    : "hover:border-foreground/30"
+                    ? TOOL_CHIP_ON_CLASS
+                    : TOOL_CHIP_OFF_CLASS
                 )}
               >
                 {set.label}
@@ -229,7 +229,7 @@ export default function PasswordGenerator() {
           </label>
           <p className="mt-1 text-xs text-muted-foreground">
             Worth it for something you will read off a screen and type. A pure
-            loss for anything going straight into a password manager — every
+            loss for anything going straight into a password manager. Every
             character removed is entropy removed.
           </p>
         </div>
@@ -286,7 +286,7 @@ export default function PasswordGenerator() {
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Capitalising and appending digits add almost nothing against a real
-            attack — the entropy is in the number of words. They are here because
+            attack: the entropy is in the number of words. They are here because
             some password policies demand a mix.
           </p>
         </div>

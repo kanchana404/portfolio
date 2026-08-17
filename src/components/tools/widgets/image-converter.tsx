@@ -155,7 +155,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                     url,
                     outBlob: item.file,
                     outName: outputName(item.file.name, target),
-                    message: "Renamed — the bytes are identical, nothing re-encoded.",
+                    message: "Renamed. The bytes are identical, nothing re-encoded.",
                   }
                 : i
             )

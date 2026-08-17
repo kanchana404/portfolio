@@ -8,7 +8,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     metaTitle: "SRT to VTT Converter (and VTT to SRT)",
     description:
       "Convert subtitles between SRT and WebVTT, fix a line, or shift the " +
-      "timing — without uploading the file. Adds the header players require.",
+      "timing, without uploading the file. Adds the header players require.",
     category: "video",
     audience: ["general", "developers"],
     compute: "browser",
@@ -30,7 +30,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     howToUse: [
       "Drop your .srt or .vtt file in, or paste its contents.",
       "The format you gave it is detected, and the other one is preselected.",
-      "Search a word to jump to that line — it lands selected, so typing replaces it.",
+      "Search a word to jump to that line. It lands selected, so typing replaces it.",
       "To fix subtitles that run early or late, set a shift in seconds. Negative moves them earlier.",
       "Copy the result, or download it with the right extension.",
     ],

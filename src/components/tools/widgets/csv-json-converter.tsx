@@ -2,12 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import {
-  ToolLabel,
-  ToolSelect,
-  ToolTextarea,
-  cx,
-} from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolLabel, ToolSelect, ToolTextarea, cx } from "@/components/tools/ui";
 import {
   type Delimiter,
   csvToJson,
@@ -83,11 +78,10 @@ export default function CsvJsonConverter() {
               aria-pressed={direction === d}
               onClick={() => setDirection(d)}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                TOOL_CHIP_CLASS,
                 direction === d
-                  ? "border-foreground bg-foreground text-background"
-                  : "hover:border-foreground/30"
+                  ? TOOL_CHIP_ON_CLASS
+                  : TOOL_CHIP_OFF_CLASS
               )}
             >
               {label}

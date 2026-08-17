@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { CopyButton } from "@/components/tools/copy-button";
-import { ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
+import { TOOL_CHIP_CLASS, TOOL_CHIP_OFF_CLASS, TOOL_CHIP_ON_CLASS, ToolLabel, ToolTextarea, cx } from "@/components/tools/ui";
 import { decodeBase64, decodedByteLength, encodeBase64 } from "@/lib/tools/dev/base64";
 
 type Direction = "encode" | "decode";
@@ -41,11 +41,10 @@ export default function Base64Converter() {
               aria-pressed={direction === id_}
               onClick={() => setDirection(id_)}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                TOOL_CHIP_CLASS,
                 direction === id_
-                  ? "border-foreground bg-foreground text-background"
-                  : "hover:border-foreground/30"
+                  ? TOOL_CHIP_ON_CLASS
+                  : TOOL_CHIP_OFF_CLASS
               )}
             >
               {label}
