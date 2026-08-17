@@ -9,6 +9,7 @@ import {
   formatFromMime,
   formatFromName,
   isRenameOnly,
+  MAX_MEGAPIXELS,
   needsMatte,
   outputName,
 } from "./spec";
@@ -120,14 +121,26 @@ describe("naming the output", () => {
 });
 
 describe("the pixel budget", () => {
-  it("passes an ordinary photo", () => {
-    expect(exceedsPixelBudget(6000, 4000)).toBe(false); // 24 MP
+  it("passes an ordinary phone or camera shot", () => {
+    expect(exceedsPixelBudget(4032, 3024)).toBe(false); // 12.2 MP, iPhone
+    expect(exceedsPixelBudget(4000, 3000)).toBe(false); // 12 MP
   });
 
-  it("refuses something past the canvas ceiling", () => {
-    // Canvas does not throw when exceeded — it yields a blank surface, so the
-    // tool would hand back an empty file and look like it worked.
+  it("refuses a 24 MP photo, which iOS Safari cannot hold", () => {
+    // The regression this pins: the cap was 40 MP, iOS Safari's real canvas
+    // ceiling is 16,777,216 px, and a canvas past it does not throw — it goes
+    // blank. So a 24 MP shot cleared the guard and produced an empty file that
+    // looked like a successful conversion. Size is no defence either: a 24 MP
+    // AVIF is only ~380 kB.
+    expect(exceedsPixelBudget(6000, 4000)).toBe(true); // 24 MP
+  });
+
+  it("refuses something far past the ceiling", () => {
     expect(exceedsPixelBudget(12000, 8000)).toBe(true); // 96 MP
+  });
+
+  it("sits at or under the 2^24 pixel iOS ceiling", () => {
+    expect(MAX_MEGAPIXELS * 1_000_000).toBeLessThanOrEqual(16_777_216);
   });
 });
 

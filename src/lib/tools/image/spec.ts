@@ -222,9 +222,18 @@ export function formatBytes(bytes: number): string {
  * Canvas has per-browser dimension and area ceilings, and exceeding them does
  * not throw — it yields a blank or transparent canvas, so the tool would hand
  * back an empty file and look like it worked. Refusing above a conservative
- * area is the only honest option. Safari on iOS is the binding constraint.
+ * area is the only honest option.
+ *
+ * **16, not 40.** iOS Safari's real ceiling is 16,777,216 pixels (2^24), and 40
+ * was 2.4× past it — so a perfectly ordinary 24 MP photo cleared this guard and
+ * handed an iPhone user a blank file. The file need not even be large: a 24 MP
+ * AVIF is around 380 kB, so no size check would have caught it either.
+ *
+ * Desktop browsers allow more, and this costs them some headroom. That is the
+ * right way round: the failure mode here is silent and produces a plausible
+ * empty file, so the cap tracks the *strictest* engine rather than the average.
  */
-export const MAX_MEGAPIXELS = 40;
+export const MAX_MEGAPIXELS = 16;
 
 export function exceedsPixelBudget(width: number, height: number): boolean {
   return (width * height) / 1_000_000 > MAX_MEGAPIXELS;

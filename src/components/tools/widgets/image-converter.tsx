@@ -221,9 +221,13 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          const files = [...e.dataTransfer.files].filter((f) =>
-            f.type.startsWith("image/")
-          );
+          // Deliberately not filtered on `f.type.startsWith("image/")`.
+          // Browsers report an empty MIME type for plenty of real images —
+          // camera RAW (.cr2, .nef, .arw), .tga, .qoi and often .tiff — so that
+          // filter silently swallowed exactly the files someone would come here
+          // to convert. Let the decoder decide, and fail with a message that
+          // names the problem.
+          const files = [...e.dataTransfer.files];
           if (files.length) run(files);
         }}
         className={cx(
