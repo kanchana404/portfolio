@@ -5,8 +5,6 @@ import type { WidgetSlug } from "@/lib/tools/widget-slugs";
 import AspectRatioCalculator from "./widgets/aspect-ratio-calculator";
 import Base64Converter from "./widgets/base64-converter";
 import CaseConverter from "./widgets/case-converter";
-import ColorConverter from "./widgets/color-converter";
-import CompoundInterestCalculator from "./widgets/compound-interest-calculator";
 import CsvJsonConverter from "./widgets/csv-json-converter";
 import HashGenerator from "./widgets/hash-generator";
 import JsonFormatter from "./widgets/json-formatter";
@@ -15,16 +13,7 @@ import LoanCalculator from "./widgets/loan-calculator";
 import PasswordGenerator from "./widgets/password-generator";
 import PercentageCalculator from "./widgets/percentage-calculator";
 import TextDiff from "./widgets/text-diff";
-import TimestampConverter from "./widgets/timestamp-converter";
 import UrlEncoder from "./widgets/url-encoder";
-import UuidGenerator from "./widgets/uuid-generator";
-import {
-  FacebookDownloader,
-  InstagramDownloader,
-  LoomDownloader,
-  TikTokDownloader,
-  YouTubeDownloader,
-} from "./widgets/video-downloader";
 import WordCounter from "./widgets/word-counter";
 
 // Nothing from `./widget-frame` is imported here on purpose: it uses `cx` now,
@@ -59,14 +48,18 @@ import WordCounter from "./widgets/word-counter";
  * | color-converter               | 0.0000 | **0.1740**|
  * | json-formatter                | 0.0000 | **0.1334**|
  *
+ * (Measured against the 17-widget catalogue. `compound-interest-calculator` and
+ * `color-converter` have since been retired; the readings are kept because they
+ * are the evidence for this decision, not a description of the current tree.)
+ *
  * 0.25 is the boundary of Google's "poor" band for Cumulative Layout Shift, and
  * mobile is the indexed viewport. Trading that for 26 kB of gzipped JavaScript
  * on a platform whose entire purpose is search performance is a bad trade, and
  * the measurement that made it look free was taken under conditions no real
  * visitor experiences.
  *
- * Static imports mean all seventeen widgets land in this route's client chunk
- * regardless of which one renders — about 26 kB gzipped, roughly 1.5 kB each.
+ * Static imports mean all thirteen widgets land in this route's client chunk
+ * regardless of which one renders — about 19 kB gzipped, roughly 1.5 kB each.
  * That cost is constant per page load and, crucially, causes no shift: the
  * server-rendered widget is never unmounted.
  *
@@ -92,7 +85,6 @@ const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
   // calculators
   "percentage-calculator": PercentageCalculator,
   "loan-calculator": LoanCalculator,
-  "compound-interest-calculator": CompoundInterestCalculator,
   // text
   "word-counter": WordCounter,
   "case-converter": CaseConverter,
@@ -100,22 +92,13 @@ const TOOL_WIDGETS: Record<WidgetSlug, ComponentType> = {
   // developer
   "json-formatter": JsonFormatter,
   "base64-encoder-decoder": Base64Converter,
-  "uuid-generator": UuidGenerator,
   "hash-generator": HashGenerator,
   "url-encoder-decoder": UrlEncoder,
-  "unix-timestamp-converter": TimestampConverter,
   "jwt-decoder": JwtDecoder,
   "password-generator": PasswordGenerator,
   "csv-to-json-converter": CsvJsonConverter,
   // image
   "aspect-ratio-calculator": AspectRatioCalculator,
-  "color-converter": ColorConverter,
-  // video — the only widgets here that talk to a server; see video-downloader.tsx
-  "tiktok-video-downloader": TikTokDownloader,
-  "youtube-video-downloader": YouTubeDownloader,
-  "instagram-video-downloader": InstagramDownloader,
-  "facebook-video-downloader": FacebookDownloader,
-  "loom-video-downloader": LoomDownloader,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {

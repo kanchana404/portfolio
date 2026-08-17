@@ -59,7 +59,7 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
         a: "No. The page is a static file and the arithmetic runs in your own browser. You can confirm it by turning off your connection and using it offline.",
       },
     ],
-    related: ["loan-calculator", "compound-interest-calculator"],
+    related: ["loan-calculator"],
   },
 
   {
@@ -108,55 +108,7 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
         a: "The instalment maths is standard and should match closely. Your bank may add processing fees, insurance or a different day-count convention, so treat this as an estimate rather than an offer.",
       },
     ],
-    related: ["compound-interest-calculator", "percentage-calculator"],
+    related: ["percentage-calculator"],
   },
 
-  {
-    slug: "compound-interest-calculator",
-    title: "Compound Interest Calculator",
-    metaTitle: "Compound Interest Calculator",
-    description:
-      "Project savings growth with optional regular contributions, at any " +
-      "compounding frequency, and see the balance year by year.",
-    category: "calculators",
-    audience: ["students", "general", "small-business"],
-    compute: "browser",
-    status: "stable",
-    publishedAt: "2026-08-09",
-    updatedAt: "2026-08-09",
-    keywords: [
-      "compound interest calculator",
-      "savings growth calculator",
-      "investment return calculator",
-      "future value calculator",
-      "effective annual rate",
-      "monthly compounding",
-    ],
-    intro:
-      "Project how a balance grows over time, with or without regular " +
-      "contributions, at any compounding frequency. Shows the year-by-year " +
-      "balance and how much of the total is interest rather than deposits.",
-    howToUse: [
-      "Enter your starting amount and the annual interest rate.",
-      "Set how often interest compounds — monthly is the common default for savings accounts.",
-      "Add a regular contribution if you plan to keep paying in, and set how often.",
-      "Set the number of years, then read the final balance and the split between what you put in and what the interest added.",
-      "Compare the effective annual rate to the headline rate: more frequent compounding makes the real return slightly higher.",
-    ],
-    faqs: [
-      {
-        q: "What is the difference between simple and compound interest?",
-        a: "Simple interest is charged only on the original amount. Compound interest is charged on the balance including interest already earned, so the growth accelerates over time.",
-      },
-      {
-        q: "Does compounding frequency matter much?",
-        a: "Less than people expect. At 10% a year, monthly compounding beats annual by about half a percentage point of effective rate. The rate and the time horizon matter far more.",
-      },
-      {
-        q: "Does this account for inflation or tax?",
-        a: "No. It projects nominal growth only. Real purchasing power will be lower, and any tax on interest reduces it further — subtract both before treating the final figure as spendable.",
-      },
-    ],
-    related: ["loan-calculator", "percentage-calculator"],
-  },
 ];

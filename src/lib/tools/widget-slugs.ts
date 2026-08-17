@@ -19,26 +19,17 @@ import { buildableTools } from "./registry";
 export const WIDGET_SLUGS = [
   "percentage-calculator",
   "loan-calculator",
-  "compound-interest-calculator",
   "word-counter",
   "case-converter",
   "text-diff-checker",
   "json-formatter",
   "base64-encoder-decoder",
-  "uuid-generator",
   "hash-generator",
   "url-encoder-decoder",
-  "unix-timestamp-converter",
   "jwt-decoder",
   "password-generator",
   "csv-to-json-converter",
   "aspect-ratio-calculator",
-  "color-converter",
-  "tiktok-video-downloader",
-  "youtube-video-downloader",
-  "instagram-video-downloader",
-  "facebook-video-downloader",
-  "loom-video-downloader",
 ] as const;
 
 export type WidgetSlug = (typeof WIDGET_SLUGS)[number];

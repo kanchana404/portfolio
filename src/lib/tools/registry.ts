@@ -2,7 +2,6 @@ import { CALCULATOR_TOOLS } from "./content/calculators";
 import { DEVELOPER_TOOLS } from "./content/developer";
 import { IMAGE_TOOLS } from "./content/image";
 import { TEXT_TOOLS } from "./content/text";
-import { VIDEO_TOOLS } from "./content/video";
 import { TOOL_CATEGORIES, type ToolCategory, type ToolDef } from "./types";
 import { validateTools } from "./validate";
 
@@ -28,7 +27,6 @@ export const TOOLS: readonly ToolDef[] = [
   ...TEXT_TOOLS,
   ...DEVELOPER_TOOLS,
   ...IMAGE_TOOLS,
-  ...VIDEO_TOOLS,
 ];
 
 /**

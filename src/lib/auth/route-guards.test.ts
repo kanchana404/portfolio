@@ -30,8 +30,6 @@ const PUBLIC_EXCEPTIONS: Record<string, string> = {
     "The login endpoint is how you obtain a session; it cannot require one. It verifies the password in constant time and fails closed when ADMIN_PASSWORD is unset.",
   "admin/logout/route.ts":
     "Clearing your own cookies needs no privilege, and an unauthenticated call accomplishes nothing an attacker wants.",
-  "tools/download-ticket/route.ts":
-    "Public by design: it is what lets an anonymous visitor use the downloader tools, so requiring a session would make them unusable. It mutates nothing on this site — it returns a 120-second, single-use, IP-bound HMAC that only the downloader service accepts, and that service burns the jti on first use and enforces its own per-IP quotas and spend cap. Abusing this endpoint yields a stack of tickets that are worthless from any other address. It fails closed with 503 when the secret is unset, and it is Turnstile-gated the moment DOWNLOADER_TURNSTILE_SECRET is configured.",
 };
 
 const MUTATING = ["POST", "PUT", "PATCH", "DELETE"];

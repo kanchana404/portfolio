@@ -100,54 +100,6 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
   },
 
   {
-    slug: "uuid-generator",
-    title: "UUID Generator",
-    metaTitle: "UUID Generator — v4 and v7",
-    description:
-      "Generate UUID v4 or the time-ordered v7 in bulk, using your browser's " +
-      "cryptographic randomness. Also validates and inspects existing UUIDs.",
-    category: "developer",
-    audience: ["developers"],
-    compute: "browser",
-    status: "stable",
-    publishedAt: "2026-08-09",
-    updatedAt: "2026-08-09",
-    keywords: [
-      "uuid generator",
-      "guid generator",
-      "uuid v4",
-      "uuid v7",
-      "generate uuid online",
-    ],
-    intro:
-      "Generates UUID v4 (fully random) or v7 (time-ordered) in bulk, using your " +
-      "browser's cryptographic randomness. Paste an existing UUID and it tells " +
-      "you the version and, for v7, when it was created.",
-    howToUse: [
-      "Pick v4 for a plain random identifier, or v7 if the values will be a database primary key.",
-      "Set how many you need and press generate.",
-      "Copy them all at once with the copy button above the list.",
-      "Paste any UUID into the inspect box below to check it is valid and see its version.",
-      "Press generate again for a fresh batch — nothing is stored, and reloading discards them.",
-    ],
-    faqs: [
-      {
-        q: "Should I use v4 or v7?",
-        a: "v7 for anything that becomes a database primary key: its time-ordered prefix keeps index inserts sequential instead of scattering them. v4 everywhere else, or where the creation time must not be inferable.",
-      },
-      {
-        q: "Can two UUIDs collide?",
-        a: "In practice, no. A v4 UUID has 122 random bits, so you would need to generate billions per second for decades before a collision became likely.",
-      },
-      {
-        q: "Does v7 leak when a record was created?",
-        a: "Yes — the first 48 bits are a millisecond timestamp, by design. That is what makes it sort well, and a reason not to use it for anything a user should not be able to date.",
-      },
-    ],
-    related: ["password-generator", "hash-generator", "unix-timestamp-converter"],
-  },
-
-  {
     slug: "hash-generator",
     title: "SHA Hash Generator",
     metaTitle: "SHA-256 Hash Generator",
@@ -192,7 +144,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
         a: "No. Hashing uses the browser's built-in Web Crypto API and happens on your device. You can verify it with the network tab open.",
       },
     ],
-    related: ["password-generator", "base64-encoder-decoder", "uuid-generator"],
+    related: ["password-generator", "base64-encoder-decoder"],
   },
 
   {
@@ -244,54 +196,6 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
   },
 
   {
-    slug: "unix-timestamp-converter",
-    title: "Unix Timestamp Converter",
-    metaTitle: "Unix Timestamp Converter",
-    description:
-      "Convert a Unix timestamp to a readable date and back, in seconds or " +
-      "milliseconds, with UTC and local time shown side by side.",
-    category: "developer",
-    audience: ["developers"],
-    compute: "browser",
-    status: "stable",
-    publishedAt: "2026-08-09",
-    updatedAt: "2026-08-09",
-    keywords: [
-      "unix timestamp converter",
-      "epoch converter",
-      "timestamp to date",
-      "date to timestamp",
-      "epoch time",
-    ],
-    intro:
-      "Converts a Unix timestamp to a readable date and back. Seconds and " +
-      "milliseconds are detected automatically, and UTC and your local time are " +
-      "shown side by side so the offset is never a guess.",
-    howToUse: [
-      "Paste a timestamp to get the date, or switch direction to go the other way.",
-      "Leave the unit on automatic — ten digits is seconds, thirteen is milliseconds.",
-      "Override the unit only if your value is unusual, such as a historical date stored in seconds.",
-      "Read both the UTC and local rows: they are the same instant shown in two zones and can differ by a day.",
-      "Use the relative description underneath as a sanity check that you converted the right value.",
-    ],
-    faqs: [
-      {
-        q: "How do I tell whether a timestamp is in seconds or milliseconds?",
-        a: "By size. A present-day timestamp in seconds has ten digits; in milliseconds it has thirteen. This page detects it automatically and lets you override the choice.",
-      },
-      {
-        q: "Why does local time differ from UTC by a day?",
-        a: "They are the same instant rendered in different zones. An event at 22:13 UTC has already happened on the following day in Sri Lanka, which is five and a half hours ahead. Both readings are correct.",
-      },
-      {
-        q: "What is the year 2038 problem?",
-        a: "Timestamps stored as signed 32-bit integers run out of range on 19 January 2038 and wrap to a negative number, placing the date in 1901. Storing time in 64 bits avoids it entirely.",
-      },
-    ],
-    related: ["uuid-generator", "jwt-decoder", "json-formatter"],
-  },
-
-  {
     slug: "jwt-decoder",
     title: "JWT Decoder",
     metaTitle: "JWT Decoder and Claims Viewer",
@@ -337,7 +241,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
         a: "No. It is base64url-encoded, which is an encoding rather than encryption and is trivially reversible. Never put anything confidential in a JWT payload.",
       },
     ],
-    related: ["base64-encoder-decoder", "hash-generator", "unix-timestamp-converter"],
+    related: ["base64-encoder-decoder", "hash-generator"],
   },
 
   {
@@ -385,7 +289,7 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
         a: "Modern guidance says no, not on a schedule. NIST recommends changing a password only on evidence of compromise, because forced rotation pushes people towards small predictable edits.",
       },
     ],
-    related: ["hash-generator", "uuid-generator", "jwt-decoder"],
+    related: ["hash-generator", "jwt-decoder"],
   },
 
   {

@@ -47,56 +47,7 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
         a: "It is a marketing label for ultrawide displays rather than a precise ratio. Common ultrawide resolutions such as 2560×1080 and 3440×1440 work out to roughly 2.37:1 and 2.39:1.",
       },
     ],
-    related: ["percentage-calculator", "color-converter"],
+    related: ["percentage-calculator"],
   },
 
-  {
-    slug: "color-converter",
-    title: "Color Converter and Contrast Checker",
-    metaTitle: "Color Converter and Contrast",
-    description:
-      "Convert a color between HEX, RGB, HSL and OKLCH, and check its WCAG " +
-      "contrast ratio against any background. Everything runs in your browser.",
-    category: "image",
-    audience: ["designers", "developers"],
-    compute: "browser",
-    status: "stable",
-    publishedAt: "2026-08-09",
-    updatedAt: "2026-08-09",
-    keywords: [
-      "color converter",
-      "hex to rgb",
-      "rgb to hex",
-      "hsl converter",
-      "oklch converter",
-      "contrast checker",
-      "wcag contrast ratio",
-    ],
-    intro:
-      "Type a color in any notation — hex, a CSS name, rgb, hsl or oklch — and " +
-      "get every other format back, plus its WCAG contrast ratio against a " +
-      "background you choose and a perceptually even tint scale.",
-    howToUse: [
-      "Type or paste a color into the first box. Hex works with or without the leading hash.",
-      "Copy whichever format you need from the list — hex, rgb, hsl or oklch.",
-      "Set the second box to the background the color will sit on to get the contrast ratio.",
-      "Check the badges: AA needs 4.5:1 for body text and 3:1 for large text or UI elements.",
-      "Use the tint scale at the bottom as a starting palette — it steps through OKLCH, so the shades read evenly.",
-    ],
-    faqs: [
-      {
-        q: "What contrast ratio do I need to pass WCAG?",
-        a: "4.5:1 for body text and 3:1 for large text at level AA, where large means 18.66px bold or 24px regular and above. Level AAA raises those to 7:1 and 4.5:1.",
-      },
-      {
-        q: "What is OKLCH and why use it over HSL?",
-        a: "It is perceptually uniform, meaning equal numeric steps look like equal visual steps. HSL does not have that property, which is why palettes made by stepping HSL lightness look uneven through the middle.",
-      },
-      {
-        q: "Why does the contrast ratio ignore transparency?",
-        a: "Because a translucent color does not have one. What it contrasts against depends on whatever sits behind it, and a confident wrong answer is worse than none.",
-      },
-    ],
-    related: ["aspect-ratio-calculator", "percentage-calculator"],
-  },
 ];
