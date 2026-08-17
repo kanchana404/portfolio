@@ -4,11 +4,7 @@
       "staticDistDir": null,
       "startServerCommand": "pnpm start --port 3200",
       "startServerReadyPattern": "Ready in",
-      "url": [
-        "http://127.0.0.1:3200/tools",
-        "http://127.0.0.1:3200/tools/percentage-calculator",
-        "http://127.0.0.1:3200/tools/color-converter"
-      ],
+      "_url": "Injected by scripts/lighthouse-config.ts from the registry. Do not add URLs here — run `pnpm lighthouse` and audit lighthouserc.generated.json instead. A slug hardcoded in this file becomes a 404 the day its tool is retired, and a 404 still scores, so the run fails on SEO with no clue why.",
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",

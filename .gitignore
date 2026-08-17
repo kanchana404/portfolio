@@ -45,6 +45,8 @@ temp_interactive_push.bat
 /blob-report
 /playwright/.cache
 .lighthouseci
+# Generated from the registry by scripts/lighthouse-config.ts on every run.
+lighthouserc.generated.json
 
 # Python virtualenvs (services/downloader)
 .venv/

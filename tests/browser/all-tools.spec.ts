@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { publicTools } from "../../src/lib/tools/registry";
+import {
+  MIN_TOOLS_FOR_INDEXABLE_CATEGORY,
+  activeCategories,
+  getToolsByCategory,
+  publicTools,
+} from "../../src/lib/tools/registry";
 
 /**
  * Guarantees that must hold for **every** tool, driven off the registry itself.
@@ -188,18 +193,44 @@ test.describe("the hub and categories", () => {
     expect(await page.locator("a[href]").count()).toBeLessThan(60);
   });
 
+  // Both category cases are *derived*, never named.
+  //
+  // These used to read `/tools/category/developer` and `/tools/category/image`
+  // with a comment asserting "six developer tools". That made the thinnest
+  // category's last tool undeletable: remove it and `activeCategories()` drops
+  // the category, the route 404s, `meta[name=robots]` is null, and the failure
+  // reads as a robots bug rather than "you deleted the tool that was holding
+  // this test up". Which category is thin is a fact about the registry, so the
+  // registry is asked.
+  const categories = activeCategories();
+  const fat = categories.find(
+    (c) => getToolsByCategory(c).length >= MIN_TOOLS_FOR_INDEXABLE_CATEGORY
+  );
+  const thin = categories.find(
+    (c) => getToolsByCategory(c).length < MIN_TOOLS_FOR_INDEXABLE_CATEGORY
+  );
+
   test("a category with enough tools is indexable", async ({ page }) => {
-    await page.goto("/tools/category/developer");
+    test.skip(
+      !fat,
+      `no active category holds ${MIN_TOOLS_FOR_INDEXABLE_CATEGORY}+ tools`
+    );
+
+    await page.goto(`/tools/category/${fat}`);
     const robots = await page.locator('meta[name="robots"]').getAttribute("content");
-    // Six developer tools is above the thin-page threshold of three.
-    expect(robots).toContain("index");
-    expect(robots).not.toContain("noindex");
+    expect(robots, `/tools/category/${fat} robots meta`).toContain("index");
+    expect(robots, `/tools/category/${fat} robots meta`).not.toContain("noindex");
   });
 
   test("a category below the threshold is not indexable", async ({ page }) => {
-    await page.goto("/tools/category/image");
+    test.skip(
+      !thin,
+      `every active category holds ${MIN_TOOLS_FOR_INDEXABLE_CATEGORY}+ tools`
+    );
+
+    await page.goto(`/tools/category/${thin}`);
     const robots = await page.locator('meta[name="robots"]').getAttribute("content");
-    expect(robots).toContain("noindex");
-    expect(robots).toContain("follow");
+    expect(robots, `/tools/category/${thin} robots meta`).toContain("noindex");
+    expect(robots, `/tools/category/${thin} robots meta`).toContain("follow");
   });
 });

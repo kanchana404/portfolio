@@ -135,7 +135,11 @@ jobs:
       # Lighthouse simulates a throttled connection, which is the only condition
       # under which the hydration-gap class of shift is visible at all. See
       # docs/adr/0003 for the regression this exists to catch.
-      - run: pnpm dlx @lhci/cli@0.14.x autorun --config=lighthouserc.json
+      # The URL list is generated from the registry rather than checked in, so
+      # retiring a tool cannot point the audit at a 404. See
+      # scripts/lighthouse-config.ts.
+      - run: pnpm lighthouse:config
+      - run: pnpm dlx @lhci/cli@0.14.x autorun --config=lighthouserc.generated.json
 
       - uses: actions/upload-artifact@v4
         if: failure()

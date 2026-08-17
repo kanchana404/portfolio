@@ -45,20 +45,38 @@ describe("nothing on the client side of the tool boundary may import the heavy U
   // someone is copying an existing widget and has not finished cleaning it up.
   const widgetDir = "src/components/tools/widgets";
 
-  const modules = [
-    // The client boundary itself. If this ever imports widget-frame.tsx for its
-    // skeleton, tailwind-merge crosses into every tool page at once.
+  // The client boundary itself. If tool-widget.tsx ever imports widget-frame.tsx
+  // for its skeleton, tailwind-merge crosses into every tool page at once.
+  const SHARED = [
     "src/components/tools/tool-widget.tsx",
     "src/components/tools/ui.tsx",
     "src/components/tools/copy-button.tsx",
-    ...readdirSync(join(root, widgetDir))
-      .filter((f) => f.endsWith(".tsx"))
-      .map((f) => `${widgetDir}/${f}`),
   ];
 
+  const widgetFiles = readdirSync(join(root, widgetDir))
+    .filter((f) => f.endsWith(".tsx"))
+    .map((f) => `${widgetDir}/${f}`);
+
+  const modules = [...SHARED, ...widgetFiles];
+
+  /**
+   * What this guards is a *silent empty scan*: a renamed directory or a typo in
+   * `widgetDir` makes `readdirSync` return nothing, every `it.each` below
+   * vanishes, and the suite reports green while checking no widget at all.
+   *
+   * It asserted `>= 20` for that, which is a headcount rather than an invariant.
+   * Twenty was one above the number of files that happened to exist, so deleting
+   * any two widgets failed a test about Radix imports — the count outlived the
+   * catalogue it was describing. The real invariant is "the scan found the
+   * shared modules and at least one widget", and it does not need maintaining
+   * when a tool is added or retired.
+   */
   it("finds every widget module to check", () => {
-    // 17 widgets plus the three shared client modules above.
-    expect(modules.length).toBeGreaterThanOrEqual(20);
+    expect(SHARED.every((m) => modules.includes(m))).toBe(true);
+    expect(
+      widgetFiles.length,
+      `no .tsx files under ${widgetDir} — the scan is checking nothing`
+    ).toBeGreaterThan(0);
   });
 
   /**
