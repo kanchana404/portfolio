@@ -1,4 +1,12 @@
 import Link from "next/link";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { SITE_AVATAR_96, SITE_CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
 import { toolJsonLd } from "@/lib/tools/jsonld";
 import { getTool } from "@/lib/tools/registry";
@@ -74,32 +82,38 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
         Skip to the tool
       </a>
 
-      {/* 1 — Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <li>
-            <Link href="/" className="hover:text-foreground">
-              Home
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li>
-            <Link href="/tools" className="hover:text-foreground">
-              Tools
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li>
-            <Link href={categoryHref} className="hover:text-foreground">
-              {CATEGORY_LABELS[tool.category]}
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li aria-current="page" className="text-foreground">
-            {tool.title}
-          </li>
-        </ol>
-      </nav>
+      {/*
+        1 — Breadcrumb.
+
+        shadcn/ui, wrapping `next/link` through `asChild` so client-side
+        navigation is kept. It is presentational and this file is a Server
+        Component, so it adds no client JavaScript.
+      */}
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList className="text-xs">
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/">Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/tools">Tools</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href={categoryHref}>{CATEGORY_LABELS[tool.category]}</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{tool.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       <main id="main-content">
         {/* 2 — H1, the exact target keyword */}

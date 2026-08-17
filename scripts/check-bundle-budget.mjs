@@ -123,6 +123,17 @@ const FORBIDDEN_IN_TOOL_ROUTES = [
   "gifenc",
   "omggif",
   "heic-to",
+  // The docstring above has always claimed this was here. It was not — only
+  // `src/components/tools/ui.test.ts` caught it, and that reads import
+  // specifiers in the widgets directory, so it cannot see the library arriving
+  // through any other path.
+  //
+  // It matters more now that `tool-shell.tsx` uses shadcn/ui. That is safe
+  // because the shell is a Server Component and `cn()` runs at render, never
+  // reaching the browser — but the same import inside a *widget* would put
+  // ~21 kB on every tool page at once, and nothing measured the built output
+  // to prove which of the two had happened. Now something does.
+  "tailwind-merge",
 ];
 
 /**
