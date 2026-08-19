@@ -11,12 +11,18 @@ ARG PYTHON_VERSION=3.12-slim-bookworm
 # ---------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION} AS builder
 
-# rawpy publishes manylinux wheels, so LibRaw is not compiled here — but the
-# headers are still needed if pip ever falls back to a source build on an
-# architecture without one. Cheap insurance against a silent arch change.
-RUN apt-get update \
- && apt-get install --no-install-recommends -y build-essential libraw-dev \
- && rm -rf /var/lib/apt/lists/*
+# No apt in the builder, deliberately.
+#
+# This stage used to install build-essential and libraw-dev as insurance against
+# a source build. It was not cheap insurance: it was the line that failed the
+# first deploy, and it was insuring against nothing. Checked against PyPI, every
+# dependency here resolves to a prebuilt cp312 manylinux wheel except pyvips,
+# which ships an sdist that is pure Python in ABI mode and needs no compiler
+# either. rawpy bundles LibRaw inside its wheel, so those headers were never
+# read.
+#
+# If a dependency ever does need to compile, build-essential goes back here with
+# the package that needed it named alongside it.
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 RUN python -m venv /opt/venv
