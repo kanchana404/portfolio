@@ -153,4 +153,108 @@ export const TEXT_TOOLS: readonly ToolDef[] = [
     ],
     related: ["word-counter", "case-converter", "json-formatter"],
   },
+
+  {
+    slug: "lorem-ipsum-generator",
+    title: "Lorem Ipsum Generator",
+    metaTitle: "Lorem Ipsum Generator",
+    description:
+      "Generate placeholder text by paragraph, sentence or exact word count. " +
+      "Every run differs, so a layout gets tested against more than one shape.",
+    category: "text",
+    audience: ["designers", "developers", "general"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "lorem ipsum generator",
+      "placeholder text",
+      "dummy text generator",
+      "lorem ipsum paragraphs",
+      "filler text",
+    ],
+    intro:
+      "Pick paragraphs, sentences or a word count and copy the result. The text " +
+      "is assembled from the original Cicero vocabulary rather than pasted from " +
+      "a fixed block, so press Shuffle and the shape changes.",
+    howToUse: [
+      "Choose paragraphs, sentences or words.",
+      "Set how many. Words gives you that count exactly, which is what a field limit needs.",
+      "Leave Start with Lorem ipsum on so the block reads as placeholder at a glance.",
+      "Press Shuffle for a different set at the same size.",
+      "Copy it out with the button.",
+    ],
+    faqs: [
+      {
+        q: "Where does lorem ipsum come from?",
+        a: "It is a corrupted extract from Cicero's De finibus, written in 45 BC. That is why it scans like Latin without quite being it, and why it has been used as placeholder since the 1500s.",
+      },
+      {
+        q: "Why does the text change every time?",
+        a: "Because a fixed block only ever tests one shape. Varying sentence and paragraph length is how a layout meets a long word or a short line before a real user does.",
+      },
+      {
+        q: "Can I get an exact word count?",
+        a: "Yes. Choose Words and the output is exactly that many, which is what you need when checking a character or word limit on a field.",
+      },
+      {
+        q: "Should I ship lorem ipsum to a real page?",
+        a: "No. It hides how real copy will fit, and it has a habit of surviving into production. It is for the stage before the words exist, not a substitute for them.",
+      },
+    ],
+    related: ["word-counter", "case-converter"],
+  },
+
+  {
+    slug: "line-cleaner",
+    title: "Remove Duplicate Lines",
+    metaTitle: "Remove Duplicate Lines and Sort",
+    description:
+      "Deduplicate, sort, trim and strip blank lines from a list, in the order " +
+      "that gives the answer you meant rather than the order you ticked them.",
+    category: "text",
+    audience: ["developers", "general"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "remove duplicate lines",
+      "sort lines online",
+      "deduplicate list",
+      "remove blank lines",
+      "text line tools",
+    ],
+    intro:
+      "Paste a list and clean it up. Trailing spaces are removed before " +
+      "duplicates are matched, so entries that differ only by whitespace " +
+      "collapse the way you would expect them to.",
+    howToUse: [
+      "Paste your lines into the box.",
+      "Turn on the operations you want. They apply as you type.",
+      "Sorting is separate from reversing, so you can sort then flip.",
+      "The counts tell you how many lines went in, came out and were dropped.",
+      "Copy the result out with the button.",
+    ],
+    faqs: [
+      {
+        q: "Why do my duplicates not collapse elsewhere?",
+        a: "Because trailing spaces are usually matched too. Entry and entry-with-a-space are different strings. This page trims before comparing, which is almost always what was meant.",
+      },
+      {
+        q: "Does it handle files from Windows?",
+        a: "Yes. Windows line endings carry a carriage return as well as a newline, and tools that split on the newline alone leave it attached, after which no two lines ever match.",
+      },
+      {
+        q: "Why does item10 come after item2?",
+        a: "Because sorting is numeric-aware. A plain character sort puts item10 before item2, since the character 1 sorts before 2, which is almost never what a person means by sorted.",
+      },
+      {
+        q: "Which line survives deduplication?",
+        a: "The first one. Later copies are dropped, so the original order of what remains is preserved unless you also sort.",
+      },
+    ],
+    related: ["case-converter", "word-counter"],
+  },
 ];

@@ -34,6 +34,9 @@ export const WIDGET_SLUGS = [
   "uuid-generator",
   "timestamp-converter",
   "cron-explainer",
+  "number-base-converter",
+  "lorem-ipsum-generator",
+  "line-cleaner",
   // Served by the shared image-converter widget; see
   // `@/lib/tools/image/spec` for what each one converts.
   "image-converter",

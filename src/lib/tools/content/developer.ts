@@ -510,4 +510,61 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     ],
     related: ["timestamp-converter", "uuid-generator"],
   },
+
+  {
+    slug: "number-base-converter",
+    title: "Number Base Converter",
+    metaTitle: "Hex, Binary and Decimal Converter",
+    description:
+      "Convert a whole number between binary, octal, decimal and hexadecimal " +
+      "at once, exactly, with no precision loss on values past 2 to the 53rd.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "hex to decimal",
+      "decimal to binary",
+      "binary converter",
+      "number base converter",
+      "hex converter",
+      "binary to hex",
+    ],
+    intro:
+      "Type a number, say which base it is in, and see it in all four at once. " +
+      "Values are held as arbitrary-precision integers, so a 64-bit mask or a " +
+      "memory address converts exactly rather than approximately.",
+    howToUse: [
+      "Type or paste the number.",
+      "Pick the base it is written in. Prefixes like 0x, 0b and 0o are understood.",
+      "Read the other three straight off. Underscores and spaces in the input are ignored.",
+      "Binary and hex are grouped in fours so long values stay readable.",
+      "The bit width is shown too, which is usually what a mask question is really asking.",
+    ],
+    faqs: [
+      {
+        q: "Why not just use parseInt?",
+        a: "Because parseInt stops at the first character it cannot read and returns what it had. parseInt of 12xyz is 12, so a typo becomes a plausible answer instead of an error.",
+      },
+      {
+        q: "Does it stay exact for large numbers?",
+        a: "Yes. Everything is held as a BigInt, which is exact at any width. A plain JavaScript number loses precision above 2 to the 53rd, which is well inside the range of a 64-bit value.",
+      },
+      {
+        q: "Can I paste 0xFF or 0b1010?",
+        a: "Yes, when the prefix matches the base you selected. Spaces and underscores are stripped too, so a grouped value copied from source can go straight in.",
+      },
+      {
+        q: "What does bit width mean here?",
+        a: "The number of bits needed to hold the value, ignoring sign. 255 is 8 bits and 256 is 9, which is the answer when you are checking whether something fits in a byte.",
+      },
+      {
+        q: "Are negative numbers supported?",
+        a: "Yes, as a leading minus sign. Two-complement representation at a fixed width is a different question and depends on the width you have in mind, so it is not shown.",
+      },
+    ],
+    related: ["hash-generator", "base64-encoder-decoder"],
+  },
 ];
