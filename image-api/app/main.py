@@ -1,4 +1,4 @@
-"""A decoder, and nothing else.
+"""What the browser cannot do on its own.
 
 The browser already converts between twelve formats perfectly well and encodes
 all of them itself. What it cannot do is *read* an iPhone HEIC or a camera RAW,
@@ -12,10 +12,16 @@ a PNG it can.** The tab then runs its existing pipeline on that PNG, which means
 HEIC and RAW immediately gain all twelve output formats, quality settings and
 batch handling without a single line of that logic being duplicated here.
 
+PDF is the second thing, and it is a different shape. `/v1/decode` answers
+"give me pixels" and returns one image; a document's useful questions are how
+many pages it has, what its text says, and what one page looks like. Those get
+their own endpoints under `/v1/pdf` rather than being forced through an
+interface built for a single image. See `app/pdf.py`.
+
 Nothing is stored. Not "deleted promptly" — never written. The upload is read
-into memory, decoded from that buffer, and the PNG is returned in the response
-body; no temporary file exists to leak, to forget to clean up, or to be read by
-the next request. A crash mid-request takes the bytes with it.
+into memory, worked on from that buffer, and the result is returned in the
+response body; no temporary file exists to leak, to forget to clean up, or to be
+read by the next request. A crash mid-request takes the bytes with it.
 """
 
 from __future__ import annotations
@@ -30,6 +36,13 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from app.pdf import (
+    MAX_PAGES,
+    PdfError,
+    extract_text,
+    inspect as inspect_pdf,
+    render_page,
+)
 from app.sniff import (
     MAX_PIXELS,
     MAX_UPLOAD_BYTES,
@@ -226,4 +239,114 @@ async def decode(file: UploadFile = File(...)) -> Response:
             "Cache-Control": "no-store",
             "X-Content-Type-Options": "nosniff",
         },
+    )
+
+
+# --------------------------------------------------------------------------- #
+# PDF
+# --------------------------------------------------------------------------- #
+#
+# Separate from /v1/decode deliberately. That endpoint answers "the browser
+# cannot read this, give me pixels", and returns one image. A PDF is a document:
+# the useful questions are how many pages it has, what its text says, and what
+# one page looks like, and answering those with an image of page one would be
+# the wrong shape.
+
+
+@app.post("/v1/pdf/text")
+async def pdf_text(file: UploadFile = File(...)) -> Response:
+    """Per-page text, plus whether there was any text at all.
+
+    The boolean matters more than it looks. A scanned PDF is images of paper
+    with no text layer, and extraction returns empty strings for every page. A
+    tool that reports that as success sends someone looking for a bug in their
+    own file, so the caller is told the difference explicitly.
+    """
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        return JSONResponse(
+            {"error": f"Files are limited to {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."},
+            status_code=413,
+        )
+    if not data:
+        return JSONResponse({"error": "No file was received."}, status_code=400)
+
+    try:
+        pages, any_text = await asyncio.wait_for(
+            asyncio.to_thread(extract_text, data), timeout=DECODE_TIMEOUT_S
+        )
+    except PdfError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=415)
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            {"error": "Reading this PDF took too long and was stopped."}, status_code=504
+        )
+    except Exception:
+        log.exception("pdf text extraction failed")
+        return JSONResponse({"error": "This PDF could not be read."}, status_code=500)
+
+    return JSONResponse(
+        {
+            "pages": pages,
+            "pageCount": len(pages),
+            "hasText": any_text,
+            # Said here rather than inferred by the caller, so every client gets
+            # the same explanation for the same situation.
+            "note": None
+            if any_text
+            else "No text layer found. This looks like a scan, so the pages are images of paper rather than characters.",
+        },
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/v1/pdf/info")
+async def pdf_info(file: UploadFile = File(...)) -> Response:
+    """Page count and whether it can be read, without rendering anything."""
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        return JSONResponse({"error": "No file was received."}, status_code=400)
+    try:
+        info = await asyncio.to_thread(inspect_pdf, data)
+    except PdfError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=415)
+    except Exception:
+        log.exception("pdf inspect failed")
+        return JSONResponse({"error": "This PDF could not be read."}, status_code=500)
+    return JSONResponse(
+        {"pageCount": info.pages, "maxPages": MAX_PAGES},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/v1/pdf/render")
+async def pdf_render(page: int = 1, file: UploadFile = File(...)) -> Response:
+    """One page as a PNG. `page` is one-based, as printed on the page itself."""
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        return JSONResponse(
+            {"error": f"Files are limited to {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."},
+            status_code=413,
+        )
+    if not data:
+        return JSONResponse({"error": "No file was received."}, status_code=400)
+
+    try:
+        png = await asyncio.wait_for(
+            asyncio.to_thread(render_page, data, page - 1), timeout=DECODE_TIMEOUT_S
+        )
+    except PdfError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=415)
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            {"error": "Rendering took too long and was stopped."}, status_code=504
+        )
+    except Exception:
+        log.exception("pdf render failed")
+        return JSONResponse({"error": "That page could not be rendered."}, status_code=500)
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )

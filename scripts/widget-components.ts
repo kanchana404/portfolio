@@ -15,6 +15,34 @@ export interface WidgetComponent {
 }
 
 export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
+  "chmod-calculator": {
+    "name": "ChmodCalculator",
+    "from": "@/components/tools/widgets/chmod-calculator"
+  },
+  "regex-tester": {
+    "name": "RegexTester",
+    "from": "@/components/tools/widgets/regex-tester"
+  },
+  "html-entity-converter": {
+    "name": "EntityConverter",
+    "from": "@/components/tools/widgets/entity-converter"
+  },
+  "pdf-to-text": {
+    "name": "PdfToText",
+    "from": "@/components/tools/widgets/pdf-to-text"
+  },
+  "pdf-to-images": {
+    "name": "PdfToImages",
+    "from": "@/components/tools/widgets/pdf-to-images"
+  },
+  "image-resizer": {
+    "name": "ImageResizer",
+    "from": "@/components/tools/widgets/image-resizer"
+  },
+  "qr-code-generator": {
+    "name": "QrGenerator",
+    "from": "@/components/tools/widgets/qr-generator"
+  },
   "percentage-calculator": {
     "name": "PercentageCalculator",
     "from": "@/components/tools/widgets/percentage-calculator"

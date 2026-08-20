@@ -567,4 +567,168 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     ],
     related: ["hash-generator", "base64-encoder-decoder"],
   },
+
+  {
+    slug: "regex-tester",
+    title: "Regex Tester",
+    metaTitle: "Regex Tester and Debugger",
+    description:
+      "Test a regular expression against your own text and see every match, " +
+      "its position and its capture groups, with runaway patterns stopped.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "regex tester",
+      "regular expression tester",
+      "regex debugger",
+      "test regex online",
+      "javascript regex",
+    ],
+    intro:
+      "Type a pattern and some text and the matches appear as you go, with " +
+      "their positions and capture groups. Patterns that run away are cut off " +
+      "after a second rather than freezing the page.",
+    howToUse: [
+      "Enter the pattern without slashes. Flags are the buttons underneath.",
+      "Type or paste the text to match against.",
+      "Matches show their start position and every capture group.",
+      "Named groups are shown by name where you used them.",
+      "A pattern that nests one quantifier inside another gets a warning. Take it seriously.",
+    ],
+    faqs: [
+      {
+        q: "Why did my pattern get stopped?",
+        a: "It hit catastrophic backtracking. Some patterns take exponential time on input that nearly matches, so matching runs on a separate thread that is killed after a second.",
+      },
+      {
+        q: "What is catastrophic backtracking?",
+        a: "A pattern like an open bracket a plus close bracket plus explores every way to split the input. Thirty characters can mean billions of attempts, and a real server hitting that stops answering.",
+      },
+      {
+        q: "Which flavour of regex is this?",
+        a: "JavaScript's own, because it runs in your browser. Lookbehind, named groups and unicode escapes all work. Recursive patterns, which PCRE has, do not exist here.",
+      },
+      {
+        q: "Do I include the slashes?",
+        a: "No. Type the pattern alone and pick flags with the buttons. Pasting slashes makes them part of the pattern, which is a common reason nothing matches.",
+      },
+      {
+        q: "Is my text sent anywhere?",
+        a: "No. Both the pattern and the text stay in your browser, which is also why a runaway pattern can only affect your own tab.",
+      },
+    ],
+    related: ["text-diff-checker", "json-formatter"],
+  },
+
+  {
+    slug: "html-entity-converter",
+    title: "HTML Entity Encoder",
+    metaTitle: "HTML Entity Encoder and Decoder",
+    description:
+      "Escape text for safe use in HTML, or turn entities back into readable " +
+      "characters, with the five characters that actually matter explained.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "html entity encoder",
+      "html escape",
+      "entity decoder",
+      "escape html characters",
+      "html special characters",
+    ],
+    intro:
+      "Paste text to escape it for HTML, or paste entities to read them back. " +
+      "The table underneath lists the five characters that must be escaped and " +
+      "what each one breaks if it is not.",
+    howToUse: [
+      "Pick a direction: text to entities, or entities back to text.",
+      "Paste your input. The output updates as you type.",
+      "Copy the result with the button.",
+      "Decoding understands named, decimal and hex references.",
+      "Check the table if you are unsure which characters need escaping.",
+    ],
+    faqs: [
+      {
+        q: "Which characters must I escape?",
+        a: "Five: ampersand, less than, greater than, and both quote characters. Guides listing only the first three are describing text between tags, and that advice breaks inside an attribute.",
+      },
+      {
+        q: "Why must the ampersand be escaped first?",
+        a: "Because it starts every entity. Escaping it last turns the entities you just made into text, so a less-than becomes ampersand-l-t rendered literally instead of a bracket.",
+      },
+      {
+        q: "Does escaping make my page safe from XSS?",
+        a: "It is necessary, not sufficient. Escaping is correct for text and attributes, but a value used in a URL, in JavaScript or in a style needs its own encoding for that context.",
+      },
+      {
+        q: "Why is my apostrophe shown as a number?",
+        a: "The named form for an apostrophe is not supported everywhere in older HTML, so the numeric form is used instead. Both mean the same character and both are safe.",
+      },
+    ],
+    related: ["url-encoder-decoder", "base64-encoder-decoder"],
+  },
+
+  {
+    slug: "chmod-calculator",
+    title: "Chmod Calculator",
+    metaTitle: "Chmod Permissions Calculator",
+    description:
+      "Convert between octal and symbolic Unix permissions, including setuid, " +
+      "setgid and sticky, with the traps in each one spelled out.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "chmod calculator",
+      "file permissions calculator",
+      "755 permissions",
+      "chmod 644",
+      "unix permissions",
+    ],
+    intro:
+      "Tick the permissions or type the number, and get the other form plus " +
+      "the command to run. It covers the fourth digit most calculators leave " +
+      "out, and says what each special bit actually does.",
+    howToUse: [
+      "Tick the boxes, or type an octal mode into the field.",
+      "Say whether it is a directory. The advice differs, especially for execute.",
+      "Read the command at the bottom and copy it.",
+      "Warnings appear for modes that are dangerous or that quietly do nothing.",
+      "Four-digit modes like 1777 and 4755 are understood in both directions.",
+    ],
+    faqs: [
+      {
+        q: "Why is 777 a bad idea?",
+        a: "It makes the file world-writable, so any account on the machine can replace its contents. It is the most common bad advice in deployment threads, and it fixes a permissions error by removing the permission system.",
+      },
+      {
+        q: "What is the difference between 755 and 644?",
+        a: "The execute bit. 755 is for things that run, including every directory, since a directory needs execute to be entered. 644 is for files that are only read.",
+      },
+      {
+        q: "Why does setuid not work on my script?",
+        a: "Linux ignores setuid on interpreted files on purpose. Honouring it would be a race between reading the shebang and running the interpreter. There is no error, which is why people assume it took effect.",
+      },
+      {
+        q: "What does the sticky bit do?",
+        a: "On a directory it stops one user deleting another user's files, which is what makes /tmp safe at 1777. On a plain file it does nothing at all on Linux.",
+      },
+      {
+        q: "What does a capital S or T mean in ls output?",
+        a: "The special bit is set but execute is not, which is almost always a mistake. Lowercase means both are set. The case is the only thing distinguishing them.",
+      },
+    ],
+    related: ["hash-generator", "number-base-converter"],
+  },
 ];

@@ -4,3 +4,4 @@ python-multipart==0.0.20
 pyvips==2.2.3
 rawpy==0.24.0
 numpy==2.2.1
+pypdf==5.1.0

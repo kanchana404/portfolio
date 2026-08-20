@@ -17,6 +17,13 @@ import PercentageCalculator from "./widgets/percentage-calculator";
 import SubtitleConverter from "./widgets/subtitle-converter";
 import CronExplainer from "./widgets/cron-explainer";
 import DataSizeConverter from "./widgets/data-size-converter";
+import ImageResizer from "./widgets/image-resizer";
+import ChmodCalculator from "./widgets/chmod-calculator";
+import EntityConverter from "./widgets/entity-converter";
+import PdfToImages from "./widgets/pdf-to-images";
+import RegexTester from "./widgets/regex-tester";
+import PdfToText from "./widgets/pdf-to-text";
+import QrGenerator from "./widgets/qr-generator";
 import DateDifference from "./widgets/date-difference";
 import LineCleaner from "./widgets/line-cleaner";
 import LoremGenerator from "./widgets/lorem-generator";
@@ -123,6 +130,15 @@ const TOOL_WIDGETS: Record<Exclude<WidgetSlug, ConversionSlug>, ComponentType> =
   // calculators
   "date-difference": DateDifference,
   "data-size-converter": DataSizeConverter,
+  // image
+  "qr-code-generator": QrGenerator,
+  "image-resizer": ImageResizer,
+  // pdf
+  "pdf-to-text": PdfToText,
+  "pdf-to-images": PdfToImages,
+  "regex-tester": RegexTester,
+  "html-entity-converter": EntityConverter,
+  "chmod-calculator": ChmodCalculator,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {

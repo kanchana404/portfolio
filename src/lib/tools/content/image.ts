@@ -109,4 +109,115 @@ export const IMAGE_TOOLS: readonly ToolDef[] = [
     related: ["aspect-ratio-calculator"],
   },
 
+  {
+    slug: "qr-code-generator",
+    title: "QR Code Generator",
+    metaTitle: "QR Code Generator (SVG)",
+    description:
+      "Turn a link or any text into a QR code and download it as SVG, so it " +
+      "stays sharp at poster size. Nothing is uploaded and no account is needed.",
+    category: "image",
+    audience: ["general", "designers", "developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "qr code generator",
+      "free qr code",
+      "url to qr code",
+      "qr code svg",
+      "make a qr code",
+    ],
+    intro:
+      "Paste a link and take the code away. It is generated in your browser and " +
+      "downloads as SVG rather than a fixed-size image, so the same file works " +
+      "on a business card and on a shop window.",
+    howToUse: [
+      "Paste the URL or text you want encoded.",
+      "Leave error correction on Medium unless you have a reason to change it.",
+      "Check the code with your own phone before printing anything.",
+      "Download the SVG, or copy it straight into your markup.",
+      "For a poster, scale the SVG rather than enlarging a PNG.",
+    ],
+    faqs: [
+      {
+        q: "Which error correction level should I use?",
+        a: "Medium. The levels are how much damage the code can survive, not how good it looks, and higher levels make the grid denser because the redundancy has to go somewhere.",
+      },
+      {
+        q: "Why is my QR code hard to scan?",
+        a: "Usually too much text. Capacity is fixed, so a long URL packs more squares into the same area. Shortening the link helps far more than raising the correction level.",
+      },
+      {
+        q: "Why SVG rather than PNG?",
+        a: "A QR code is squares, so it should be vector. An SVG stays crisp from a business card to a billboard, while a PNG has to be generated at one size and blurs beyond it.",
+      },
+      {
+        q: "Do these codes expire?",
+        a: "No. The link is encoded in the squares themselves, so there is no redirect in the middle and nothing to switch off later. Services that offer editable codes work by pointing at their own domain first.",
+      },
+      {
+        q: "Is my link sent anywhere?",
+        a: "No. The code is generated in your browser, so the page works offline once loaded and nobody records what you encoded.",
+      },
+    ],
+    related: ["image-converter", "url-encoder-decoder"],
+  },
+
+  {
+    slug: "image-resizer",
+    title: "Image Resizer",
+    metaTitle: "Resize Images Without Distortion",
+    description:
+      "Resize photos by longest side, width, height or percent, in batches, " +
+      "with the aspect ratio held automatically and nothing uploaded.",
+    category: "image",
+    audience: ["general", "designers", "developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "image resizer",
+      "resize image online",
+      "bulk image resize",
+      "reduce image size",
+      "resize photo",
+    ],
+    intro:
+      "Set one dimension and the other follows, so nothing stretches. Drop in " +
+      "as many images as you like; they are resized by your own browser and " +
+      "never leave the device.",
+    howToUse: [
+      "Choose what to set: longest side is usually what you want for a batch of mixed orientations.",
+      "Enter the size. Only one dimension is ever set by hand; the other is calculated.",
+      "Add your images. Portrait and landscape can be mixed freely.",
+      "Anything already smaller than the target is left alone unless you allow upscaling.",
+      "Save each result, and check the size saving shown beside it.",
+    ],
+    faqs: [
+      {
+        q: "Why can I not set width and height separately?",
+        a: "Because setting both is what stretches an image, and stretched faces are the one distortion everybody notices. One dimension is yours, the other follows from the original ratio.",
+      },
+      {
+        q: "Why did my image stay the same size?",
+        a: "It was already smaller than the target. Enlarging cannot invent detail; it makes a softer, larger file. Turn on Allow upscaling if you genuinely want that.",
+      },
+      {
+        q: "Will resizing rotate my phone photos?",
+        a: "No. The rotation flag phones write into a photo is read on decode, so a portrait shot stays portrait. Losing that flag is the usual reason a resized photo comes out sideways.",
+      },
+      {
+        q: "Why is my PNG bigger than the JPEG?",
+        a: "PNG is lossless, so a photograph stored as PNG is often larger than the JPEG it came from. PNGs stay PNG here; everything else is written as JPEG at high quality.",
+      },
+      {
+        q: "Is there a file size limit?",
+        a: "Only what your device can hold. The work happens in your browser, so there is no upload, no queue and no account.",
+      },
+    ],
+    related: ["image-converter", "aspect-ratio-calculator"],
+  },
 ];

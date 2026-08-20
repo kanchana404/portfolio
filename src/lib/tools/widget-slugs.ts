@@ -39,6 +39,13 @@ export const WIDGET_SLUGS = [
   "line-cleaner",
   "date-difference",
   "data-size-converter",
+  "qr-code-generator",
+  "image-resizer",
+  "pdf-to-text",
+  "pdf-to-images",
+  "regex-tester",
+  "html-entity-converter",
+  "chmod-calculator",
   // Served by the shared image-converter widget; see
   // `@/lib/tools/image/spec` for what each one converts.
   "image-converter",
