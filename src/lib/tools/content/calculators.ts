@@ -111,4 +111,109 @@ export const CALCULATOR_TOOLS: readonly ToolDef[] = [
     related: ["percentage-calculator"],
   },
 
+  {
+    slug: "date-difference",
+    title: "Date Difference Calculator",
+    metaTitle: "Days Between Two Dates",
+    description:
+      "Count the days, weeks, weekdays and calendar months between two dates, " +
+      "with inclusive and exclusive totals given separately.",
+    category: "calculators",
+    audience: ["general", "developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "days between dates",
+      "date difference calculator",
+      "date duration",
+      "weekdays between dates",
+      "how many days until",
+    ],
+    intro:
+      "Pick two dates and read the gap in every unit at once. Weekends are " +
+      "counted separately from working days, and both the inclusive and the " +
+      "exclusive day count are shown, because those differ by one and both get " +
+      "asked for.",
+    howToUse: [
+      "Set the two dates. Order does not matter; a backwards range is reported as such.",
+      "Days is the plain gap. Days inclusive counts both endpoints, which is what a booking usually means.",
+      "Weekdays skips Saturdays and Sundays.",
+      "The calendar line counts whole months, not thirty-day blocks.",
+      "Everything updates as you change either date.",
+    ],
+    faqs: [
+      {
+        q: "Why do two calculators disagree by a day?",
+        a: "One is counting inclusively and the other is not. Monday to Friday is four days apart and five days inclusive. Both numbers are shown here so you can pick the one your question means.",
+      },
+      {
+        q: "How are months counted?",
+        a: "As whole calendar months, then whatever days remain. Not as thirty-day blocks, which is why 15 January to 18 March is two months and three days rather than two months and two.",
+      },
+      {
+        q: "Is 31 January to 28 February one month?",
+        a: "Here, yes. Adding one month to the 31st clamps to the 28th, so the parts add back to the end date exactly. Strict counting would call it 28 days instead. The day count is 28 either way.",
+      },
+      {
+        q: "Does daylight saving affect the result?",
+        a: "No. Dates are compared at UTC midnight, so a clock change cannot make two days 23 hours apart and round the answer down to zero, which is the usual bug.",
+      },
+    ],
+    related: ["percentage-calculator", "timestamp-converter"],
+  },
+
+  {
+    slug: "data-size-converter",
+    title: "Data Size Converter",
+    metaTitle: "MB to GB Converter (and GiB)",
+    description:
+      "Convert between bytes, kB, MB, GB and their binary counterparts KiB, " +
+      "MiB and GiB, and see why a drive never holds the number on the box.",
+    category: "calculators",
+    audience: ["developers", "general"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "mb to gb",
+      "data size converter",
+      "gb to gib",
+      "bytes to mb",
+      "kb vs kib",
+      "storage size calculator",
+    ],
+    intro:
+      "There are two systems using nearly the same abbreviations: one counts in " +
+      "thousands, the other in 1024s. Enter a size in either and see it in both, " +
+      "along with how far apart they are at that scale.",
+    howToUse: [
+      "Type the size and pick its unit.",
+      "Choose which system that unit belongs to: decimal counts in 1000s, binary in 1024s.",
+      "Read the byte count and both interpretations underneath.",
+      "The percentage line is the gap between the systems at that magnitude.",
+      "Copy any row with the button beside it.",
+    ],
+    faqs: [
+      {
+        q: "Why does my 500 GB drive show 465 GB?",
+        a: "Both numbers are right. The drive holds 500 billion bytes as advertised, then the operating system divides by 1024 three times and still writes GB. The correct label for 465 is GiB.",
+      },
+      {
+        q: "What is the difference between GB and GiB?",
+        a: "A GB is a billion bytes. A GiB is 1024 cubed, or 1,073,741,824. That is 6.87% more, which is exactly the shortfall people notice on storage.",
+      },
+      {
+        q: "Which system should I use?",
+        a: "Decimal for storage and network sizes, which is what vendors quote. Binary for memory, where 1024 is a consequence of how addressing works rather than a convention someone picked.",
+      },
+      {
+        q: "Why do Windows and macOS disagree?",
+        a: "macOS reports decimal, so it agrees with the box. Windows divides by 1024 but keeps the decimal label, which is where the apparent missing space comes from.",
+      },
+    ],
+    related: ["date-difference", "number-base-converter"],
+  },
 ];

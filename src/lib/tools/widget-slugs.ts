@@ -37,6 +37,8 @@ export const WIDGET_SLUGS = [
   "number-base-converter",
   "lorem-ipsum-generator",
   "line-cleaner",
+  "date-difference",
+  "data-size-converter",
   // Served by the shared image-converter widget; see
   // `@/lib/tools/image/spec` for what each one converts.
   "image-converter",

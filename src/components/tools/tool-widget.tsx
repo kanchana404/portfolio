@@ -16,6 +16,8 @@ import PasswordGenerator from "./widgets/password-generator";
 import PercentageCalculator from "./widgets/percentage-calculator";
 import SubtitleConverter from "./widgets/subtitle-converter";
 import CronExplainer from "./widgets/cron-explainer";
+import DataSizeConverter from "./widgets/data-size-converter";
+import DateDifference from "./widgets/date-difference";
 import LineCleaner from "./widgets/line-cleaner";
 import LoremGenerator from "./widgets/lorem-generator";
 import NumberBaseConverter from "./widgets/number-base-converter";
@@ -118,6 +120,9 @@ const TOOL_WIDGETS: Record<Exclude<WidgetSlug, ConversionSlug>, ComponentType> =
   // text
   "lorem-ipsum-generator": LoremGenerator,
   "line-cleaner": LineCleaner,
+  // calculators
+  "date-difference": DateDifference,
+  "data-size-converter": DataSizeConverter,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {
