@@ -118,9 +118,40 @@ export function mintTicket({
  * present because it cannot be spoofed past Cloudflare.
  */
 export function clientIpFrom(headers: Headers): string {
-  const cf = headers.get("cf-connecting-ip")?.trim();
-  if (cf) return cf;
+  // `cf-connecting-ip` is deliberately not consulted.
+  //
+  // It is only the true client address, and only unforgeable, when Cloudflare
+  // is actually in front and has stripped the caller's copy. Neither this
+  // deployment nor the downloader service is behind Cloudflare, so nothing on
+  // the path strips it and it is simply a string the caller chose.
+  //
+  // Reading it was a measured hole rather than a theoretical one. Because both
+  // this route and the service consulted it first, a caller could present one
+  // fabricated address to both, watch them agree, and receive a ticket bound to
+  // a per-IP quota bucket of their own choosing — then increment and repeat, so
+  // the daily caps stopped being caps. Verified against the deployed service on
+  // 2026-08-21: a ticket minted for 198.51.100.7 and presented with
+  // `CF-Connecting-IP: 198.51.100.7` was accepted, while the same attempt
+  // through `x-forwarded-for` was refused.
+  //
+  // If this site is ever put behind Cloudflare, the header becomes trustworthy
+  // again — but only alongside an edge-proof check, the way
+  // `downloader-api/app/security/origin.py` does it. Restoring the old
+  // unconditional read would restore the hole.
 
+  // RIGHTMOST entry, and `client_ip` in app/security/tickets.py now matches.
+  //
+  // The two sides must derive the same address by the same rule or every
+  // request 401s with nothing in the response explaining why. They previously
+  // disagreed — this side took the rightmost, the service took the leftmost —
+  // and agreed in practice only because both platforms replace the header with
+  // a single entry, which makes the two ends of the list the same value.
+  //
+  // Rightmost is the rule that survives being wrong about that. If a platform
+  // ever appends instead of replacing, the leftmost is whatever the caller
+  // claimed and the rightmost is what the platform itself observed; only one of
+  // those is worth binding a quota to. Aligning on the safe one costs nothing
+  // while the lists are one entry long, and costs nothing later either.
   const forwarded = headers.get("x-forwarded-for") ?? "";
   const parts = forwarded
     .split(",")

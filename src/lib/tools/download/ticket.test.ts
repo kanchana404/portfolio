@@ -170,14 +170,37 @@ describe("normalising an address", () => {
 describe("finding the client address", () => {
   const h = (o: Record<string, string>) => new Headers(o);
 
-  it("prefers Cloudflare's header, which cannot be spoofed past Cloudflare", () => {
-    expect(clientIpFrom(h({ "cf-connecting-ip": "1.1.1.1", "x-forwarded-for": "9.9.9.9" })))
-      .toBe("1.1.1.1");
+  it("ignores cf-connecting-ip entirely", () => {
+    // This test asserted the opposite until 2026-08-21, under the name "cannot
+    // be spoofed past Cloudflare". That was true and irrelevant: nothing here is
+    // behind Cloudflare, so the header never goes *past* it — it arrives
+    // straight from the caller with nothing on the path to strip it.
+    //
+    // Believing it meant a caller could hand the same fabricated address to this
+    // route and to the service, watch them agree, and be issued a ticket bound
+    // to a quota bucket of their own choosing. Confirmed against the deployed
+    // service: a ticket minted for 198.51.100.7 and presented with
+    // `CF-Connecting-IP: 198.51.100.7` was accepted.
+    expect(
+      clientIpFrom(h({ "cf-connecting-ip": "1.1.1.1", "x-forwarded-for": "9.9.9.9" }))
+    ).toBe("9.9.9.9");
+  });
+
+  it("cannot be talked into a chosen address by any header it reads", () => {
+    // The whole point: every header a caller can set must not be able to move
+    // the derived address to a value the caller picked.
+    const attacker = "198.51.100.7";
+    expect(clientIpFrom(h({ "cf-connecting-ip": attacker }))).not.toBe(attacker);
+    expect(
+      clientIpFrom(h({ "x-forwarded-for": `${attacker}, 203.0.113.1` }))
+    ).not.toBe(attacker);
   });
 
   it("takes the RIGHTMOST forwarded entry, not the leftmost", () => {
-    // The leftmost is whatever the client claimed. Trusting it would let anyone
-    // choose their own quota bucket.
+    // The leftmost is whatever the client claimed; the rightmost is what the
+    // platform in front observed. `client_ip` in app/security/tickets.py takes
+    // the same end of the list — they disagreed until 2026-08-21 and agreed only
+    // because both platforms happen to send a single entry.
     expect(clientIpFrom(h({ "x-forwarded-for": "10.0.0.1, 203.0.113.9" }))).toBe("203.0.113.9");
   });
 
