@@ -70,7 +70,7 @@ export default function JwtDecoder() {
   const hasToken = token.trim().length > 0;
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ToolLabel htmlFor={`${id}-token`}>Paste a JWT</ToolLabel>

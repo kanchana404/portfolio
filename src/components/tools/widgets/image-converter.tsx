@@ -402,8 +402,8 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
           if (files.length) run(files);
         }}
         className={cx(
-          "rounded-xl border transition-colors",
-          dragging ? "border-foreground/40 bg-muted/40" : "border-border"
+          "rounded-lg border transition-colors",
+          dragging ? "border-foreground/30" : "border-border"
         )}
       >
         {/*
@@ -432,19 +432,30 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
             onToChange={(v) => setTarget(v as ImageFormat)}
           />
 
-          <div className="flex flex-col items-center gap-2 text-center">
+          {/*
+            A real drop target, rather than a sentence claiming the whole panel is
+            one. A dashed hairline that goes solid on dragover states it in the
+            interface instead of in prose, costs no fill and no shadow, and
+            reuses the loading skeleton's own dashed language as a state.
+          */}
+          <div
+            className={cx(
+              "flex w-full flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
+              dragging ? "border-solid border-foreground/30" : "border-border"
+            )}
+          >
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] active:scale-100"
+              className="inline-flex h-9 items-center rounded-md bg-foreground px-3.5 text-sm font-medium text-background ring-offset-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Choose {source ? FORMATS[source].label : "image"} files
             </button>
             <p className="text-sm text-muted-foreground">
-              or drop them anywhere in this box
+              or drop them here
             </p>
             <p className="text-xs text-muted-foreground">
-              Converted on your device · nothing is uploaded · no file limit
+              Converted on your device. Nothing is uploaded, and there is no file limit.
             </p>
           </div>
 
@@ -481,7 +492,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                   <button
                     type="button"
                     onClick={downloadAll}
-                    className="rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+                    className="inline-flex h-7 items-center rounded-sm border px-2.5 text-xs font-medium transition-colors hover:border-foreground/20 hover:bg-muted"
                   >
                     Save all {done.length}
                   </button>
@@ -500,7 +511,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 border-t px-3 py-2"
+                  className="flex min-h-11 items-center gap-3 border-t border-border/60 px-3 py-2 transition-colors hover:bg-muted"
                 >
                   {item.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -519,7 +530,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                     <p className="truncate text-sm">
                       {item.outName ?? item.file.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs tabular-nums text-muted-foreground">
                       {item.status === "error" ? (
                         item.message
                       ) : item.status === "pending" ? (
@@ -536,22 +547,28 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                           returned without being stored.
                         </>
                       ) : (
+                        // One middle dot at most. This chained up to three at
+                        // 12px, which reads as a machine log rather than prose
+                        // and overflowed the row at 375px. The message gets its
+                        // own line below instead of a fourth clause.
                         <>
                           {formatBytes(item.file.size)} →{" "}
                           {formatBytes(item.outBlob?.size ?? 0)}
                           {item.width ? ` · ${item.width}×${item.height}` : ""}
-                          {item.frames ? ` · ${item.frames} frames` : ""}
-                          {item.message ? ` · ${item.message}` : ""}
+                          {item.frames ? `, ${item.frames} frames` : ""}
                         </>
                       )}
                     </p>
+                    {item.status === "done" && item.message ? (
+                      <p className="text-xs text-muted-foreground">{item.message}</p>
+                    ) : null}
                   </div>
 
                   {item.status === "needs-server" ? (
                     <button
                       type="button"
                       onClick={() => convertOnServer(item.id)}
-                      className="shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+                      className="inline-flex h-7 shrink-0 items-center rounded-sm border px-2.5 text-xs font-medium transition-colors hover:border-foreground/20 hover:bg-muted"
                     >
                       Send and convert
                     </button>
@@ -561,7 +578,7 @@ export default function ImageConverter({ from: initialFrom, to }: ConversionSpec
                     <a
                       href={item.url}
                       download={item.outName}
-                      className="shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+                      className="inline-flex h-7 shrink-0 items-center rounded-sm border px-2.5 text-xs font-medium transition-colors hover:border-foreground/20 hover:bg-muted"
                     >
                       Save
                     </a>

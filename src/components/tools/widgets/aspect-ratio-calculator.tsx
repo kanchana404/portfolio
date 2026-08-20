@@ -38,7 +38,7 @@ export default function AspectRatioCalculator() {
   }, [ratioText, knownWidth]);
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="p-4 sm:p-5">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           What ratio is this size?
@@ -73,7 +73,7 @@ export default function AspectRatioCalculator() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
                 <StatTile
                   label="Ratio"
                   value={`${analysis.simplified.w}:${analysis.simplified.h}`}

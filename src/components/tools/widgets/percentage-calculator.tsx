@@ -164,7 +164,7 @@ export default function PercentageCalculator() {
   const bId = `${baseId}-b`;
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       {/*
         A group of toggle buttons, not a radiogroup.
 

@@ -35,7 +35,7 @@ export default function HashGenerator() {
   const value = result?.ok ? (encoding === "hex" ? result.hex : result.base64) : "";
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div role="group" aria-label="Algorithm" className="flex flex-wrap gap-2 border-b p-4 sm:p-5">
         {HASH_ALGORITHMS.map((a) => (
           <button

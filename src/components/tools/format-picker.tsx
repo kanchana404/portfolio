@@ -75,12 +75,13 @@ function Card({
         aria-expanded={interactive ? open : undefined}
         onClick={() => interactive && setOpen((v) => !v)}
         className={cx(
-          "group flex h-24 w-28 flex-col items-center justify-center gap-1 rounded-xl border bg-background transition-all sm:h-28 sm:w-32",
+          "group flex h-24 w-28 flex-col items-center justify-center gap-1 rounded-lg border bg-background transition-[border-color,transform] duration-150 sm:h-28 sm:w-32",
+          "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           interactive
             ? // Border only. DESIGN.md gives cards a hairline and no shadow, and
               // the lift-plus-shadow here was the one place on the tools surface
               // that broke it.
-              "cursor-pointer hover:border-foreground/30"
+              "cursor-pointer hover:border-foreground/20 motion-safe:hover:-translate-y-px"
             : "cursor-default"
         )}
       >
@@ -125,7 +126,7 @@ function Card({
       {interactive && open ? (
         <div
           role="menu"
-          className="absolute left-1/2 z-20 mt-2 w-44 -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-lg"
+          className="absolute left-1/2 z-20 mt-1 w-44 -translate-x-1/2 overflow-hidden rounded-md border bg-background"
         >
           {options.map((option) => (
             <button
@@ -138,7 +139,7 @@ function Card({
                 setOpen(false);
               }}
               className={cx(
-                "block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                "block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2",
                 option.label === label ? "font-medium" : ""
               )}
             >

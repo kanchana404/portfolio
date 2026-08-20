@@ -18,7 +18,7 @@ export default function CaseConverter() {
   );
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="p-4 sm:p-5">
         <ToolLabel htmlFor={id}>Your text</ToolLabel>
         <ToolTextarea

@@ -26,7 +26,7 @@ export default function Base64Converter() {
   const payloadBytes = direction === "decode" ? decodedByteLength(input) : null;
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="flex flex-wrap items-center gap-3 border-b p-4 sm:p-5">
         <div role="group" aria-label="Direction" className="flex gap-2">
           {(

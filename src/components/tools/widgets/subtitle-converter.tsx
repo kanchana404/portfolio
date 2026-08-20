@@ -414,7 +414,7 @@ export default function SubtitleConverter() {
                     spellCheck={false}
                     rows={Math.max(1, cue.text.split("\n").length)}
                     aria-label={`Cue at ${displayTime(cue.start, effectiveTarget)}`}
-                    className="mt-0.5 w-full resize-none bg-transparent text-sm outline-none focus:ring-0"
+                    className="-mx-1 mt-0.5 w-full resize-none rounded-sm bg-transparent px-1 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   />
                 </div>
               ))}
@@ -432,7 +432,7 @@ export default function SubtitleConverter() {
               spellCheck={false}
               rows={8}
               placeholder="Drop a .srt or .vtt file here, or paste its contents."
-              className="w-full resize-y bg-transparent p-3 font-mono text-sm outline-none placeholder:text-muted-foreground"
+              className="w-full resize-y rounded-lg bg-transparent p-3 font-mono text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             />
             {parseError ? (
               <p className="border-t px-3 py-2 text-sm">{parseError}</p>
@@ -506,7 +506,7 @@ export default function SubtitleConverter() {
               <button
                 type="button"
                 onClick={download}
-                className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+                className="inline-flex h-9 items-center rounded-md bg-foreground px-3.5 text-sm font-medium text-background ring-offset-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Download .{effectiveTarget}
               </button>

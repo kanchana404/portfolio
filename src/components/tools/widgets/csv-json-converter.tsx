@@ -63,7 +63,7 @@ export default function CsvJsonConverter() {
   const warnings = toJson ? fromCsv.parsed.warnings : [];
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="flex flex-wrap items-end gap-4 border-b p-4 sm:p-5">
         <div role="group" aria-label="Direction" className="flex gap-2">
           {(

@@ -185,6 +185,13 @@ export function ToolSelect({
 /**
  * A labelled figure in a results grid.
  *
+ * No border and no fill: separation is the grid gap's job now. This used to be
+ * a bordered rounded card, and it is only ever rendered *inside* another
+ * bordered rounded card, so the word counter drew eight hairline boxes inside
+ * one hairline box. That is the literal source of the "uniform grey cards"
+ * complaint, in a system whose cards are hairline-only by design. Do not
+ * reintroduce the border here; widen the gap instead.
+ *
  * `tabular-nums` so digits do not jitter as values change under the reader —
  * the numbers in these tools update on every keystroke.
  */
@@ -198,7 +205,7 @@ export function StatTile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-lg border p-3">
+    <div className="min-w-0">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </p>

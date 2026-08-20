@@ -28,7 +28,7 @@ export default function LoanCalculator() {
   }, [amount, rate, term, termUnit]);
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="grid gap-4 p-4 sm:grid-cols-3 sm:p-5">
         <div>
           <ToolLabel htmlFor={`${id}-amount`}>Amount borrowed</ToolLabel>
@@ -88,7 +88,7 @@ export default function LoanCalculator() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               <StatTile label="Per month" value={money(result.monthlyPayment)} />
               <StatTile label="Total repaid" value={money(result.totalPaid)} />
               <StatTile label="Total interest" value={money(result.totalInterest)} />

@@ -32,7 +32,7 @@ export default function JsonFormatter() {
     result.ok && result.bytesIn > 0 ? result.bytesIn - result.bytesOut : 0;
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="p-4 sm:p-5">
         <ToolLabel htmlFor={id}>JSON</ToolLabel>
         <ToolTextarea

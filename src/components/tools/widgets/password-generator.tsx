@@ -90,7 +90,7 @@ export default function PasswordGenerator() {
   };
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="flex flex-wrap items-center gap-2 border-b p-4 sm:p-5">
         <div role="group" aria-label="Kind of secret" className="flex gap-2">
           {(

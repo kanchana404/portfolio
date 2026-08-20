@@ -47,7 +47,7 @@ export default function TextDiff() {
   const shown = result.lines.slice(0, MAX_RENDERED);
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="grid gap-4 p-4 sm:p-5 md:grid-cols-2">
         <div>
           <ToolLabel htmlFor={`${id}-left`}>Original</ToolLabel>
@@ -94,7 +94,7 @@ export default function TextDiff() {
         </label>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 border-t p-4 sm:p-5" aria-live="polite">
+      <div className="grid grid-cols-3 gap-x-6 gap-y-4 border-t p-4 sm:p-5" aria-live="polite">
         <StatTile label="Added" value={String(result.added)} />
         <StatTile label="Removed" value={String(result.removed)} />
         <StatTile label="Unchanged" value={String(result.unchanged)} />

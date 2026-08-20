@@ -21,7 +21,7 @@ export default function WordCounter() {
   const number = (n: number): string => n.toLocaleString("en-US");
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border">
       <div className="p-4 sm:p-5">
         <ToolLabel htmlFor={id}>Your text</ToolLabel>
         <ToolTextarea
@@ -49,7 +49,7 @@ export default function WordCounter() {
       </div>
 
       <div
-        className="grid grid-cols-2 gap-3 border-t p-4 sm:grid-cols-4 sm:p-5"
+        className="grid grid-cols-2 gap-x-6 gap-y-4 border-t p-4 sm:grid-cols-4 sm:p-5"
         aria-live="polite"
         aria-atomic="true"
       >
