@@ -31,6 +31,9 @@ export const WIDGET_SLUGS = [
   "csv-to-json-converter",
   "aspect-ratio-calculator",
   "srt-to-vtt",
+  "uuid-generator",
+  "timestamp-converter",
+  "cron-explainer",
   // Served by the shared image-converter widget; see
   // `@/lib/tools/image/spec` for what each one converts.
   "image-converter",

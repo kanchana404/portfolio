@@ -339,4 +339,175 @@ export const DEVELOPER_TOOLS: readonly ToolDef[] = [
     ],
     related: ["json-formatter", "text-diff-checker", "base64-encoder-decoder"],
   },
+
+  {
+    slug: "uuid-generator",
+    title: "UUID Generator",
+    metaTitle: "UUID Generator: v4 and v7",
+    description:
+      "Generate UUIDs in your browser, one at a time or five hundred at once. " +
+      "Version 4 for random ids, version 7 for time-ordered database keys.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "uuid generator",
+      "guid generator",
+      "uuid v4",
+      "uuid v7",
+      "random uuid",
+      "bulk uuid generator",
+    ],
+    intro:
+      "Pick a version, pick how many, and copy them out. Every id is generated " +
+      "by your own browser's cryptographic random source, so nothing is fetched " +
+      "and nothing is logged.",
+    howToUse: [
+      "Choose v4 for a plain random id. It is the right default.",
+      "Choose v7 if the id will be a database primary key, so rows sort by creation time.",
+      "Set how many you need, up to 500 in one batch.",
+      "Copy one with the button beside it, or use Copy all for the whole list.",
+      "Press Generate again for a fresh set. Nothing is stored between batches.",
+    ],
+    faqs: [
+      {
+        q: "What is the difference between UUID v4 and v7?",
+        a: "v4 is 122 random bits. v7 replaces the top 48 with a millisecond timestamp, so the ids sort by creation time as plain text while the rest stays random.",
+      },
+      {
+        q: "Why does v7 matter for a database?",
+        a: "A random key lands anywhere in a B-tree index, so inserts write all over it and the pages fragment. A time-ordered key appends instead, which is what the index is built for.",
+      },
+      {
+        q: "When should I not use v7?",
+        a: "Anywhere the id is public and the creation time is not. A v7 id tells anyone holding it when it was made, which is fine for a row and wrong for a password-reset link.",
+      },
+      {
+        q: "Can two of these collide?",
+        a: "Not in practice. v4 has 122 random bits, so you would need billions of ids before a collision becomes worth thinking about. Both versions use crypto.getRandomValues, never Math.random.",
+      },
+      {
+        q: "Are these generated on your server?",
+        a: "No. They come from your browser's own crypto API, in your tab. A server-generated id would be identical for every visitor and cached along the way, which is the opposite of what an id is for.",
+      },
+    ],
+    related: ["hash-generator", "password-generator"],
+  },
+
+  {
+    slug: "timestamp-converter",
+    title: "Unix Timestamp Converter",
+    metaTitle: "Unix Timestamp Converter",
+    description:
+      "Convert a Unix timestamp to a readable date, or a date back to epoch " +
+      "seconds. Reads seconds and milliseconds, and tells you which it assumed.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "unix timestamp converter",
+      "epoch converter",
+      "timestamp to date",
+      "date to timestamp",
+      "epoch time",
+      "milliseconds to date",
+    ],
+    intro:
+      "Paste a timestamp or a date and get every form of it at once: ISO 8601, " +
+      "UTC, your own local time, and how long ago it was. It works out whether " +
+      "your number is seconds or milliseconds, and says which it chose.",
+    howToUse: [
+      "Paste a Unix timestamp, or a date like 2026-08-20T14:30:00Z.",
+      "A whole number is read as a timestamp. Anything else is read as a date.",
+      "If the number could be either unit, the one it used is highlighted. Click the other to switch.",
+      "Press Now to drop in the current timestamp.",
+      "Copy any row with the button beside it.",
+    ],
+    faqs: [
+      {
+        q: "Is my timestamp in seconds or milliseconds?",
+        a: "Ten digits is seconds, thirteen is milliseconds. This page reads anything at or above one hundred billion as milliseconds, and shows you which unit it picked so a wrong guess is visible.",
+      },
+      {
+        q: "Why does my timestamp show 1970?",
+        a: "Milliseconds were read as seconds, or the other way round. A millisecond value divided by a thousand lands close to the epoch. Switch the unit and it will be right.",
+      },
+      {
+        q: "Why is the local time missing for a moment on load?",
+        a: "Your timezone is only known once the page runs in your browser. Guessing it on the server would show one timezone's local time to everybody, so that row waits.",
+      },
+      {
+        q: "Does it handle dates before 1970?",
+        a: "Yes. Those are negative timestamps and are treated as ordinary values, not errors. The moon landing is -14182940 in seconds.",
+      },
+      {
+        q: "Is the date sent anywhere?",
+        a: "No. The conversion is arithmetic on the Date object your browser already has. The page works offline once loaded.",
+      },
+    ],
+    related: ["uuid-generator", "json-formatter"],
+  },
+
+  {
+    slug: "cron-explainer",
+    title: "Cron Expression Explainer",
+    metaTitle: "Cron Expression Explainer",
+    description:
+      "Paste a cron expression and read what it actually does, field by field, " +
+      "with the next five run times in your own timezone.",
+    category: "developer",
+    audience: ["developers"],
+    compute: "browser",
+    status: "stable",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "cron expression",
+      "crontab explainer",
+      "cron schedule",
+      "cron syntax",
+      "next cron run",
+      "cron generator",
+    ],
+    intro:
+      "Cron syntax is five fields and one rule that surprises almost everyone. " +
+      "Paste an expression to see it broken down in plain English, and the next " +
+      "five times it will actually fire.",
+    howToUse: [
+      "Paste your expression, or press one of the examples to start from it.",
+      "Read the sentence at the top. That is what the schedule really does.",
+      "Check the field breakdown if a value looks wrong.",
+      "The next five runs are shown in your own timezone, not the server's.",
+      "Try the OR trap example if you have ever written a day-and-weekday schedule.",
+    ],
+    faqs: [
+      {
+        q: "Does 0 0 13 * 5 mean Friday the 13th?",
+        a: "No, and this catches nearly everyone. When day-of-month and day-of-week are both set, cron ORs them: it runs on the 13th of every month and also on every Friday, about five times more often than intended.",
+      },
+      {
+        q: "What are the five fields?",
+        a: "Minute, hour, day of month, month, day of week, in that order. A star means every value. Some systems add a seconds field at the front, which this page does not read.",
+      },
+      {
+        q: "Is Sunday 0 or 7?",
+        a: "Both. Cron accepts either for Sunday, and real crontabs use both. This page treats 7 as 0 so an expression copied from anywhere behaves the same.",
+      },
+      {
+        q: "What does the slash mean?",
+        a: "A step. Slash-15 in the minute field means every fifteenth minute from the start of the range, so 0, 15, 30 and 45. You can put a step on a range too.",
+      },
+      {
+        q: "Why does my schedule never run?",
+        a: "Usually an impossible date, such as day 30 in February. The page tells you when a schedule can never fire rather than showing an empty list without explanation.",
+      },
+    ],
+    related: ["timestamp-converter", "uuid-generator"],
+  },
 ];

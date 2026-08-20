@@ -15,6 +15,9 @@ import LoanCalculator from "./widgets/loan-calculator";
 import PasswordGenerator from "./widgets/password-generator";
 import PercentageCalculator from "./widgets/percentage-calculator";
 import SubtitleConverter from "./widgets/subtitle-converter";
+import CronExplainer from "./widgets/cron-explainer";
+import TimestampConverter from "./widgets/timestamp-converter";
+import UuidGenerator from "./widgets/uuid-generator";
 import TextDiff from "./widgets/text-diff";
 import UrlEncoder from "./widgets/url-encoder";
 import WordCounter from "./widgets/word-counter";
@@ -104,6 +107,10 @@ const TOOL_WIDGETS: Record<Exclude<WidgetSlug, ConversionSlug>, ComponentType> =
   "aspect-ratio-calculator": AspectRatioCalculator,
   // video
   "srt-to-vtt": SubtitleConverter,
+  // developer
+  "uuid-generator": UuidGenerator,
+  "timestamp-converter": TimestampConverter,
+  "cron-explainer": CronExplainer,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {
