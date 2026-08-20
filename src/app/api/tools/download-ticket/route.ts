@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import {
+  CLEARANCE_COOKIE,
+  clearanceCookieHeader,
+  clearanceValid,
+  mintClearance,
+} from "@/lib/tools/download/clearance";
+import {
   TICKET_TTL_S,
   clientIpFrom,
+  hashIp,
   mintTicket,
 } from "@/lib/tools/download/ticket";
 
@@ -34,6 +41,15 @@ import {
  * Spoofing that header is not a bypass. The value gets hashed into the ticket,
  * and the service recomputes it from the connection it actually received, so a
  * forged address produces a ticket that fails on the caller's own next request.
+ *
+ * ## One challenge, then a window
+ *
+ * A ticket is single use and a Turnstile token is single use, so the literal
+ * reading — challenge every mint — means a CAPTCHA per poll of a running job,
+ * dozens per download. Instead the first solve sets a signed, IP-bound,
+ * 15-minute clearance cookie and later mints present that. See `clearance.ts`
+ * for why this is a window rather than a hole; the short version is that the
+ * per-IP quota on the service, not the challenge, is what caps the bill.
  */
 
 export const runtime = "nodejs";
@@ -82,18 +98,32 @@ export async function POST(request: Request) {
   }
 
   const ip = clientIpFrom(request.headers);
+  const ipHash = hashIp(ip, salt);
+  let grantClearance = false;
 
   if (turnstileSecret) {
-    let token: string | null = null;
-    try {
-      const body = (await request.json()) as { token?: unknown };
-      token = typeof body.token === "string" ? body.token : null;
-    } catch {
-      token = null;
-    }
-    if (!token) return refuse("challenge_required", "Complete the challenge first.", 403);
-    if (!(await turnstileOk(token, turnstileSecret, ip))) {
-      return refuse("challenge_failed", "That challenge could not be verified.", 403);
+    const cookie = request.headers
+      .get("cookie")
+      ?.split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${CLEARANCE_COOKIE}=`))
+      ?.slice(CLEARANCE_COOKIE.length + 1);
+
+    if (!clearanceValid(cookie, ipHash, secret)) {
+      let token: string | null = null;
+      try {
+        const body = (await request.json()) as { token?: unknown };
+        token = typeof body.token === "string" ? body.token : null;
+      } catch {
+        token = null;
+      }
+      if (!token) {
+        return refuse("challenge_required", "Complete the challenge first.", 403);
+      }
+      if (!(await turnstileOk(token, turnstileSecret, ip))) {
+        return refuse("challenge_failed", "That challenge could not be verified.", 403);
+      }
+      grantClearance = true;
     }
   } else if (process.env.NODE_ENV === "production") {
     // Minting unchallenged tickets in production would hand the expensive
@@ -108,8 +138,15 @@ export async function POST(request: Request) {
 
   const ticket = mintTicket({ ip, secret, salt });
 
-  return NextResponse.json(
-    { ticket, expiresIn: TICKET_TTL_S },
-    { headers: { "Cache-Control": "no-store" } }
-  );
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (grantClearance) {
+    headers["Set-Cookie"] = clearanceCookieHeader(
+      mintClearance(ipHash, secret),
+      // `Secure` would make the cookie undeliverable over plain HTTP, which is
+      // exactly what local development runs on.
+      process.env.NODE_ENV === "production"
+    );
+  }
+
+  return NextResponse.json({ ticket, expiresIn: TICKET_TTL_S }, { headers });
 }

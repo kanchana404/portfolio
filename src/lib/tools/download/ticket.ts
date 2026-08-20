@@ -30,12 +30,14 @@
  * with the real Python verifier, so drift fails the build rather than the site.
  */
 
+import {
+  TICKET_AUDIENCE,
+  TICKET_HEADER,
+  TICKET_TTL_S,
+} from "./protocol";
 import { createHmac, createHash, randomBytes } from "node:crypto";
 
-export const TICKET_AUDIENCE = "downloader";
 /** Matches TICKET_TTL_S. The verifier refuses anything over 300 + skew. */
-export const TICKET_TTL_S = 120;
-export const TICKET_HEADER = "X-Download-Ticket";
 const IP_HASH_LEN = 16;
 
 function b64url(raw: Buffer): string {
@@ -128,3 +130,5 @@ export function clientIpFrom(headers: Headers): string {
 
   return headers.get("x-real-ip")?.trim() ?? "";
 }
+
+export { TICKET_AUDIENCE, TICKET_HEADER, TICKET_TTL_S };
