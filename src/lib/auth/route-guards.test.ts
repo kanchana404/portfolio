@@ -30,6 +30,8 @@ const PUBLIC_EXCEPTIONS: Record<string, string> = {
     "The login endpoint is how you obtain a session; it cannot require one. It verifies the password in constant time and fails closed when ADMIN_PASSWORD is unset.",
   "admin/logout/route.ts":
     "Clearing your own cookies needs no privilege, and an unauthenticated call accomplishes nothing an attacker wants.",
+  "tools/download-ticket/route.ts":
+    "Minting a download ticket is a public action by definition: it is what a visitor does before they have any credential at all, so requiring one is circular. It is not unguarded. The route verifies a Turnstile token server-side and refuses without one, refuses outright when TURNSTILE_SECRET is unset in production, and mints nothing at all if TICKET_SECRET or IP_SALT is missing. What it issues is deliberately weak: 120 seconds, single use, bound to the caller's own address, and useless against any endpoint but the downloader's. It mutates no state here, and the quota it feeds lives in the downloader's Redis rather than ours.",
 };
 
 const MUTATING = ["POST", "PUT", "PATCH", "DELETE"];

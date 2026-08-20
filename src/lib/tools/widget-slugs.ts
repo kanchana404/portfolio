@@ -1,4 +1,4 @@
-import { buildableTools } from "./registry";
+import { TOOLS, buildableTools } from "./registry";
 
 /**
  * Every slug that has a widget.
@@ -46,6 +46,7 @@ export const WIDGET_SLUGS = [
   "regex-tester",
   "html-entity-converter",
   "chmod-calculator",
+  "video-downloader",
   // Served by the shared image-converter widget; see
   // `@/lib/tools/image/spec` for what each one converts.
   "image-converter",
@@ -78,8 +79,15 @@ if (missing.length > 0) {
   );
 }
 
+// Checked against every tool, not only buildable ones. A draft tool has no
+// route by design but may have a finished widget behind it: that is what draft
+// is *for*. Requiring the registration to appear only at publication would put
+// a second file edit on the riskiest step, which is exactly backwards.
+//
+// The check above still uses `buildableTools()`, and must: a tool that will be
+// routed with no widget is a live page with a hole in it.
 const orphaned = WIDGET_SLUGS.filter(
-  (slug) => !buildableTools().some((t) => t.slug === slug)
+  (slug) => !TOOLS.some((t) => t.slug === slug)
 );
 
 if (orphaned.length > 0) {

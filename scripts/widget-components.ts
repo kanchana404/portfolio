@@ -15,6 +15,10 @@ export interface WidgetComponent {
 }
 
 export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
+  "video-downloader": {
+    "name": "VideoDownloader",
+    "from": "@/components/tools/widgets/video-downloader"
+  },
   "chmod-calculator": {
     "name": "ChmodCalculator",
     "from": "@/components/tools/widgets/chmod-calculator"

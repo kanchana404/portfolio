@@ -58,4 +58,68 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     ],
     related: ["word-counter", "text-diff-checker"],
   },
+
+  {
+    slug: "video-downloader",
+    title: "Video Downloader",
+    metaTitle: "Video and Reel Downloader",
+    description:
+      "Get the direct media link from a public post so it downloads straight " +
+      "from the platform, without an account, a watermark or an install.",
+    category: "video",
+    audience: ["general"],
+    // Not "browser": resolving a link needs a server-side extractor. The meta
+    // row says so, and `caveats` below is what the validator requires for it.
+    compute: "railway",
+    // DRAFT ON PURPOSE. `buildableTools()` excludes draft, so no route is
+    // generated, the hub does not link it and the sitemap does not carry it.
+    // It exists to be built and tested, not to be found. See the caveat.
+    status: "draft",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    keywords: [
+      "video downloader",
+      "download reels",
+      "save video from link",
+      "tiktok video download",
+      "download without watermark",
+    ],
+    intro:
+      "Paste a link to a public post and get its media URLs. The file is " +
+      "fetched from the platform's own servers by your browser, so nothing " +
+      "large passes through this site.",
+    howToUse: [
+      "Copy the link to a public post.",
+      "Paste it in and press Get links.",
+      "Pick the quality you want. Sizes are shown where the platform reports them.",
+      "Open saves the file straight from the platform, not from here.",
+      "Private and age-restricted posts cannot be read and will say so.",
+    ],
+    caveats:
+      "This one is different from every other tool here. The link is sent to a " +
+      "server to be read, and downloading a video is not always yours to do: " +
+      "most platforms forbid it in their terms, and the content usually belongs " +
+      "to whoever made it. Use it for your own uploads, for content you have " +
+      "permission to keep, or where the licence allows it. The service is rate " +
+      "limited and can be switched off at any time.",
+    faqs: [
+      {
+        q: "Does the file go through this site?",
+        a: "No. The server reads the link and returns the platform's own media URLs, then your browser fetches from their CDN directly. That is why it is fast and why it costs almost nothing to run.",
+      },
+      {
+        q: "Why can it not open a private post?",
+        a: "Because there is nothing public to read. The resolver sees exactly what a logged-out visitor sees, and it does not log in as anyone or accept credentials.",
+      },
+      {
+        q: "Is downloading videos legal?",
+        a: "It depends on the video and where you are. Most platforms prohibit it in their terms regardless, and copyright belongs to the creator. Your own uploads and permissively licensed material are the safe cases.",
+      },
+      {
+        q: "Why did a link that worked yesterday stop working?",
+        a: "Platforms change how their pages are built, often without notice, and every extractor breaks when they do. It usually returns within a few days of the upstream project catching up.",
+      },
+    ],
+    related: ["srt-to-vtt"],
+  },
 ];

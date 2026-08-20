@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildableTools, publicTools } from "./registry";
+import { TOOLS, buildableTools, publicTools } from "./registry";
 import { WIDGET_COMPONENTS } from "../../../scripts/widget-components";
 
 /**
@@ -49,9 +49,23 @@ describe("every buildable tool has a route", () => {
   });
 
   it("maps no widget to a slug that does not exist", () => {
-    const slugs = new Set(buildableTools().map((t) => t.slug));
+    // Checked against every tool, not only buildable ones. A draft tool has no
+    // route by design, but it may perfectly well have a finished widget waiting
+    // behind it: that is what "draft" is for. Checking against buildableTools()
+    // would force the mapping to be added at the moment of publication, which
+    // is the worst time to be editing a second file.
+    const slugs = new Set(TOOLS.map((t) => t.slug));
     for (const slug of Object.keys(WIDGET_COMPONENTS)) {
       expect(slugs.has(slug), `${slug} is mapped but not in the registry`).toBe(true);
+    }
+  });
+
+  it("generates no route for a draft tool", () => {
+    // The whole point of draft: present in the codebase, absent from the site.
+    const drafts = TOOLS.filter((t) => t.status === "draft").map((t) => t.slug);
+    const routes = new Set(generatedRoutes());
+    for (const slug of drafts) {
+      expect(routes.has(slug), `${slug} is a draft but has a live route`).toBe(false);
     }
   });
 });

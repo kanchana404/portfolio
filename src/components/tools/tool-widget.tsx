@@ -19,6 +19,7 @@ import CronExplainer from "./widgets/cron-explainer";
 import DataSizeConverter from "./widgets/data-size-converter";
 import ImageResizer from "./widgets/image-resizer";
 import ChmodCalculator from "./widgets/chmod-calculator";
+import VideoDownloader from "./widgets/video-downloader";
 import EntityConverter from "./widgets/entity-converter";
 import PdfToImages from "./widgets/pdf-to-images";
 import RegexTester from "./widgets/regex-tester";
@@ -139,6 +140,8 @@ const TOOL_WIDGETS: Record<Exclude<WidgetSlug, ConversionSlug>, ComponentType> =
   "regex-tester": RegexTester,
   "html-entity-converter": EntityConverter,
   "chmod-calculator": ChmodCalculator,
+  // video
+  "video-downloader": VideoDownloader,
 };
 
 export default function ToolWidget({ slug }: { slug: string }) {
