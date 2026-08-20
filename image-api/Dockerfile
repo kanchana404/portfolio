@@ -61,9 +61,20 @@ FROM python:${PYTHON_VERSION} AS runtime
 # compiling libvips from source with -Dmagick=disabled: a long build for one
 # loader.
 #
-# It is disarmed at runtime instead, via VIPS_BLOCK_UNTRUSTED below. That is the
-# better control regardless, because it blocks every loader libvips marks
-# untrusted rather than only the one we thought to name.
+# It is unreachable rather than absent, and the thing making it unreachable is
+# `app/sniff.py`, not a libvips setting.
+#
+# VIPS_BLOCK_UNTRUSTED=1 was tried here and removed, because it was measurably
+# worse than the problem. libvips sets VIPS_OPERATION_UNTRUSTED on popplerload
+# and jxlload as well as magick7load, so that one variable blocked PDF rendering
+# and JPEG XL decoding in order to block ImageMagick. Two working features
+# traded for one, and the trade was invisible until a PDF failed.
+#
+# The allowlist does the job properly. `sniff()` identifies a file by its bytes
+# and refuses anything outside a fixed set, and every format in that set has a
+# native libvips loader. A file that would only decode through ImageMagick is
+# rejected before libvips is called at all, which is a stronger guarantee than
+# blocking a loader after the fact.
 RUN apt-get update \
  && apt-get install --no-install-recommends -y \
         libvips42 \
@@ -96,11 +107,7 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     # cannot hold decoded pixels from one user's upload while the next is
     # served.
     VIPS_CONCURRENCY=2 \
-    VIPS_DISC_THRESHOLD=0 \
-    # Refuses every loader libvips marks untrusted, which is what actually
-    # neutralises the ImageMagick delegate libvips42 drags in. A file that would
-    # only decode through magickload is refused rather than handed to it.
-    VIPS_BLOCK_UNTRUSTED=1
+    VIPS_DISC_THRESHOLD=0
 
 # No writable directory is created, deliberately. This service never writes a
 # file: uploads are decoded from memory and returned in the response body, so

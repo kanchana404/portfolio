@@ -31,9 +31,7 @@ from typing import Optional
 #: service exists only for what a browser genuinely cannot read. PNG, JPEG,
 #: WebP, GIF and AVIF are all decoded natively in the tab, so sending one here
 #: would be a pointless round trip and is refused rather than served.
-SUPPORTED = frozenset(
-    {"heic", "heif", "raw", "tiff", "pdf", "jxl", "bmp", "psd"}
-)
+SUPPORTED = frozenset({"heic", "heif", "raw", "tiff", "pdf", "jxl", "bmp"})
 
 #: Refuse anything whose *declared* pixel count exceeds this, before decoding.
 #:
@@ -195,8 +193,14 @@ def sniff(data: bytes, filename: str = "") -> Probe:
     if data[:5] == b"%PDF-":
         return Probe(kind="pdf")
 
+    # PSD is deliberately absent. libvips has no native Photoshop loader, so it
+    # would decode through ImageMagick, and this allowlist is the only thing
+    # keeping ImageMagick unreachable. Accepting one format that needs it would
+    # undo that for every file.
     if data[:4] == b"8BPS":
-        return Probe(kind="psd")
+        raise UnsupportedFile(
+            "Photoshop files are not supported. Export a PNG or TIFF instead."
+        )
 
     # JPEG XL: raw codestream, or the ISOBMFF-wrapped form.
     if data[:2] == b"\xff\x0a" or data[:12] == b"\x00\x00\x00\x0cJXL \x0d\x0a\x87\x0a":

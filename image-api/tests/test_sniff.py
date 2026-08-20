@@ -81,9 +81,16 @@ class TestWhatTheServerIsFor:
         for brand in (b"mif1", b"msf1"):
             assert sniff(heif(brand)).kind == "heif", brand
 
-    def test_recognises_pdf_and_psd(self) -> None:
+    def test_recognises_pdf(self) -> None:
         assert sniff(b"%PDF-1.7" + b"\x00" * 16).kind == "pdf"
-        assert sniff(b"8BPS\x00\x01" + b"\x00" * 16).kind == "psd"
+
+    def test_refuses_psd_because_only_imagemagick_reads_it(self) -> None:
+        # The allowlist is what keeps ImageMagick unreachable, and libvips has
+        # no native Photoshop loader. Accepting one format that needs the
+        # delegate would undo that for every file, so PSD is refused with a
+        # workaround rather than quietly routed through it.
+        with pytest.raises(UnsupportedFile, match="Photoshop"):
+            sniff(b"8BPS\x00\x01" + b"\x00" * 16)
 
     def test_recognises_both_jpeg_xl_forms(self) -> None:
         # The raw codestream and the container are the same format; a converter
