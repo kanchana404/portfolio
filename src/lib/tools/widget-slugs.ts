@@ -93,7 +93,7 @@ if (orphaned.length > 0) {
  * non-zero height. Without this split the static-HTML test passes on the
  * `sr-only` heading alone, which is what it was doing.
  */
-export const LAZY_WIDGET_SLUGS: readonly string[] = ["image-converter"];
+export const LAZY_WIDGET_SLUGS: readonly string[] = ["image-converter", "srt-to-vtt"];
 
 export function isLazyWidget(slug: string): boolean {
   return LAZY_WIDGET_SLUGS.includes(slug);
