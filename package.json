@@ -25,7 +25,8 @@
     "verify": "node scripts/check-config-integrity.mjs && pnpm typecheck && pnpm lint && pnpm test && pnpm build:only && pnpm budget",
     "validate:registry": "vitest run src/lib/tools/validate.test.ts src/lib/tools/registry.test.ts",
     "test:browser": "playwright test",
-    "integrity": "node scripts/check-config-integrity.mjs"
+    "integrity": "node scripts/check-config-integrity.mjs",
+    "routes": "tsx scripts/generate-tool-routes.ts"
   },
   "dependencies": {
     "@jsquash/avif": "2.1.1",

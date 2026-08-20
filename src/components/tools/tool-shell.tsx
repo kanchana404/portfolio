@@ -12,7 +12,6 @@ import { toolJsonLd } from "@/lib/tools/jsonld";
 import { getTool } from "@/lib/tools/registry";
 import { CATEGORY_LABELS, type ToolCompute, type ToolDef } from "@/lib/tools/types";
 import "@/lib/tools/widget-slugs";
-import ToolWidget from "./tool-widget";
 import { WidgetFrame } from "./widget-frame";
 import { jsonLdHtml } from "@/lib/json-ld";
 
@@ -67,7 +66,24 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export function ToolShell({ tool }: { tool: ToolDef }) {
+export function ToolShell({
+  tool,
+  widget,
+}: {
+  tool: ToolDef;
+  /**
+   * The tool itself, passed in rather than looked up by slug.
+   *
+   * This is what makes one route per tool worth having. When the shell imported
+   * a slug-keyed map, that map reached every widget, so importing the shell
+   * imported all of them and each page shipped the whole catalogue. Taking the
+   * widget as a prop keeps the shell free of any widget import at all, and the
+   * page that renders it pulls in exactly one. Measured across that change:
+   * 127 kB of first-load JavaScript to 99.4 kB, and no longer growing with the
+   * number of tools.
+   */
+  widget: React.ReactNode;
+}) {
   const categoryHref = `/tools/category/${tool.category}`;
   const related = tool.related
     .map(getTool)
@@ -180,7 +196,7 @@ export function ToolShell({ tool }: { tool: ToolDef }) {
         <section id="tool-widget" className="mt-6 scroll-mt-6">
           <h2 className="sr-only">{tool.title}</h2>
           <WidgetFrame>
-            <ToolWidget slug={tool.slug} />
+            {widget}
           </WidgetFrame>
         </section>
 

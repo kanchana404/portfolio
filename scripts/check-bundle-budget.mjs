@@ -22,10 +22,16 @@
  * 3. **`/blog/[slug]` must not move at all.** It is the canary: a route with no
  *    tools on it. If it grows after a tool ships, something imports the registry
  *    transitively into a graph that should never see it.
- * 4. **The widget delta.** `/tools/[slug]` minus `/tools` is what one widget
- *    actually costs, with the platform floor cancelled out on both sides. This
- *    is the number that catches a heavy dependency sneaking into a widget, and
- *    it is the one the plan was reaching for.
+ * 4. **The widget delta.** The heaviest tool route minus `/tools` is what the
+ *    largest single widget costs, with the platform floor cancelled on both
+ *    sides. This is the number that catches a heavy dependency sneaking into a
+ *    widget.
+ *
+ *    It used to be `/tools/[slug]` minus `/tools`, which measured *every*
+ *    widget at once, because one dynamic route is one module graph and each
+ *    page shipped the whole catalogue. Tool pages are now one route each, so
+ *    the delta is per widget and no longer grows as tools are added. That
+ *    change alone took a tool page from 127 kB to under 100 kB.
  * 5. **Forbidden modules.** Certain libraries must never appear in a first-load
  *    chunk — they belong behind `dynamic(ssr: false)` and a user gesture.
  *
@@ -47,7 +53,6 @@ const ROUTE_BUDGETS = [
   { key: "/(site)/blog/[slug]/page", label: "/blog/[slug]", maxKb: 88 },
   { key: "/(site)/blog/page", label: "/blog", maxKb: 96 },
   { key: "/(tools)/tools/page", label: "/tools", maxKb: 100 },
-  { key: "/(tools)/tools/[slug]/page", label: "/tools/[slug]", maxKb: 126 },
   {
     key: "/(tools)/tools/category/[category]/page",
     label: "/tools/category/[category]",
@@ -89,9 +94,21 @@ const ROUTE_BUDGETS = [
  * is no gap to shift through.
  */
 const WIDGET_DELTA = {
-  route: "/(tools)/tools/[slug]/page",
+  /** Every generated tool route matches this; the heaviest one is measured. */
+  pattern: /^\/\(tools\)\/tools\/[a-z0-9-]+\/page$/,
   against: "/(tools)/tools/page",
-  maxKb: 30,
+  /**
+   * What the largest single widget may cost.
+   *
+   * Set from measurement with headroom, not aspiration: at 23 tools the
+   * heaviest is the password generator at ~7 kB over the hub. A widget that
+   * needs more than this is a widget that has pulled in a dependency, and the
+   * fix is the same as it has always been — drop it, or put a genuinely heavy
+   * one (WASM, canvas, a large parser) behind `lazyWidget`.
+   */
+  maxKb: 12,
+  /** No individual tool page may exceed this first-load total. */
+  routeMaxKb: 108,
 };
 
 /**
@@ -233,14 +250,47 @@ for (const { key, label, maxKb } of ROUTE_BUDGETS) {
 }
 
 // --- 2. widget delta -------------------------------------------------------
-const withWidget = firstLoadKb(WIDGET_DELTA.route);
+//
+// One route per tool means there is no longer a single page carrying every
+// widget. The heaviest route is measured instead, and every route is checked
+// against its own ceiling, so a single bloated tool cannot hide behind an
+// average.
+const toolRoutes = Object.keys(manifest.pages).filter((k) =>
+  WIDGET_DELTA.pattern.test(k)
+);
+
+if (toolRoutes.length === 0) {
+  fail("no generated tool routes found — did `pnpm routes` run?");
+}
+
+let heaviest = { key: "", kb: 0 };
+let overRoutes = 0;
+for (const key of toolRoutes) {
+  const kb = firstLoadKb(key);
+  if (kb === null) continue;
+  if (kb > heaviest.kb) heaviest = { key, kb };
+  if (kb > WIDGET_DELTA.routeMaxKb) {
+    fail(
+      `${key.replace("/(tools)", "")} is ${kb.toFixed(1)} kB, over the ` +
+        `${WIDGET_DELTA.routeMaxKb} kB per-route ceiling`
+    );
+    overRoutes += 1;
+  }
+}
+console.log(
+  `\nok    ${String(toolRoutes.length).padStart(2)} tool routes, heaviest ` +
+    `${heaviest.key.replace("/(tools)/tools/", "").replace("/page", "")} at ` +
+    `${heaviest.kb.toFixed(1)} kB   ceiling ${WIDGET_DELTA.routeMaxKb} kB`
+);
+
+const withWidget = heaviest.kb;
 const withoutWidget = firstLoadKb(WIDGET_DELTA.against);
 if (withWidget !== null && withoutWidget !== null) {
   const delta = withWidget - withoutWidget;
   const over = delta > WIDGET_DELTA.maxKb;
   if (over) failed = true;
   console.log(
-    `\n${over ? "FAIL" : "ok  "}  widget cost (tool page − hub)  ${delta
+    `${over ? "FAIL" : "ok  "}  heaviest widget (route − hub)  ${delta
       .toFixed(1)
       .padStart(6)} kB   budget ${WIDGET_DELTA.maxKb} kB`
   );
