@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { TOOLS_SECTION_LIVE } from "../../src/lib/tools/section-flag";
+import { isLazyWidget } from "../../src/lib/tools/widget-slugs";
 import {
   MIN_TOOLS_FOR_INDEXABLE_CATEGORY,
   activeCategories,
@@ -40,10 +41,36 @@ for (const tool of tools) {
       await expect(page.locator("h1")).toHaveText(tool.title);
 
       // The widget's own container, not merely the surrounding prose. If this
-      // is empty the page is a article with a hole in it — and an indexable one.
+      // is empty the page is an article with a hole in it, and an indexable one.
       const widget = page.locator("#tool-widget");
       await expect(widget).toBeVisible();
-      expect((await widget.innerText()).trim().length).toBeGreaterThan(0);
+
+      if (isLazyWidget(tool.slug)) {
+        // A widget behind `ssr: false` is deliberately absent here, so demanding
+        // its text would be demanding the impossible. What ADR 0003 requires in
+        // exchange is a reserved box, because that is the whole reason the
+        // exception is safe: no server markup means no gap to shift through
+        // *only if* the space is already held.
+        const skeleton = widget.locator("[aria-hidden='true'][style*='min-height']");
+        await expect(skeleton).toBeVisible();
+        const reserved = Number(
+          (await skeleton.evaluate((el) => getComputedStyle(el).minHeight)).replace("px", "")
+        );
+        expect(reserved).toBeGreaterThan(100);
+        return;
+      }
+
+      // Everything else must ship the real tool in static HTML. Checked against
+      // the widget with the section's own `sr-only` heading removed: that
+      // heading is always present, so counting it made this assertion pass for
+      // a widget that had rendered nothing at all, which is precisely how a
+      // lazy image-converter slipped through it.
+      const bodyText = await widget.evaluate((el) => {
+        const clone = el.cloneNode(true) as HTMLElement;
+        clone.querySelectorAll(".sr-only").forEach((n) => n.remove());
+        return clone.textContent ?? "";
+      });
+      expect(bodyText.trim().length).toBeGreaterThan(0);
 
       await context.close();
     });

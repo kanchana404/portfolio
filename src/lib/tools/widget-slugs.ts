@@ -74,3 +74,24 @@ if (orphaned.length > 0) {
       `unreferenced widget is dead code that still ships.`
   );
 }
+
+/**
+ * Slugs whose widget is code-split behind `dynamic(..., { ssr: false })`.
+ *
+ * ADR 0003 permits this for one reason only — a widget carrying WASM or a large
+ * parser, whose weight lands on every other tool page for nothing — and demands
+ * a `<WidgetSkeleton>` reserving its settled height in exchange, because with
+ * `ssr: false` there is no server markup to lose and therefore no gap to shift
+ * through.
+ *
+ * The list exists so the browser suite can assert the *right* guarantee per
+ * tool instead of one loose guarantee for all of them: a server-rendered widget
+ * must put real text in the static HTML, while a lazy one must instead reserve a
+ * non-zero height. Without this split the static-HTML test passes on the
+ * `sr-only` heading alone, which is what it was doing.
+ */
+export const LAZY_WIDGET_SLUGS: readonly string[] = ["image-converter"];
+
+export function isLazyWidget(slug: string): boolean {
+  return LAZY_WIDGET_SLUGS.includes(slug);
+}
