@@ -34,7 +34,11 @@
  * Reusing one produces `ticket_used`, which is the protection working.
  */
 
-import { TICKET_HEADER, TURNSTILE_HEADER } from "./protocol";
+import {
+  JOB_TIMEOUT_S,
+  TICKET_HEADER,
+  TURNSTILE_HEADER,
+} from "./protocol";
 
 export const DOWNLOADER_API = process.env.NEXT_PUBLIC_DOWNLOADER_API ?? "";
 
@@ -186,20 +190,52 @@ export interface JobStatus {
   expires_at: number | null;
 }
 
+/** Mints a fresh single-use Turnstile token, or undefined when unconfigured. */
+export type GetToken = () => Promise<string | undefined>;
+
+/**
+ * Obtains a ticket, spending a challenge only if the clearance window has closed.
+ *
+ * The bug this shape exists to prevent: a Turnstile token is redeemed at
+ * Cloudflare the first time it is verified, and the job path needs *two*
+ * verifications — our mint route checks one, and the service checks another on
+ * POST /v1/jobs because a job costs real money. Passing the same token to both
+ * meant the second verification always failed, so the first download after the
+ * clearance cookie lapsed was guaranteed to break, and only that one, which is
+ * the hardest kind of bug to catch by hand.
+ *
+ * So the mint goes through clearance where it can, and a challenge is only spent
+ * when there is genuinely no other way.
+ */
+async function ticketForJob(getToken?: GetToken): Promise<string> {
+  try {
+    return await getTicket();
+  } catch (error) {
+    const needsChallenge =
+      error instanceof DownloaderError &&
+      (error.code === "challenge_required" || error.code === "challenge_failed");
+    if (!needsChallenge || !getToken) throw error;
+    return await getTicket(await getToken());
+  }
+}
+
 async function jobFetch(
   path: string,
   init: RequestInit,
-  turnstileToken?: string
+  options: { getToken?: GetToken; challengeService?: boolean } = {}
 ): Promise<JobStatus> {
-  const ticket = await getTicket(turnstileToken);
+  const ticket = await ticketForJob(options.getToken);
   const headers: Record<string, string> = {
     "content-type": "application/json",
     [TICKET_HEADER]: ticket,
     ...(init.headers as Record<string, string> | undefined),
   };
   // Job creation is charged, so the service challenges it independently of the
-  // ticket. Polling is not.
-  if (turnstileToken) headers[TURNSTILE_HEADER] = turnstileToken;
+  // ticket, with its own token. Polling is not charged and is not challenged.
+  if (options.challengeService && options.getToken) {
+    const token = await options.getToken();
+    if (token) headers[TURNSTILE_HEADER] = token;
+  }
 
   let response: Response;
   try {
@@ -234,23 +270,28 @@ export function createJob(
   url: string,
   formatId: string,
   mode: "video" | "audio",
-  options: { turnstileToken?: string; signal?: AbortSignal } = {}
+  options: { getToken?: GetToken; signal?: AbortSignal } = {}
 ): Promise<JobStatus> {
   return jobFetch(
     "/v1/jobs",
-    { method: "POST", body: JSON.stringify({ url, format_id: formatId, mode }), signal: options.signal },
-    options.turnstileToken
+    {
+      method: "POST",
+      body: JSON.stringify({ url, format_id: formatId, mode }),
+      signal: options.signal,
+    },
+    { getToken: options.getToken, challengeService: true }
   );
 }
 
 export function readJob(
   jobId: string,
-  options: { signal?: AbortSignal } = {}
+  options: { getToken?: GetToken; signal?: AbortSignal } = {}
 ): Promise<JobStatus> {
-  return jobFetch(`/v1/jobs/${encodeURIComponent(jobId)}`, {
-    method: "GET",
-    signal: options.signal,
-  });
+  return jobFetch(
+    `/v1/jobs/${encodeURIComponent(jobId)}`,
+    { method: "GET", signal: options.signal },
+    { getToken: options.getToken }
+  );
 }
 
 /** Poll delay in milliseconds, by how long we have already been waiting. */
@@ -262,8 +303,24 @@ function pollDelay(elapsedMs: number): number {
   return 5_000;
 }
 
-/** Nothing legitimate takes this long; past it the job is not coming back. */
-const JOB_TIMEOUT_MS = 10 * 60_000;
+/**
+ * Give up only after the worker itself has, plus a poll interval's grace.
+ *
+ * Taken from the server's own constant rather than picked: a client that quits
+ * first turns a slow success into a failure the visitor has already been
+ * charged for.
+ */
+const JOB_TIMEOUT_MS = JOB_TIMEOUT_S * 1000 + 15_000;
+
+/**
+ * Consecutive poll failures tolerated before the job is called lost.
+ *
+ * A poll is a network round trip on a phone that may be moving between cells,
+ * and it needs a fresh ticket, so it has more ways to fail transiently than the
+ * job does. Treating the first blip as fatal throws away a download that is
+ * still running and still being paid for.
+ */
+const POLL_FAILURES_TOLERATED = 3;
 
 /**
  * Runs a job to completion, reporting progress, and resolves to the file URL.
@@ -277,7 +334,7 @@ export async function runJob(
   formatId: string,
   mode: "video" | "audio",
   options: {
-    turnstileToken?: string;
+    getToken?: GetToken;
     signal?: AbortSignal;
     onProgress?: (status: JobStatus) => void;
   } = {}
@@ -286,6 +343,8 @@ export async function runJob(
   options.onProgress?.(status);
 
   const started = Date.now();
+  let consecutiveFailures = 0;
+
   while (status.state === "queued" || status.state === "running") {
     if (Date.now() - started > JOB_TIMEOUT_MS) {
       throw new DownloaderError(
@@ -294,8 +353,26 @@ export async function runJob(
       );
     }
     await sleep(pollDelay(Date.now() - started), options.signal);
-    status = await readJob(status.id, { signal: options.signal });
-    options.onProgress?.(status);
+
+    try {
+      status = await readJob(status.id, {
+        getToken: options.getToken,
+        signal: options.signal,
+      });
+      consecutiveFailures = 0;
+      options.onProgress?.(status);
+    } catch (error) {
+      // An abort is the visitor leaving, not a blip.
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+
+      // A verdict about the job itself is final; only transport trouble is
+      // worth retrying. `job_not_found` in particular must not be retried —
+      // it will not become found.
+      const code = error instanceof DownloaderError ? error.code : "internal";
+      const transient =
+        code === "unreachable" || code === "internal" || code.startsWith("http_5");
+      if (!transient || ++consecutiveFailures >= POLL_FAILURES_TOLERATED) throw error;
+    }
   }
 
   if (status.state === "failed") {

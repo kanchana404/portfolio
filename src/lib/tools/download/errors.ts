@@ -4,8 +4,13 @@
  * The downloader returns machine codes, and a few of them are the difference
  * between "this is broken" and "this is working exactly as intended":
  *
- * - `ticket_used` means a ticket was replayed. That is the single-use guarantee
- *   doing its job, and the fix is to try again, not to report a bug.
+ * - `ticket_replayed` means a ticket was presented twice. That is the single-use
+ *   guarantee doing its job, and the fix is to try again, not to report a bug.
+ *   The name matters: an earlier version of this file handled `ticket_used`,
+ *   which nothing emits, so every genuine replay fell through to the generic
+ *   fallback — the one code most in need of a specific message got the least
+ *   specific one. These strings are a wire contract with
+ *   `downloader-api/app/errors.py`; they are not descriptive prose.
  * - `platform_degraded` means an extractor broke upstream. Every downloader on
  *   the internet has the same problem at the same time, and it comes back on
  *   its own, so saying "try again in a few days" is more honest than "error".
@@ -61,9 +66,20 @@ const MESSAGES: Record<string, DownloadErrorInfo> = {
     message: "That took too long. Press the button again.",
     retryable: true,
   },
-  ticket_used: {
+  ticket_replayed: {
     message: "That session was already used. Press the button again.",
     retryable: true,
+  },
+  ticket_rejected: {
+    message: "The download session was refused. Press the button again.",
+    retryable: true,
+  },
+  ticket_ttl_implausible: {
+    // The clock on one side is wrong. Nothing the reader does fixes it, and
+    // "try again" would be a lie, so this one is not retryable.
+    message:
+      "The download session had an impossible lifetime, which usually means a clock is wrong. This is not something you can work around.",
+    retryable: false,
   },
   ticket_missing: {
     message: "The download session did not start. Press the button again.",

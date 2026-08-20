@@ -146,13 +146,20 @@ export default function ToolsHubPage() {
         )}
 
         {/* Availability and privacy, stated once on the hub rather than
-            repeated on all seventeen tool pages. Every tool's meta row links to
-            /privacy, which carries the same terms in full. */}
+            repeated on every tool page. Every tool's meta row links to
+            /privacy, which carries the same terms in full.
+
+            The blanket "they run entirely in your browser" that used to sit here
+            was printed directly above cards whose own labels said "Processed on
+            my server" — the page contradicted itself within one screen. Each
+            card already carries the truth for its own tool, so this line stops
+            trying to speak for all of them. */}
         <p className="mt-10 text-xs leading-relaxed text-muted-foreground">
           These tools are free and provided as-is, with no guarantee of uptime
           or accuracy — check anything that matters against a second source.
-          They run entirely in your browser and nothing you enter is uploaded or
-          stored; see{" "}
+          Almost all of them run entirely in your browser and upload nothing; the
+          few that need a server say so on their own card and again on their own
+          page. See{" "}
           <Link href="/privacy" className="underline underline-offset-2">
             privacy
           </Link>

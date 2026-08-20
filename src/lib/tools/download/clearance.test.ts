@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CLEARANCE_MAX_LIFETIME_S,
   CLEARANCE_TTL_S,
   clearanceCookieHeader,
+  clearanceSolvedAt,
   clearanceValid,
   mintClearance,
 } from "./clearance";
@@ -102,5 +104,50 @@ describe("the Set-Cookie header", () => {
 
   it("expires with the same window it was signed for", () => {
     expect(clearanceCookieHeader("v", true)).toContain(`Max-Age=${CLEARANCE_TTL_S}`);
+  });
+});
+
+
+describe("the sliding window, and its ceiling", () => {
+  it("survives a reissue that carries the original solve time", () => {
+    // The point of sliding: a long download must not expire the cookie while
+    // the visitor is sitting there watching it.
+    const first = mintClearance(IP, SECRET, NOW);
+    const later = NOW + 14 * 60 * 1000;
+    const reissued = mintClearance(IP, SECRET, later, clearanceSolvedAt(first, SECRET)!);
+    const laterStill = later + 14 * 60 * 1000;
+    expect(clearanceValid(reissued, IP, SECRET, laterStill)).toBe(true);
+  });
+
+  it("stops sliding once the solve is older than the absolute cap", () => {
+    // Without this, a client that keeps polling never proves anything again and
+    // one solve is a permanent key.
+    const solved = Math.floor(NOW / 1000);
+    const wayLater = NOW + (CLEARANCE_MAX_LIFETIME_S + 1) * 1000;
+    const reissued = mintClearance(IP, SECRET, wayLater, solved);
+    // Freshly minted, so `exp` is comfortably in the future — only the cap can
+    // refuse it, which is exactly what is being tested.
+    expect(clearanceValid(reissued, IP, SECRET, wayLater)).toBe(false);
+  });
+
+  it("still accepts a reissue just inside the cap", () => {
+    const solved = Math.floor(NOW / 1000);
+    const justInside = NOW + (CLEARANCE_MAX_LIFETIME_S - 60) * 1000;
+    const reissued = mintClearance(IP, SECRET, justInside, solved);
+    expect(clearanceValid(reissued, IP, SECRET, justInside)).toBe(true);
+  });
+
+  it("refuses a cookie with no solve time rather than grandfathering it", () => {
+    // An uncapped clearance is the thing the cap exists to prevent, so an old
+    // cookie without `iat` is refused. It costs one silent challenge to replace.
+    const { createHmac } = require("node:crypto") as typeof import("node:crypto");
+    const payload = { ip_hash: IP, exp: Math.floor(NOW / 1000) + 600 };
+    const b64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
+    const sig = createHmac("sha256", SECRET).update(b64).digest("base64url");
+    expect(clearanceValid(`${b64}.${sig}`, IP, SECRET, NOW)).toBe(false);
+  });
+
+  it("will not read a solve time out of a cookie it did not sign", () => {
+    expect(clearanceSolvedAt(mintClearance(IP, OTHER, NOW), SECRET)).toBeNull();
   });
 });

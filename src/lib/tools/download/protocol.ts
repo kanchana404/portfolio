@@ -22,3 +22,21 @@ export const TICKET_HEADER = "X-Download-Ticket";
 
 /** Matches TURNSTILE_HEADER in app/routes/jobs.py. */
 export const TURNSTILE_HEADER = "X-Turnstile-Token";
+
+/**
+ * Matches JOB_TIMEOUT_S in app/jobs/worker.py.
+ *
+ * These drifted once, in the direction that costs the most: the client gave up
+ * at ten minutes while the worker was allowed fifteen, so a job between those
+ * two numbers finished, was paid for, was uploaded — and the browser had
+ * already reported it as timed out and stopped asking. Whoever changes the
+ * Python value has to change this one.
+ */
+export const JOB_TIMEOUT_S = 900;
+
+/**
+ * Matches result_ttl_s in app/settings.py: how long a finished file stays in
+ * the bucket before it is deleted. Six hours, and the reader is entitled to
+ * know it, so the widget says so.
+ */
+export const RESULT_TTL_S = 21_600;

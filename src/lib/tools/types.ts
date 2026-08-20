@@ -144,6 +144,22 @@ export interface ToolDef {
   category: ToolCategory;
   audience: ToolAudience[];
   compute: ToolCompute;
+
+  /**
+   * Overrides the privacy line under the title, for a tool `compute` cannot
+   * describe honestly.
+   *
+   * `compute: "railway"` normally prints "Processed on my server, then deleted",
+   * which is exactly right for the PDF tools — they parse in memory and write
+   * nothing. It is wrong for the downloader, where the finished file is written
+   * to object storage and kept for six hours so the link works. One word of
+   * `compute` cannot carry both, and the difference is the part a reader would
+   * most want to know.
+   *
+   * Use sparingly. The derived line exists so this sentence cannot go stale, and
+   * every override is a sentence that can.
+   */
+  privacyLine?: string;
   status: ToolStatus;
   /** ISO calendar date. Never changes after first deploy. */
   publishedAt: string;

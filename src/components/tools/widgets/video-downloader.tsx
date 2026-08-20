@@ -47,6 +47,18 @@ export default function VideoDownloader() {
   const [job, setJob] = useState<{ formatId: string; status: JobStatus | null } | null>(
     null
   );
+  /**
+   * Finished jobs, by format id.
+   *
+   * Kept rather than acted on, because `window.open` after the poll loop does
+   * not work: transient user activation from the click is long gone by the time
+   * a mux finishes, so Safari and Firefox block it outright and Chrome blocks it
+   * past a few seconds. The result was the tool's main path — seven of the ten
+   * platforms — ending in silence: no file, no link, no error. So the URL is
+   * rendered as a link the visitor clicks, the same shape image-resizer and
+   * pdf-to-images already use.
+   */
+  const [ready, setReady] = useState<Record<string, string>>({});
   const available = downloaderAvailable();
 
   // A resolve or a job in flight when the page goes away is a request nobody
@@ -62,15 +74,33 @@ export default function VideoDownloader() {
     return token ?? undefined;
   }, []);
 
-  const fail = useCallback((error: unknown) => {
-    if (error instanceof DOMException && error.name === "AbortError") return;
+  const explain = useCallback((error: unknown): string | null => {
+    if (error instanceof DOMException && error.name === "AbortError") return null;
     if (error instanceof DownloaderError || error instanceof TurnstileError) {
-      setMessage(describeError(error.code, error.message).message);
-    } else {
-      setMessage(describeError("internal").message);
+      return describeError(error.code, error.message).message;
     }
-    setStage("error");
+    return describeError("internal").message;
   }, []);
+
+  /** Replaces the panel. For a resolve, where there is nothing to keep. */
+  const fail = useCallback(
+    (error: unknown) => {
+      const text = explain(error);
+      if (text === null) return;
+      setMessage(text);
+      setStage("error");
+    },
+    [explain]
+  );
+
+  /** Keeps the resolved list and reports beside it. For a failed download. */
+  const failInPlace = useCallback(
+    (error: unknown) => {
+      const text = explain(error);
+      if (text !== null) setMessage(text);
+    },
+    [explain]
+  );
 
   const run = useCallback(async () => {
     const value = url.trim();
@@ -84,6 +114,7 @@ export default function VideoDownloader() {
     setMessage(null);
     setResult(null);
     setJob(null);
+    setReady({});
     try {
       const token = await challenge();
       const out = await resolve(value, {
@@ -109,31 +140,34 @@ export default function VideoDownloader() {
       setJob({ formatId: format.format_id, status: null });
       setMessage(null);
       try {
-        // Job creation is charged, so the service challenges it separately from
-        // the ticket. Polling afterwards rides the clearance cookie.
-        const token = await challenge();
+        // `challenge` is handed over rather than called: a Turnstile token is
+        // redeemed on first verification, and this path may need more than one —
+        // the service challenges job creation separately from our mint route.
+        // Letting the client ask for each token as it needs one is what keeps it
+        // from spending the same token twice.
         const finished = await runJob(
           value,
           format.format_id,
           format.has_video ? "video" : "audio",
           {
-            turnstileToken: token,
+            getToken: challenge,
             signal: controller.signal,
             onProgress: (status) => setJob({ formatId: format.format_id, status }),
           }
         );
         if (finished.download_url) {
-          // Opened rather than navigated to, so the resolved list survives and a
-          // second format can be fetched without starting over.
-          window.open(finished.download_url, "_blank", "noopener,noreferrer");
+          setReady((prev) => ({ ...prev, [format.format_id]: finished.download_url! }));
         }
         setJob(null);
       } catch (error) {
         setJob(null);
-        fail(error);
+        // Not `fail`: that switches the whole panel to the error stage and takes
+        // the resolved format list with it, so one failed download loses the
+        // work of resolving and there is nothing left to retry against.
+        failInPlace(error);
       }
     },
-    [url, challenge, fail]
+    [url, challenge, failInPlace]
   );
 
   const busy = stage === "working" || job !== null;
@@ -156,17 +190,29 @@ export default function VideoDownloader() {
           />
           <button
             type="button"
-            disabled={!available || busy || !url.trim()}
-            onClick={() => void run()}
-            className="inline-flex h-10 shrink-0 items-center rounded-md bg-foreground px-3.5 text-sm font-medium text-background ring-offset-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+            // Deliberately not disabled while busy. A disabled element loses
+            // focus, and this is the element the visitor just pressed Enter on —
+            // disabling it drops them back to the top of the document exactly
+            // when a challenge may be about to appear and need their attention.
+            // `aria-busy` says the same thing without moving anyone.
+            disabled={!available || !url.trim()}
+            aria-busy={busy}
+            onClick={() => {
+              if (!busy) void run();
+            }}
+            className="inline-flex h-10 shrink-0 items-center rounded-md bg-foreground px-3.5 text-sm font-medium text-background ring-offset-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 aria-busy:opacity-50"
           >
             {stage === "working" ? "Checking…" : "Get links"}
           </button>
         </div>
 
-        {/* Empty until Cloudflare decides this visitor has to prove something,
-            so it must collapse rather than reserve a box that is usually blank. */}
-        <div ref={challengeRef} className="empty:hidden mt-3" />
+        {/* Usually blank: with `interaction-only` most visitors never see a
+            challenge. `:empty` cannot do the collapsing, because Turnstile
+            renders a wrapper element whether or not it shows anything — the
+            selector stops matching after the first submit and leaves a permanent
+            gap. So the container carries no spacing of its own and any height
+            comes from Turnstile's own element. */}
+        <div ref={challengeRef} className="[&:not(:empty)]:mt-3" />
 
         <p className="mt-2 max-w-prose text-xs text-muted-foreground">
           {available
@@ -216,6 +262,7 @@ export default function VideoDownloader() {
                     format={f}
                     first={i === 0}
                     job={job?.formatId === f.format_id ? job.status : undefined}
+                    readyUrl={ready[f.format_id]}
                     disabled={busy}
                     onDownload={() => void download(f)}
                   />
@@ -237,6 +284,7 @@ function FormatRow({
   format,
   first,
   job,
+  readyUrl,
   disabled,
   onDownload,
 }: {
@@ -244,6 +292,8 @@ function FormatRow({
   first: boolean;
   /** `undefined` when no job for this row; `null` while one is starting. */
   job?: JobStatus | null;
+  /** Set once a job for this row has produced a file. */
+  readyUrl?: string;
   disabled: boolean;
   onDownload: () => void;
 }) {
@@ -267,8 +317,24 @@ function FormatRow({
         </span>
       </span>
 
-      {running ? (
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+      {readyUrl ? (
+        <a
+          href={readyUrl}
+          // The object carries `Content-Disposition: attachment`, set on upload,
+          // so this genuinely saves rather than opening a player.
+          className="inline-flex h-7 shrink-0 items-center rounded-sm border px-2.5 text-xs font-medium transition-colors hover:border-foreground/20 hover:bg-muted"
+        >
+          Save
+        </a>
+      ) : running ? (
+        <span
+          // Outside the live region on purpose. A percentage that changes every
+          // second is read out every second, so a ten-minute mux becomes several
+          // hundred announcements of a number nobody asked to hear. The state
+          // changes that matter are announced once each, above.
+          aria-hidden="true"
+          className="shrink-0 text-xs tabular-nums text-muted-foreground"
+        >
           {job === null || job.state === "queued"
             ? "Queued…"
             : job.state === "running"

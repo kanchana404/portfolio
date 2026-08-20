@@ -5,9 +5,9 @@ describe("codes that mean the protection is working", () => {
   it("treats a replayed ticket as retryable, not as a fault", () => {
     // Single-use is the whole point. Telling someone to press the button again
     // is the correct response, and calling it an error is not.
-    expect(isRetryable("ticket_used")).toBe(true);
+    expect(isRetryable("ticket_replayed")).toBe(true);
     expect(isRetryable("ticket_expired")).toBe(true);
-    expect(describeError("ticket_used").message).toMatch(/again/i);
+    expect(describeError("ticket_replayed").message).toMatch(/again/i);
   });
 
   it("does not explain why a signature failed", () => {
@@ -59,13 +59,39 @@ describe("never leaking a raw code", () => {
     for (const code of [
       "unsupported_platform", "playlist_rejected", "video_too_long", "file_too_large",
       "extractor_failed", "platform_degraded", "ticket_expired", "ticket_used",
-      "ticket_missing", "turnstile_failed", "killswitch_active", "quota_exceeded",
+      "ticket_missing", "ticket_replayed", "ticket_rejected", "ticket_ttl_implausible",
+      "turnstile_failed", "killswitch_active", "quota_exceeded",
       "not_configured", "unreachable", "internal",
     ]) {
       const m = describeError(code).message;
       expect(m.length, code).toBeGreaterThan(20);
       expect(m, code).not.toMatch(/_/); // no snake_case leaking through
       expect(m.endsWith("."), code).toBe(true);
+    }
+  });
+});
+
+describe("the codes are a wire contract, not prose", () => {
+  it("handles every ticket code the Python service can actually emit", async () => {
+    // The bug this catches: errors.ts once handled `ticket_used`, which the
+    // service never sends — so a replayed ticket, the one case with a genuinely
+    // useful message, got the generic fallback instead. Read the codes out of
+    // the service rather than trusting this file to have kept up.
+    const { readFileSync, existsSync } = await import("node:fs");
+    const errorsPy = "downloader-api/app/errors.py";
+    if (!existsSync(errorsPy)) return; // service not vendored in this checkout
+
+    const source = readFileSync(errorsPy, "utf8");
+    const codes = [...source.matchAll(/^\s*"(ticket_[a-z_]+)":\s*\d{3},/gm)].map(
+      (m) => m[1]
+    );
+    expect(codes.length).toBeGreaterThan(3);
+
+    for (const code of codes) {
+      const info = describeError(code);
+      expect(info.message, `${code} has no entry in errors.ts`).not.toMatch(
+        /could not be processed/
+      );
     }
   });
 });

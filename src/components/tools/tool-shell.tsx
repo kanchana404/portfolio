@@ -161,7 +161,7 @@ export function ToolShell({
           <span aria-hidden>·</span>
           {/* Linked, so the claim is checkable rather than merely asserted. */}
           <Link href="/privacy" className="hover:text-foreground">
-            {privacyLine(tool.compute)}
+            {tool.privacyLine ?? privacyLine(tool.compute)}
           </Link>
           <span aria-hidden>·</span>
           <span>

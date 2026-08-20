@@ -32,8 +32,19 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const CLEARANCE_COOKIE = "dl_clearance";
 
-/** Long enough to finish a download, short enough that a solve is not a licence. */
+/** How long the cookie survives without being used. Slides on every use. */
 export const CLEARANCE_TTL_S = 15 * 60;
+
+/**
+ * How long one solve can be stretched by continuous use, no matter what.
+ *
+ * The idle window has to slide, or a long mux expires the cookie in the middle
+ * of a download the visitor is actively waiting for. But sliding alone means a
+ * client that keeps polling never has to prove anything again, and one solve
+ * becomes a permanent key. Two hours is far longer than any legitimate session
+ * here and far shorter than a useful stolen credential.
+ */
+export const CLEARANCE_MAX_LIFETIME_S = 2 * 60 * 60;
 
 function b64url(input: string): string {
   return Buffer.from(input, "utf8").toString("base64url");
@@ -46,18 +57,29 @@ function sign(payloadB64: string, secret: string): string {
 interface ClearancePayload {
   /** Ties the cookie to the address that solved the challenge. */
   ip_hash: string;
-  /** Unix seconds. */
+  /** Unix seconds. Idle expiry; moves forward each time the cookie is used. */
   exp: number;
+  /** Unix seconds. When the original challenge was solved. Never moves. */
+  iat: number;
 }
 
+/**
+ * Issues a cookie, carrying forward the original solve time when there is one.
+ *
+ * `solvedAt` is what makes the absolute cap real: a reissue that forgot it would
+ * reset the clock, and the sliding window would have no ceiling at all.
+ */
 export function mintClearance(
   ipHash: string,
   secret: string,
-  now: number = Date.now()
+  now: number = Date.now(),
+  solvedAt?: number
 ): string {
+  const nowS = Math.floor(now / 1000);
   const payload: ClearancePayload = {
     ip_hash: ipHash,
-    exp: Math.floor(now / 1000) + CLEARANCE_TTL_S,
+    exp: nowS + CLEARANCE_TTL_S,
+    iat: solvedAt ?? nowS,
   };
   const payloadB64 = b64url(JSON.stringify(payload));
   return `${payloadB64}.${sign(payloadB64, secret)}`;
@@ -71,16 +93,23 @@ export function mintClearance(
  * function that hands back parsed attacker-supplied data invites someone to
  * start using them.
  */
-export function clearanceValid(
+/** The solve time inside a cookie, or null when it does not carry one. */
+export function clearanceSolvedAt(
   cookie: string | undefined,
-  ipHash: string,
-  secret: string,
-  now: number = Date.now()
-): boolean {
-  if (!cookie) return false;
+  secret: string
+): number | null {
+  const parsed = parseTrusted(cookie, secret);
+  return parsed && typeof parsed.iat === "number" ? parsed.iat : null;
+}
+
+function parseTrusted(
+  cookie: string | undefined,
+  secret: string
+): ClearancePayload | null {
+  if (!cookie) return null;
 
   const dot = cookie.indexOf(".");
-  if (dot <= 0 || dot === cookie.length - 1) return false;
+  if (dot <= 0 || dot === cookie.length - 1) return null;
 
   const payloadB64 = cookie.slice(0, dot);
   const providedSig = cookie.slice(dot + 1);
@@ -90,19 +119,36 @@ export function clearanceValid(
   // because the signature already proved it came from here.
   const a = Buffer.from(providedSig);
   const b = Buffer.from(expectedSig);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
 
-  let payload: ClearancePayload;
   try {
-    payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+    return JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function clearanceValid(
+  cookie: string | undefined,
+  ipHash: string,
+  secret: string,
+  now: number = Date.now()
+): boolean {
+  const payload = parseTrusted(cookie, secret);
+  if (!payload) return false;
 
   if (typeof payload.exp !== "number" || typeof payload.ip_hash !== "string") {
     return false;
   }
-  if (payload.exp <= Math.floor(now / 1000)) return false;
+
+  const nowS = Math.floor(now / 1000);
+  if (payload.exp <= nowS) return false;
+
+  // The absolute cap. A cookie with no `iat` predates this field and is refused
+  // rather than grandfathered: an un-capped clearance is exactly what the cap
+  // exists to prevent, and reissuing one costs a single silent challenge.
+  if (typeof payload.iat !== "number") return false;
+  if (nowS - payload.iat >= CLEARANCE_MAX_LIFETIME_S) return false;
 
   // A cookie carried to a different address is not this visitor's clearance.
   const want = Buffer.from(payload.ip_hash);

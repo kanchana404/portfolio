@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_CONTACT_EMAIL, SITE_URL } from "@/lib/site";
+import { buildableTools } from "@/lib/tools/registry";
 
 export const metadata: Metadata = {
   title: "Privacy",
   description:
-    "What this site collects, what it does not, and who else receives data when you visit. The tools collect nothing at all.",
+    "What this site collects, what it does not, and who else receives data when you visit. Almost every tool runs entirely in your browser; the few that do not are named.",
   alternates: { canonical: `${SITE_URL}/privacy` },
   robots: { index: true, follow: true },
 };
@@ -19,12 +20,31 @@ export const metadata: Metadata = {
  * checkable: what the third-party analytics script is, and which pages it is
  * absent from.
  *
+ * ## The list of server-backed tools is read from the registry
+ *
+ * This page used to open with "Every tool under /tools runs entirely in your
+ * browser." That sentence was already false — pdf-to-text and pdf-to-images had
+ * shipped, and both upload. A privacy page is the one page on a site where a
+ * stale sentence is not a typo, so the exception list is now derived from
+ * `compute` rather than typed, exactly like the line under each tool's title.
+ * Ship a tool that uses a server and it names itself here.
+ *
  * Statically rendered, no data access — a privacy page that phones home would be
  * its own punchline.
  */
 export const dynamic = "force-static";
 
-const LAST_UPDATED = "9 August 2026";
+const LAST_UPDATED = "21 August 2026";
+
+/**
+ * Tools that send anything to a server, straight from the registry.
+ *
+ * Derived rather than listed so this page cannot fall behind the code. `browser`
+ * is the only compute mode that touches nothing.
+ */
+const serverTools = buildableTools()
+  .filter((tool) => tool.compute !== "browser")
+  .sort((a, b) => a.title.localeCompare(b.title));
 
 function Section({
   title,
@@ -57,9 +77,9 @@ export default function PrivacyPage() {
         and no reason to collect it.
       </p>
 
-      <Section title="The tools collect nothing">
+      <Section title="Almost every tool collects nothing">
         <p>
-          Every tool under{" "}
+          Nearly every tool under{" "}
           <Link href="/tools" className="underline underline-offset-2">
             /tools
           </Link>{" "}
@@ -67,19 +87,47 @@ export default function PrivacyPage() {
           JSON formatter, a JWT decoder or a password generator is never sent
           anywhere — there is no server request to send it to. You can confirm
           this by opening your browser&rsquo;s network tab while you type, or by
-          disconnecting from the internet and using the tool offline.
+          disconnecting from the internet and using the tool offline. Nothing you
+          enter is stored, and nothing survives a page reload; passwords and
+          tokens in particular exist only in the tab you generated them in.
         </p>
         <p>
-          Nothing you enter is stored, and nothing survives a page reload.
-          Passwords and tokens in particular exist only in the tab you generated
-          them in.
+          {serverTools.length === 0 ? (
+            "There are currently no exceptions."
+          ) : (
+            <>
+              The exceptions are named here rather than left for you to discover.
+              These {serverTools.length === 1 ? "tool sends" : "tools send"} what
+              you give {serverTools.length === 1 ? "it" : "them"} to a server I
+              run, because the work cannot be done in a browser:
+            </>
+          )}
         </p>
+        {serverTools.length > 0 ? (
+          <ul className="ml-5 list-disc space-y-1">
+            {serverTools.map((tool) => (
+              <li key={tool.slug}>
+                <Link
+                  href={`/tools/${tool.slug}`}
+                  className="underline underline-offset-2"
+                >
+                  {tool.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <p>
-          Analytics are not loaded on tool pages at all. If a tool is ever added
-          that does need a server — larger file processing, for instance — its
-          page will say so in the line under its title, and that line is
-          generated from how the tool actually works rather than typed by hand.
+          For those, the line under the tool&rsquo;s title says so before you use
+          it, and that line is generated from how the tool actually works rather
+          than typed by hand. The video downloader is the furthest from &ldquo;runs
+          in your browser&rdquo;: for most sites it has to fetch the video onto my
+          server, combine the separate video and audio streams, and hand you a
+          link — so the file itself passes through my storage and is deleted six
+          hours later. The link you paste is processed to find the media and is
+          not kept.
         </p>
+        <p>Analytics are not loaded on tool pages at all.</p>
       </Section>
 
       <Section title="The rest of the site">
@@ -92,6 +140,16 @@ export default function PrivacyPage() {
           , which records page views and interaction events so I know which
           articles get read. It sets its own identifiers and receives your IP
           address and user agent, as any request to any server does.
+        </p>
+        <p>
+          The video downloader page contacts two others. Cloudflare Turnstile
+          supplies the &ldquo;are you human&rdquo; check, which is what keeps the
+          tool from being drained by scripts, and it receives your IP address and
+          browser details. When a download can be served directly, your browser
+          fetches the file from the originating platform&rsquo;s own network —
+          TikTok&rsquo;s, X&rsquo;s, and so on — which means that platform sees
+          the request, though the referrer is stripped so it does not learn that
+          you came from here.
         </p>
         <p>
           Yes, including this one. Carving out an exception for the privacy page
@@ -118,10 +176,18 @@ export default function PrivacyPage() {
 
       <Section title="Cookies">
         <p>
-          The site sets no cookies for visitors. There is one cookie used by the
-          private admin area, which only exists after logging in and only applies
-          to me. The analytics script described above may set storage of its own
-          on the pages where it loads.
+          The site sets no cookies for ordinary browsing. There is one cookie
+          used by the private admin area, which only exists after logging in and
+          only applies to me. The analytics script described above may set
+          storage of its own on the pages where it loads.
+        </p>
+        <p>
+          The video downloader sets one cookie, and only once you use it. It
+          records that the &ldquo;are you human&rdquo; check has been passed, so a
+          single download does not ask you to pass it again for every step. It
+          holds no identifier for you — only a one-way hash of your address and
+          two timestamps — cannot be read by any script, is not sent to any other
+          site, and expires within fifteen minutes of you stopping.
         </p>
       </Section>
 

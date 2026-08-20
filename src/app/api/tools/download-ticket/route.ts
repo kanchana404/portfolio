@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   CLEARANCE_COOKIE,
   clearanceCookieHeader,
+  clearanceSolvedAt,
   clearanceValid,
   mintClearance,
 } from "@/lib/tools/download/clearance";
@@ -68,16 +69,39 @@ function refuse(code: string, detail: string, status: number) {
   );
 }
 
+/**
+ * Cloudflare's tokens are ~2 kB at the outside. Anything past this is not a
+ * token, and forwarding it would make this route a free relay for pushing
+ * arbitrary bodies at Cloudflare on someone else's behalf.
+ */
+const MAX_TOKEN_LENGTH = 4096;
+
+/** Long enough for a slow verification, short enough not to pin a function. */
+const VERIFY_TIMEOUT_MS = 5_000;
+
 async function turnstileOk(token: string, secret: string, ip: string): Promise<boolean> {
+  if (token.length > MAX_TOKEN_LENGTH) return false;
+
+  // Without a deadline, a hung siteverify holds this function open until the
+  // platform kills it — and every visitor waiting on a challenge holds another
+  // one. The failure mode of a slow dependency should be a fast refusal.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), VERIFY_TIMEOUT_MS);
   try {
     const body = new URLSearchParams({ secret, response: token, remoteip: ip });
-    const response = await fetch(TURNSTILE_VERIFY, { method: "POST", body });
+    const response = await fetch(TURNSTILE_VERIFY, {
+      method: "POST",
+      body,
+      signal: abort.signal,
+    });
     if (!response.ok) return false;
     const result = (await response.json()) as { success?: boolean };
     return result.success === true;
   } catch {
     // A network failure verifying the challenge is not permission to skip it.
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -123,6 +147,8 @@ export async function POST(request: Request) {
   const ip = clientIpFrom(request.headers);
   const ipHash = hashIp(ip, salt);
   let grantClearance = false;
+  /** Carried forward on a reissue so the absolute cap cannot be reset. */
+  let solvedAt: number | undefined;
 
   if (turnstileSecret) {
     const cookie = request.headers
@@ -132,11 +158,22 @@ export async function POST(request: Request) {
       .find((part) => part.startsWith(`${CLEARANCE_COOKIE}=`))
       ?.slice(CLEARANCE_COOKIE.length + 1);
 
-    if (!clearanceValid(cookie, ipHash, secret)) {
+    if (clearanceValid(cookie, ipHash, secret)) {
+      // Slide the window on use. A fixed 15 minutes from the solve expires in
+      // the middle of a long mux — the visitor is actively waiting, polling
+      // every few seconds, and gets asked to prove they are human again for a
+      // download that is already running and already paid for. An idle window
+      // is the thing worth bounding, not an active one.
+      grantClearance = true;
+      solvedAt = clearanceSolvedAt(cookie, secret) ?? undefined;
+    } else {
       let token: string | null = null;
       try {
         const body = (await request.json()) as { token?: unknown };
-        token = typeof body.token === "string" ? body.token : null;
+        token =
+          typeof body.token === "string" && body.token.length <= MAX_TOKEN_LENGTH
+            ? body.token
+            : null;
       } catch {
         token = null;
       }
@@ -164,7 +201,7 @@ export async function POST(request: Request) {
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (grantClearance) {
     headers["Set-Cookie"] = clearanceCookieHeader(
-      mintClearance(ipHash, secret),
+      mintClearance(ipHash, secret, Date.now(), solvedAt),
       // `Secure` would make the cookie undeliverable over plain HTTP, which is
       // exactly what local development runs on.
       process.env.NODE_ENV === "production"

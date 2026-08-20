@@ -64,16 +64,23 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     title: "Video Downloader",
     metaTitle: "Video and Reel Downloader",
     description:
-      "Get the direct media link from a public post so it downloads straight " +
-      "from the platform, without an account, a watermark or an install.",
+      "Save a video from a public post on ten sites, without an account, a " +
+      "watermark or an install. Nothing to sign up for and nothing to fetch.",
     category: "video",
     audience: ["general"],
     // Not "browser": resolving a link needs a server-side extractor. The meta
     // row says so, and `caveats` below is what the validator requires for it.
     compute: "railway",
-    // DRAFT ON PURPOSE. `buildableTools()` excludes draft, so no route is
-    // generated, the hub does not link it and the sitemap does not carry it.
-    // It exists to be built and tested, not to be found. See the caveat.
+    // `compute` alone would print "Processed on my server, then deleted", which
+    // is true of the PDF tools and not of this one: the finished file is written
+    // to object storage so the link works, and lives there for six hours. That
+    // difference is the part a reader would most want to know before pasting.
+    privacyLine: "Fetched by my server, stored 6 hours, then deleted",
+    // DRAFT until the two server-side findings from the pre-flight audit are
+    // closed: the origin has no edge guard, so `cf-connecting-ip` is spoofable
+    // and the per-IP quotas become per-Turnstile-solve allowances; and the byte
+    // quota is charged after the transfer rather than before, so it can refuse
+    // delivery but never refuses spend. Both live in downloader-api.
     status: "draft",
     publishedAt: "2026-08-20",
     updatedAt: "2026-08-20",
@@ -85,27 +92,33 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
       "download without watermark",
     ],
     intro:
-      "Paste a link to a public post and get its media URLs. The file is " +
-      "fetched from the platform's own servers by your browser, so nothing " +
-      "large passes through this site.",
+      "Paste a link to a public post and pick the quality you want. On X, " +
+      "Pinterest and Snapchat your browser takes the file straight from the " +
+      "platform. Everywhere else video and audio arrive separately, so my " +
+      "server joins them for you.",
     howToUse: [
-      "Copy the link to a public post.",
+      "Copy the link to one public post. Channels and playlists are refused.",
       "Paste it in and press Get links.",
       "Pick the quality you want. Sizes are shown where the platform reports them.",
-      "Open saves the file straight from the platform, not from here.",
-      "Private and age-restricted posts cannot be read and will say so.",
+      "Press Download and wait. Save appears when the file is ready.",
+      "On X, Pinterest and Snapchat you get Open instead, which opens the video on the platform for you to save from there.",
+      "Private, deleted and age-restricted posts cannot be read and will say so.",
     ],
     caveats:
-      "This one is different from every other tool here. The link is sent to a " +
-      "server to be read, and downloading a video is not always yours to do: " +
-      "most platforms forbid it in their terms, and the content usually belongs " +
-      "to whoever made it. Use it for your own uploads, for content you have " +
-      "permission to keep, or where the licence allows it. The service is rate " +
-      "limited and can be switched off at any time.",
+      "This one is different from every other tool here. The link goes to a " +
+      "server, the file passes through it for most sites, and downloading a " +
+      "video is not always yours to do: most platforms forbid it in their " +
+      "terms, and the content belongs to whoever made it. Use it for your own " +
+      "uploads, for content you have permission to keep, or where the licence " +
+      "allows. The service is rate limited and can be switched off at any time.",
     faqs: [
       {
         q: "Does the file go through this site?",
-        a: "No. The server reads the link and returns the platform's own media URLs, then your browser fetches from their CDN directly. That is why it is fast and why it costs almost nothing to run.",
+        a: "For X, Pinterest and Snapchat, no. Your browser fetches from their network and I never see it. For the other seven it does, because they serve video and audio separately. My server joins them, keeps the file six hours, then deletes it.",
+      },
+      {
+        q: "Why is TikTok slower than X?",
+        a: "X hands out one finished MP4 your browser can take directly. TikTok, Instagram and YouTube do not, so a server has to fetch the video, fetch the audio, and join them. That wait is the work.",
       },
       {
         q: "Why can it not open a private post?",
