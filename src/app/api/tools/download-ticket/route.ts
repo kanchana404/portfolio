@@ -87,9 +87,32 @@ export async function POST(request: Request) {
   const turnstileSecret = process.env.TURNSTILE_SECRET;
 
   if (!secret || !salt) {
-    // Loud, because the alternative is a service that 401s every request while
-    // both sides look healthy.
-    console.error("download-ticket: TICKET_SECRET or IP_SALT is not configured");
+    // Names the variables, and names the ones that did arrive.
+    //
+    // "TICKET_SECRET or IP_SALT is not configured" was true and useless: on
+    // Vercel a variable can exist in the dashboard and still be absent from the
+    // running function, because it is injected at build time and scoped per
+    // environment. Whether *none* of the five arrived or only one is missing
+    // separates "wrong environment tick-box" from "typo", and that difference
+    // is the whole debugging session.
+    //
+    // Names only. A value never goes near a log line.
+    const missing = [
+      !secret && "TICKET_SECRET",
+      !salt && "IP_SALT",
+    ].filter(Boolean);
+    const present = [
+      "TICKET_SECRET",
+      "IP_SALT",
+      "TURNSTILE_SECRET",
+      "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+      "NEXT_PUBLIC_DOWNLOADER_API",
+    ].filter((name) => Boolean(process.env[name]));
+    console.error(
+      `download-ticket: missing ${missing.join(" and ")}. ` +
+        `Of the five expected variables, the ones this function can see are: ` +
+        `${present.length ? present.join(", ") : "none"}.`
+    );
     return refuse(
       "not_configured",
       "Downloads are not available on this deployment.",
