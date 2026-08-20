@@ -45,20 +45,29 @@ FROM python:${PYTHON_VERSION} AS runtime
 #   libheif1      — HEIC/HEIF. The reason this service exists: it is LGPL, so it
 #                   cannot be conveyed to a browser from an MIT front end, but
 #                   on a server nothing is conveyed to anyone.
-#   libraw23      — camera RAW, under rawpy.
+#   (no libraw)   — camera RAW comes from rawpy, whose manylinux wheel bundles
+#                   its own libraw_r.so. An apt libraw would be dead weight, and
+#                   the name is a moving target: bookworm ships libraw20, not
+#                   the libraw23 this line used to ask for, which is exactly
+#                   what failed the second deploy.
 #   libjxl0.7     — JPEG XL, for the browsers that are not Safari.
 #   libpoppler    — PDF first-page rendering.
 #   ca-certificates, tini — TLS trust, and PID 1 that reaps children.
 #
-# ImageMagick is deliberately ABSENT. libvips would use it as a catch-all
-# delegate, and it is the largest attack surface available to a service that
-# decodes hostile files for a living. Anything it would have handled is either
-# handled by a specific library above or refused by name.
+# ImageMagick cannot be kept out of this image, and saying so plainly matters
+# because an earlier version of this comment claimed the opposite. Debian's
+# libvips42 declares `libmagickcore-6.q16-6` as a hard dependency, so apt
+# installs it no matter what this list asks for. Excluding it would mean
+# compiling libvips from source with -Dmagick=disabled: a long build for one
+# loader.
+#
+# It is disarmed at runtime instead, via VIPS_BLOCK_UNTRUSTED below. That is the
+# better control regardless, because it blocks every loader libvips marks
+# untrusted rather than only the one we thought to name.
 RUN apt-get update \
  && apt-get install --no-install-recommends -y \
         libvips42 \
         libheif1 \
-        libraw23 \
         libjxl0.7 \
         libpoppler-glib8 \
         ca-certificates \
@@ -87,7 +96,11 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     # cannot hold decoded pixels from one user's upload while the next is
     # served.
     VIPS_CONCURRENCY=2 \
-    VIPS_DISC_THRESHOLD=0
+    VIPS_DISC_THRESHOLD=0 \
+    # Refuses every loader libvips marks untrusted, which is what actually
+    # neutralises the ImageMagick delegate libvips42 drags in. A file that would
+    # only decode through magickload is refused rather than handed to it.
+    VIPS_BLOCK_UNTRUSTED=1
 
 # No writable directory is created, deliberately. This service never writes a
 # file: uploads are decoded from memory and returned in the response body, so
