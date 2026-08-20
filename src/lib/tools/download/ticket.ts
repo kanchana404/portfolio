@@ -1,0 +1,130 @@
+/**
+ * Minting download tickets, byte-compatible with the downloader service.
+ *
+ * The wire format is a shared protocol between two programs in two languages in
+ * two repositories, and `downloader-api/app/security/tickets.py` is the
+ * authority: it is the code that actually verifies, so a disagreement is
+ * measured against it, not negotiated with it.
+ *
+ *     ticket  = base64url(payloadJson) + "." + base64url(hmacSha256(secret, payloadB64))
+ *     payload = {"jti":<32 hex>,"aud":"downloader","exp":<unix s>,"ip_hash":<16 hex>}
+ *
+ * Four details are load-bearing, and each has a specific failure mode:
+ *
+ * 1. **The MAC covers the base64url *text* of the payload**, not the JSON bytes.
+ *    That removes any dependence on two languages serialising JSON identically,
+ *    and means the verifier never re-encodes attacker-controlled data before
+ *    checking it. Sign exactly the string that goes before the dot.
+ * 2. **`exp` is UNIX seconds.** `Date.now()` is milliseconds. Forgetting the
+ *    divide mints tickets valid until the year 57000, which the verifier
+ *    rejects outright as `ticket_expired` rather than honouring.
+ * 3. **base64url is unpadded** and uses `-` and `_`. Node's `base64url`
+ *    encoding already does this; `base64` does not.
+ * 4. **The IP is normalised before hashing.** Measured on 2026-08-12: the same
+ *    loopback connection was `::ffff:127.0.0.1` to Node and `127.0.0.1` to
+ *    uvicorn. Two spellings, two digests, every ticket rejected. Any dual-stack
+ *    hop can do the same in production, where the symptom is a service that is
+ *    100% broken behind a 401 that explains nothing.
+ *
+ * `src/lib/tools/download/ticket.test.ts` mints with this code and verifies
+ * with the real Python verifier, so drift fails the build rather than the site.
+ */
+
+import { createHmac, createHash, randomBytes } from "node:crypto";
+
+export const TICKET_AUDIENCE = "downloader";
+/** Matches TICKET_TTL_S. The verifier refuses anything over 300 + skew. */
+export const TICKET_TTL_S = 120;
+export const TICKET_HEADER = "X-Download-Ticket";
+const IP_HASH_LEN = 16;
+
+function b64url(raw: Buffer): string {
+  return raw.toString("base64url");
+}
+
+/**
+ * Canonicalise an address so both sides hash the same string.
+ *
+ * Must stay byte-identical to `normalise_ip` in
+ * `downloader-api/app/security/quotas.py`: trim, lowercase, strip brackets from
+ * a bracketed IPv6 literal, and strip a leading `::ffff:` only when what
+ * follows is a real dotted quad.
+ */
+export function normaliseIp(ip: string): string {
+  let cleaned = ip.trim().toLowerCase();
+  if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  if (cleaned.startsWith("::ffff:")) {
+    const candidate = cleaned.slice(7);
+    const parts = candidate.split(".");
+    // "::ffff:1.2" is not a dotted quad and is left alone.
+    if (parts.length === 4 && parts.every((p) => /^\d{1,3}$/.test(p))) {
+      cleaned = candidate;
+    }
+  }
+  return cleaned;
+}
+
+export function hashIp(ip: string, salt: string): string {
+  return createHash("sha256")
+    .update(`${normaliseIp(ip)}${salt}`, "utf8")
+    .digest("hex")
+    .slice(0, IP_HASH_LEN);
+}
+
+export interface MintOptions {
+  ip: string;
+  secret: string;
+  salt: string;
+  ttlSeconds?: number;
+  /** Injected in tests so the payload is reproducible. */
+  now?: number;
+  jti?: string;
+}
+
+export function mintTicket({
+  ip,
+  secret,
+  salt,
+  ttlSeconds = TICKET_TTL_S,
+  now,
+  jti,
+}: MintOptions): string {
+  const issued = now ?? Math.floor(Date.now() / 1000);
+
+  // Key order matches the Python minter: jti, aud, exp, ip_hash. Verification
+  // does not depend on it, since the MAC covers the encoded text, but a
+  // divergence here is how two implementations start drifting apart.
+  const payload = {
+    jti: jti ?? randomBytes(16).toString("hex"),
+    aud: TICKET_AUDIENCE,
+    exp: issued + ttlSeconds,
+    ip_hash: hashIp(ip, salt),
+  };
+
+  const payloadB64 = b64url(Buffer.from(JSON.stringify(payload), "utf8"));
+  const mac = createHmac("sha256", secret).update(payloadB64, "ascii").digest();
+  return `${payloadB64}.${b64url(mac)}`;
+}
+
+/**
+ * The client address, matching `client_ip` in the verifier.
+ *
+ * The rightmost meaningful entry of X-Forwarded-For, not the leftmost: the
+ * leftmost is whatever the client claimed. Cloudflare's own header wins when
+ * present because it cannot be spoofed past Cloudflare.
+ */
+export function clientIpFrom(headers: Headers): string {
+  const cf = headers.get("cf-connecting-ip")?.trim();
+  if (cf) return cf;
+
+  const forwarded = headers.get("x-forwarded-for") ?? "";
+  const parts = forwarded
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length > 0) return parts[parts.length - 1];
+
+  return headers.get("x-real-ip")?.trim() ?? "";
+}
