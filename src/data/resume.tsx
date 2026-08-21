@@ -104,7 +104,7 @@ export const DATA = {
       badges: ["Co-Founder"],
       location: "Sri Lanka",
       title: "Co-Founder & Software Engineer",
-      logoUrl: "/ryzera.svg",
+      logoUrl: "/ryzera.jpg",
       start: "2023",
       end: "Present",
       description:
