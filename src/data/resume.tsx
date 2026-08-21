@@ -100,11 +100,11 @@ export const DATA = {
     },
     {
       company: "Ryzera Technologies",
-      href: "https://ryzera.io",
+      href: "https://www.ryzera.lk",
       badges: ["Co-Founder"],
       location: "Sri Lanka",
       title: "Co-Founder & Software Engineer",
-      logoUrl: "/ryzera.jpg",
+      logoUrl: "/ryzera.svg",
       start: "2023",
       end: "Present",
       description:
