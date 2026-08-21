@@ -113,7 +113,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
       },
       {
         q: "Why is TikTok slower than X?",
-        a: "X hands out one finished MP4 your browser can take directly. TikTok, Instagram and YouTube do not, so a server has to fetch the video, fetch the audio, and join them. That wait is the work.",
+        a: "X hands out one finished MP4 your browser can take directly. TikTok, Instagram and Facebook do not, so a server has to fetch the video, fetch the audio, and join them. That wait is the work.",
       },
       {
         q: "Why can it not open a private post?",

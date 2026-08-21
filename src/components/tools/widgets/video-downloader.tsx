@@ -31,9 +31,21 @@ import {
 
 type Stage = "idle" | "working" | "done" | "error";
 
-/** Mirrors SUPPORTED in app/resolver/platforms.py. */
+/**
+ * Mirrors SUPPORTED in app/resolver/platforms.py, minus YouTube.
+ *
+ * YouTube is deliberately not advertised. The service still recognises a
+ * YouTube link and answers `platform_degraded` — "temporarily unavailable" —
+ * which is the honest thing to say to someone who pastes one anyway. What would
+ * not be honest is listing it as something this tool does.
+ *
+ * It is out because it is the one platform that cannot work from a datacenter
+ * address without a residential proxy, which costs real money per gigabyte. Put
+ * it back here the same day that is paid for and a real download succeeds, not
+ * before.
+ */
 const PLATFORMS =
-  "TikTok, Instagram, Facebook, X, Reddit, Pinterest, YouTube, Loom, Twitch and Snapchat";
+  "TikTok, Instagram, Facebook, X, Reddit, Pinterest, Loom, Twitch and Snapchat";
 
 export default function VideoDownloader() {
   const id = useId();
