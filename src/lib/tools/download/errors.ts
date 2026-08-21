@@ -27,6 +27,19 @@ export interface DownloadErrorInfo {
   message: string;
   /** True when trying the same thing again might work. */
   retryable: boolean;
+  /**
+   * Prefer the service's own `detail` over the sentence below, when it sends one.
+   *
+   * Only for codes where the service knows something this file cannot. It sends
+   * "Daily limit of 30 lookups reached. Try again tomorrow." — the number is the
+   * whole point, and a generic "you have used today's downloads" throws it away.
+   *
+   * Off by default and deliberately rare. The reason these messages are written
+   * here at all is that a raw code must never reach a reader, and every opt-in
+   * is a promise that this particular field is a human sentence rather than a
+   * machine string.
+   */
+  preferDetail?: boolean;
 }
 
 const MESSAGES: Record<string, DownloadErrorInfo> = {
@@ -41,10 +54,12 @@ const MESSAGES: Record<string, DownloadErrorInfo> = {
     retryable: false,
   },
   video_too_long: {
+    preferDetail: true,
     message: "That video is longer than this will handle. Short posts and clips work best.",
     retryable: false,
   },
   file_too_large: {
+    preferDetail: true,
     message: "That file is too large to process here.",
     retryable: false,
   },
@@ -121,11 +136,13 @@ const MESSAGES: Record<string, DownloadErrorInfo> = {
 
   // --- capacity ------------------------------------------------------------
   killswitch_active: {
+    preferDetail: true,
     message:
       "Downloads are paused for today because the daily limit was reached. Nothing is broken; try tomorrow.",
     retryable: false,
   },
   quota_exceeded: {
+    preferDetail: true,
     message: "You have used today's downloads from this connection. Try again tomorrow.",
     retryable: false,
   },
@@ -147,7 +164,14 @@ const MESSAGES: Record<string, DownloadErrorInfo> = {
 
 export function describeError(code: string, fallback?: string): DownloadErrorInfo {
   const known = MESSAGES[code];
-  if (known) return known;
+  if (known) {
+    // The service's detail wins only where it was opted in, and only when it
+    // actually said something.
+    if (known.preferDetail && fallback?.trim()) {
+      return { ...known, message: fallback.trim() };
+    }
+    return known;
+  }
 
   // Never print a raw code. It is a bug report the reader cannot file.
   return {

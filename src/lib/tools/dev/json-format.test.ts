@@ -105,3 +105,57 @@ describe("describeJson", () => {
     expect(describeJson("{")).toBeNull();
   });
 });
+
+describe("numbers survive the round trip", () => {
+  // Reported 2026-08-21 by an external test pass: `{"id":12345678901234567890}`
+  // came back as 12345678901234567000. No error, no warning, just different
+  // digits — the worst shape a bug can take in a tool whose whole promise is
+  // "here is your data, tidied". `JSON.parse` produces float64, so every
+  // integer past 2^53 was altered, and Snowflake ids, database bigints and
+  // payment identifiers all live in that range.
+  const exact = (source: string) => {
+    const formatted = formatJson(source, 2);
+    const minified = minifyJson(source);
+    expect(formatted.ok && minified.ok).toBe(true);
+    return { formatted, minified };
+  };
+
+  it("keeps an integer larger than Number.MAX_SAFE_INTEGER exactly", () => {
+    const source = '{"id":12345678901234567890}';
+    const { formatted, minified } = exact(source);
+    expect(formatted.ok && formatted.value).toContain("12345678901234567890");
+    // Minifying JSON that has no whitespace must return it unchanged.
+    expect(minified.ok && minified.value).toBe(source);
+  });
+
+  it("does not turn an out-of-range exponent into null", () => {
+    // JSON.parse('1e400') is Infinity, and JSON.stringify(Infinity) is null —
+    // so this silently replaced a number with nothing.
+    const { minified } = exact('{"n":1e400}');
+    expect(minified.ok && minified.value).toBe('{"n":1e400}');
+  });
+
+  it("keeps more decimal places than a float64 can hold", () => {
+    const { minified } = exact('{"n":0.1234567890123456789}');
+    expect(minified.ok && minified.value).toBe('{"n":0.1234567890123456789}');
+  });
+
+  it("keeps big numbers when sorting keys too", () => {
+    const sorted = sortJsonKeys('{"b":1,"a":12345678901234567890}', 2);
+    expect(sorted.ok && sorted.value).toContain("12345678901234567890");
+  });
+
+  it("still reports a syntax error rather than reformatting invalid input", () => {
+    // The lossless emitter must never be reached for bad input; JSON.parse is
+    // still the validator, and its message is the product.
+    const result = formatJson('{"a":1,}');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.line).toBe(1);
+  });
+
+  it("leaves strings containing number-like text alone", () => {
+    const source = '{"s":"12345678901234567890"}';
+    const { minified } = exact(source);
+    expect(minified.ok && minified.value).toBe(source);
+  });
+});

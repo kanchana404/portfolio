@@ -115,3 +115,32 @@ describe("a broken challenge is not a failed one", () => {
     expect(describeError("challenge_failed").message).toMatch(/once more/i);
   });
 });
+
+describe("the service's own detail, where it knows more than this file does", () => {
+  it("shows the real quota number instead of a generic sentence", () => {
+    // Reported 2026-08-21: the service sends "Daily limit of 30 lookups
+    // reached. Try again tomorrow." and the UI replaced it with a sentence
+    // carrying no number at all. The number is the useful part.
+    const info = describeError(
+      "quota_exceeded",
+      "Daily limit of 30 lookups reached. Try again tomorrow."
+    );
+    expect(info.message).toContain("30");
+    expect(info.retryable).toBe(false);
+  });
+
+  it("falls back to the local sentence when the service sent nothing", () => {
+    expect(describeError("quota_exceeded").message).toMatch(/today/i);
+    expect(describeError("quota_exceeded", "   ").message).toMatch(/today/i);
+  });
+
+  it("does not let the service overwrite messages that were chosen deliberately", () => {
+    // ticket_bad_signature must stay vague: the service refuses to say whether
+    // the secret or the address was wrong, and repeating its detail here would
+    // undo that. Same for the challenge codes.
+    for (const code of ["ticket_bad_signature", "challenge_failed", "unreachable"]) {
+      const withDetail = describeError(code, "SOMETHING FROM THE SERVER");
+      expect(withDetail.message, code).not.toContain("SOMETHING FROM THE SERVER");
+    }
+  });
+});

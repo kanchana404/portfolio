@@ -64,7 +64,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     title: "Video Downloader",
     metaTitle: "Video and Reel Downloader",
     description:
-      "Save a video from a public post on ten sites, without an account, a " +
+      "Save a video from a public post on nine sites, without an account, a " +
       "watermark or an install. Nothing to sign up for and nothing to fetch.",
     category: "video",
     audience: ["general"],
@@ -87,16 +87,16 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
       "download without watermark",
     ],
     intro:
-      "Paste a link to a public post and pick the quality you want. On X, " +
-      "Pinterest and Snapchat your browser takes the file straight from the " +
-      "platform. Everywhere else video and audio arrive separately, so my " +
+      "Paste a link to a public post and pick the quality you want. On X " +
+      "and Snapchat your browser takes the file straight from the platform. " +
+      "Everywhere else video and audio usually arrive separately, so my " +
       "server joins them for you.",
     howToUse: [
       "Copy the link to one public post. Channels and playlists are refused.",
       "Paste it in and press Get links.",
       "Pick the quality you want. Sizes are shown where the platform reports them.",
       "Press Download and wait. Save appears when the file is ready.",
-      "On X, Pinterest and Snapchat you get Open instead, which opens the video on the platform for you to save from there.",
+      "On X and Snapchat you get Open instead, which opens the video on the platform to save from there. Pinterest can give either.",
       "Private, deleted and age-restricted posts cannot be read and will say so.",
     ],
     caveats:
@@ -109,7 +109,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     faqs: [
       {
         q: "Does the file go through this site?",
-        a: "For X, Pinterest and Snapchat, no. Your browser fetches from their network and I never see it. For the other seven it does, because they serve video and audio separately. My server joins them, keeps the file six hours, then deletes it.",
+        a: "For X and Snapchat, no. Your browser fetches from their network and I never see it. Everywhere else it usually does, because they serve video and audio separately. My server joins them, keeps the file six hours, then deletes it.",
       },
       {
         q: "Why is TikTok slower than X?",

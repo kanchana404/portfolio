@@ -9,6 +9,8 @@
  * the bug and a tool that confirms one exists.
  */
 
+import { reformat } from "./json-lossless";
+
 export interface JsonError {
   message: string;
   line: number;
@@ -104,8 +106,9 @@ function toJsonError(source: string, err: unknown): JsonError {
 
 export type IndentStyle = 2 | 4 | "tab";
 
-function indentOf(style: IndentStyle): string | number {
-  return style === "tab" ? "\t" : style;
+/** The emitter works in literal padding rather than JSON.stringify's number. */
+function indentText(style: IndentStyle): string {
+  return style === "tab" ? "\t" : " ".repeat(style);
 }
 
 /** Parse, then re-serialise with indentation. */
@@ -114,8 +117,12 @@ export function formatJson(source: string, indent: IndentStyle = 2): JsonResult 
     return { ok: true, value: "", bytesIn: 0, bytesOut: 0 };
   }
   try {
-    const parsed: unknown = JSON.parse(source);
-    const value = JSON.stringify(parsed, null, indentOf(indent));
+    // Validate with JSON.parse — its error messages are this module's product —
+    // but never serialise from the value it returns. A JS number is a float64,
+    // so `{"id":12345678901234567890}` came back as ...567000 with no error at
+    // all. `reformat` copies every number through from the source text.
+    JSON.parse(source);
+    const value = reformat(source, indentText(indent));
     return {
       ok: true,
       value,
@@ -133,8 +140,8 @@ export function minifyJson(source: string): JsonResult {
     return { ok: true, value: "", bytesIn: 0, bytesOut: 0 };
   }
   try {
-    const parsed: unknown = JSON.parse(source);
-    const value = JSON.stringify(parsed);
+    JSON.parse(source);
+    const value = reformat(source, "");
     return {
       ok: true,
       value,
@@ -156,18 +163,9 @@ export function sortJsonKeys(source: string, indent: IndentStyle = 2): JsonResul
   if (source.trim().length === 0) {
     return { ok: true, value: "", bytesIn: 0, bytesOut: 0 };
   }
-  const sortValue = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(sortValue);
-    if (value && typeof value === "object") {
-      const entries = Object.entries(value as Record<string, unknown>);
-      entries.sort(([a], [b]) => a.localeCompare(b));
-      return Object.fromEntries(entries.map(([k, v]) => [k, sortValue(v)]));
-    }
-    return value;
-  };
   try {
-    const parsed: unknown = JSON.parse(source);
-    const value = JSON.stringify(sortValue(parsed), null, indentOf(indent));
+    JSON.parse(source);
+    const value = reformat(source, indentText(indent), true);
     return {
       ok: true,
       value,
