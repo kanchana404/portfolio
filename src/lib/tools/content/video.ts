@@ -76,12 +76,7 @@ export const VIDEO_TOOLS: readonly ToolDef[] = [
     // to object storage so the link works, and lives there for six hours. That
     // difference is the part a reader would most want to know before pasting.
     privacyLine: "Fetched by my server, stored 6 hours, then deleted",
-    // DRAFT until the two server-side findings from the pre-flight audit are
-    // closed: the origin has no edge guard, so `cf-connecting-ip` is spoofable
-    // and the per-IP quotas become per-Turnstile-solve allowances; and the byte
-    // quota is charged after the transfer rather than before, so it can refuse
-    // delivery but never refuses spend. Both live in downloader-api.
-    status: "draft",
+    status: "stable",
     publishedAt: "2026-08-20",
     updatedAt: "2026-08-20",
     keywords: [
