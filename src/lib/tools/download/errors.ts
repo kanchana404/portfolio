@@ -109,6 +109,15 @@ const MESSAGES: Record<string, DownloadErrorInfo> = {
     message: "The 'are you human' check could not be verified. Try once more.",
     retryable: true,
   },
+  challenge_misconfigured: {
+    // Deliberately does not say "try again". This is a Cloudflare 4xxxxx: the
+    // sitekey is unknown to Cloudflare, usually because the widget was deleted
+    // or never listed this hostname. Every retry fails the same way, and the
+    // only person who can fix it is the operator.
+    message:
+      "The 'are you human' check is not set up correctly on this site, so downloads cannot run. This is my fault, not yours, and retrying will not help.",
+    retryable: false,
+  },
 
   // --- capacity ------------------------------------------------------------
   killswitch_active: {

@@ -95,3 +95,23 @@ describe("the codes are a wire contract, not prose", () => {
     }
   });
 });
+
+describe("a broken challenge is not a failed one", () => {
+  it("does not tell the reader to retry a configuration fault", () => {
+    // Measured 2026-08-21 on the live site: a deleted Turnstile widget's
+    // sitekey returns error 400020, byte-identical to a garbage key, while
+    // Cloudflare's always-block test key returns 600010. The old code mapped
+    // both to "Try once more", so the one failure no amount of retrying could
+    // fix was the one that invited retrying.
+    const broken = describeError("challenge_misconfigured");
+    expect(broken.retryable).toBe(false);
+    expect(broken.message).not.toMatch(/try (again|once more)/i);
+    // Says whose fault it is. The reader can do nothing about this one.
+    expect(broken.message).toMatch(/not yours/i);
+  });
+
+  it("still offers a retry for an actual challenge verdict", () => {
+    expect(describeError("challenge_failed").retryable).toBe(true);
+    expect(describeError("challenge_failed").message).toMatch(/once more/i);
+  });
+});

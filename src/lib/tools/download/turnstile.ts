@@ -187,16 +187,38 @@ export async function getTurnstileToken(
         size: "flexible",
         callback: (token: string) => finish(() => resolve(token)),
         "error-callback": (code?: string) =>
-          finish(() =>
+          finish(() => {
+            // Cloudflare's code is the whole diagnosis, and it was previously
+            // thrown away: `describeError` maps `challenge_failed` to a fixed
+            // sentence and ignores the detail, so a deleted widget and a failed
+            // challenge produced the same words. They need opposite responses.
+            //
+            // 4xxxxx is configuration — an unknown or deleted sitekey, a domain
+            // the widget does not list. Retrying is futile and telling someone
+            // to "try once more" wastes their time. Measured 2026-08-21: a
+            // deleted widget's sitekey returns 400020, byte-identical to a
+            // garbage key, while Cloudflare's always-block test key returns
+            // 600010 — a different family entirely.
+            //
+            // 6xxxxx is a verdict about this visitor. Retrying can genuinely help.
+            const isConfig = typeof code === "string" && code.startsWith("4");
+            if (code) {
+              console.error(
+                `Turnstile error ${code}` +
+                  (isConfig
+                    ? " — this is a configuration fault. Check the sitekey exists in the Cloudflare dashboard and lists this hostname."
+                    : "")
+              );
+            }
             reject(
               new TurnstileError(
-                "challenge_failed",
+                isConfig ? "challenge_misconfigured" : "challenge_failed",
                 code
                   ? `The 'are you human' check failed (${code}).`
                   : "The 'are you human' check failed."
               )
-            )
-          ),
+            );
+          }),
         "timeout-callback": () =>
           finish(() =>
             reject(
