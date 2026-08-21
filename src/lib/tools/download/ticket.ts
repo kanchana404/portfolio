@@ -139,19 +139,22 @@ export function clientIpFrom(headers: Headers): string {
   // `downloader-api/app/security/origin.py` does it. Restoring the old
   // unconditional read would restore the hole.
 
-  // RIGHTMOST entry, and `client_ip` in app/security/tickets.py now matches.
+  // RIGHTMOST entry here, LEFTMOST in app/security/tickets.py — deliberately.
   //
-  // The two sides must derive the same address by the same rule or every
-  // request 401s with nothing in the response explaining why. They previously
-  // disagreed — this side took the rightmost, the service took the leftmost —
-  // and agreed in practice only because both platforms replace the header with
-  // a single entry, which makes the two ends of the list the same value.
+  // The goal is not that the two files run the same rule. It is that both
+  // arrive at the same value: the visitor's address. The rule that achieves
+  // that depends on what each platform does to the header, and they differ.
   //
-  // Rightmost is the rule that survives being wrong about that. If a platform
-  // ever appends instead of replacing, the leftmost is whatever the caller
-  // claimed and the rightmost is what the platform itself observed; only one of
-  // those is worth binding a quota to. Aligning on the safe one costs nothing
-  // while the lists are one entry long, and costs nothing later either.
+  // MEASURED 2026-08-21. Railway APPENDS its own proxy, so its header reads
+  // "112.134.221.2, 152.233.68.97" and the client is the FIRST entry. Vercel
+  // does not append, so the client is the last entry here — which is the same
+  // as the first, and is the value this side has always produced correctly.
+  //
+  // Making the service "match" this file by switching it to the rightmost entry
+  // broke everything: the service started hashing Railway's proxy instead of the
+  // visitor, every ip_hash stopped matching, and the resulting mismatch looked
+  // so much like two real addresses that it was misdiagnosed as a CGNAT pool.
+  // Symmetry of rule is not the invariant. Equality of derived value is.
   const forwarded = headers.get("x-forwarded-for") ?? "";
   const parts = forwarded
     .split(",")
