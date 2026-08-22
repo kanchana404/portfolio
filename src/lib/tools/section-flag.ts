@@ -44,5 +44,22 @@
  * and the type-level widget map all keep running on every CI pass, so the
  * platform cannot rot silently while the section is dark.
  */
+/**
+ * Held back regardless of the environment variable.
+ *
+ * The section is being reconsidered — 24 of its 31 tools are the commodity kind
+ * (JSON formatter, base64, UUID, hash) that thousands of sites already serve, so
+ * what it is *for* is an open question. It stays dark until that is answered
+ * rather than shipping while undecided.
+ *
+ * This overrides `NEXT_PUBLIC_TOOLS_LIVE=1`, which is still set in Vercel. That
+ * is deliberate: flipping it here is one line in a reviewed commit, and it does
+ * not depend on remembering what a dashboard variable is doing months from now.
+ *
+ * **To bring the section back: set this to `false`.** The env var then governs
+ * again, exactly as before, and everything else already reads the flag.
+ */
+const HELD_BACK = true;
+
 export const TOOLS_SECTION_LIVE =
-  process.env.NEXT_PUBLIC_TOOLS_LIVE === "1";
+  !HELD_BACK && process.env.NEXT_PUBLIC_TOOLS_LIVE === "1";
