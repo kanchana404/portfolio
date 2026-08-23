@@ -59,79 +59,15 @@ function analyzeContentForImages(content: string) {
 }
 
 // Function to enhance content with better structure and writing
-function enhanceContentStructure(originalContent: string, title: string, link: string) {
-  const paragraphs = originalContent.split('. ').filter((p: string) => p.trim().length > 0);
-  
-  // Create enhanced content with better structure
-  let enhancedContent = '';
-  
-  // Add title
-  enhancedContent += `# ${title}\n\n`;
-  
-  // Add introduction section
-  enhancedContent += `## Introduction\n\n`;
-  if (paragraphs.length > 0) {
-    enhancedContent += `${paragraphs[0]}.\n\n`;
-  }
-  
-  // Add background context
-  enhancedContent += `## Background & Context\n\n`;
-  enhancedContent += `This development represents a significant milestone in the intersection of artificial intelligence and economic policy. As AI continues to reshape industries and economies worldwide, strategic frameworks like this blueprint provide essential guidance for nations seeking to harness AI's transformative potential while ensuring sustainable and inclusive growth. From my experience in AI/ML integration and automation solutions, I can see how these initiatives align with the broader trend of intelligent systems transforming business processes and decision-making frameworks.\n\n`;
-  
-  // Add main content section
-  enhancedContent += `## Key Insights & Analysis\n\n`;
-  
-  // Add middle paragraphs with better flow
-  const middleParagraphs = paragraphs.slice(1, Math.max(2, paragraphs.length - 1));
-  for (let i = 0; i < middleParagraphs.length; i++) {
-    enhancedContent += `${middleParagraphs[i]}.\n\n`;
-  }
-  
-  // Add detailed analysis section
-  enhancedContent += `## Detailed Analysis\n\n`;
-  enhancedContent += `### Economic Impact\n\n`;
-  enhancedContent += `The implementation of AI-driven economic strategies has the potential to significantly boost productivity across various sectors. By leveraging artificial intelligence for data analysis, automation, and decision-making processes, organizations can achieve unprecedented levels of efficiency and innovation.\n\n`;
-  
-  enhancedContent += `### Technological Considerations\n\n`;
-  enhancedContent += `Modern AI systems require robust infrastructure, skilled workforce, and ethical frameworks to ensure responsible deployment. The blueprint addresses these critical aspects, providing a comprehensive roadmap for sustainable AI integration. Drawing from my experience with n8n and Make.com automation platforms, I can see how workflow automation and intelligent systems can significantly enhance the implementation of such AI-driven strategies.\n\n`;
-  
-  enhancedContent += `### Implementation Strategy\n\n`;
-  enhancedContent += `Successful implementation requires collaboration between government entities, private sector organizations, and educational institutions. The blueprint outlines specific steps for fostering these partnerships and creating an ecosystem conducive to AI-driven growth. As a software engineer specializing in AI/ML solutions and automation, I believe the key to successful implementation lies in creating scalable, intelligent systems that can adapt to evolving requirements while maintaining efficiency and reliability.\n\n`;
-  
-  // Add future implications
-  enhancedContent += `## Future Implications\n\n`;
-  enhancedContent += `### Short-term Benefits\n\n`;
-  enhancedContent += `In the immediate future, this initiative is expected to accelerate digital transformation efforts, improve operational efficiency, and create new opportunities for innovation across various industries. Based on my experience with AI-powered applications and automation workflows, I can see how these technologies can immediately enhance productivity and streamline complex business processes.\n\n`;
-  
-  enhancedContent += `### Long-term Vision\n\n`;
-  enhancedContent += `Looking ahead, the comprehensive adoption of AI technologies promises to revolutionize how we approach economic development, problem-solving, and resource allocation. This blueprint serves as a foundational document for building a more intelligent and adaptive economic system. From my work on AI-powered SaaS applications and intelligent automation systems, I can envision how these technologies will continue to evolve and create new opportunities for innovation and growth.\n\n`;
-  
-  // Add conclusion section
-  enhancedContent += `## Conclusion\n\n`;
-  if (paragraphs.length > 1) {
-    enhancedContent += `${paragraphs[paragraphs.length - 1]}.\n\n`;
-  }
-  enhancedContent += `This initiative represents a forward-thinking approach to economic development in the AI era. By providing clear guidelines and strategic frameworks, it enables stakeholders to navigate the complexities of AI integration while maximizing its benefits for society as a whole. As someone deeply involved in AI/ML development and automation solutions, I believe these frameworks will be crucial for building the next generation of intelligent systems and applications.\n\n`;
-  
-  // Add additional resources
-  enhancedContent += `## Additional Resources\n\n`;
-  enhancedContent += `For more information about AI implementation strategies and economic development frameworks, consider exploring:\n\n`;
-  enhancedContent += `- **AI Policy Guidelines**: Best practices for responsible AI deployment\n`;
-  enhancedContent += `- **Economic Impact Studies**: Research on AI's influence on various sectors\n`;
-  enhancedContent += `- **Implementation Case Studies**: Real-world examples of successful AI integration\n`;
-  enhancedContent += `- **Future Trends**: Emerging developments in AI technology and applications\n`;
-  enhancedContent += `- **Automation Solutions**: Workflow automation with n8n and Make.com\n`;
-  enhancedContent += `- **AI/ML Integration**: Building intelligent applications and systems\n\n`;
-  
-  // Add source attribution
-  enhancedContent += `---\n\n`;
-  enhancedContent += `**Source:** [Read the original article](${link})\n\n`;
-  enhancedContent += `*This article was automatically generated and enhanced with AI-generated images and comprehensive analysis.*`;
-  
-  return enhancedContent;
-}
+// `enhanceContentStructure` used to live here. It spliced incoming feed text
+// into a fixed heading template and appended ~700 words of hardcoded prose,
+// including a first-person sentence claiming personal experience that was
+// byte-identical across every post it generated — on posts about Broadcom,
+// Greece, Argentina, Australia, GPT-5 and AMD alike.
+//
+// Content now arrives finished from the caller. This route stores and
+// attributes it; it does not write it.
 
-// Function to create a blog from news data
 async function createBlogFromNews(newsData: any) {
   const { title, link, content, date } = newsData;
   
@@ -171,8 +107,8 @@ async function createBlogFromNews(newsData: any) {
     }
   }
   
-  // Enhance content structure first
-  let enhancedContent = enhanceContentStructure(content, title, link);
+  // Stored as supplied. The caller is responsible for the words.
+  let enhancedContent = content;
   
   // Insert images at strategic points based on content length
   if (additionalImages.length > 0) {
@@ -249,7 +185,9 @@ async function createBlogFromNews(newsData: any) {
     tags: ['AI', 'Technology', 'News', 'OpenAI', 'Automation', 'Software Engineering'],
     author: 'Kavitha Kanchana',
     publishedAt: publishedDate,
-    isPublished: true,
+    // Opt in, never default. A post reaches the public because something asked
+    // for it, not because nothing stopped it.
+    isPublished: newsData.publish === true,
     sourceUrl: link,
     originalDate: date
   };
