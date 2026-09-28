@@ -27,12 +27,16 @@ import type { NextRequest } from "next/server";
  * `'admin123'`. An environment variable that goes missing during a deploy should
  * lock the door, not remove it.
  *
- * ## The cookie no longer carries the password
+ * ## The cookie carries a signed, expiring token
  *
- * It used to store `ADMIN_PASSWORD` verbatim. It now stores a digest derived
- * from it, so the secret itself is never written to a cookie jar, a proxy log or
- * an error report. This is not a session system — there is no server-side store
- * and no revocation beyond changing the password, which is the correct amount of
+ * It once stored `ADMIN_PASSWORD` verbatim, then a fixed digest of it: the same
+ * value for every session, with no server-side expiry, so a leaked cookie
+ * worked until the password changed and could be brute-forced offline to
+ * recover the password. It now holds `v2.<issuedAt>.<HMAC-SHA256(key,
+ * issuedAt)>`, where the key comes from `ADMIN_SESSION_SECRET` (or, if that is
+ * unset, from the password). The server rejects it after SESSION_MAX_AGE_S
+ * whatever the cookie's own expiry says, and changing either secret signs
+ * every session out. Still not a session store, which is the right amount of
  * machinery for a single-operator blog admin.
  *
  * ## Runtime
@@ -49,7 +53,9 @@ import type { NextRequest } from "next/server";
 export const ADMIN_COOKIE = "admin-session";
 export const LEGACY_ADMIN_COOKIE = "admin-password";
 
-const TOKEN_CONTEXT = "admin-session-v1";
+const TOKEN_VERSION = "v2";
+/** Seven days; enforced from the token's own timestamp, not the cookie. */
+export const SESSION_MAX_AGE_S = 60 * 60 * 24 * 7;
 
 async function sha256(value: string): Promise<Uint8Array> {
   const digest = await crypto.subtle.digest(
@@ -74,14 +80,52 @@ export async function constantTimeEquals(a: string, b: string): Promise<boolean>
   return diff === 0;
 }
 
-/** The value the session cookie should hold, or null if admin access is unconfigured. */
-export async function expectedSessionToken(): Promise<string | null> {
-  const secret = process.env.ADMIN_PASSWORD;
-  if (!secret) return null;
-  const digest = await sha256(`${TOKEN_CONTEXT}:${secret}`);
-  return Array.from(digest)
+/** True when admin login can work on this deployment. */
+export function isAdminConfigured(): boolean {
+  return Boolean(process.env.ADMIN_PASSWORD);
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+async function sign(message: string): Promise<string | null> {
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) return null;
+  const secret = process.env.ADMIN_SESSION_SECRET || `password:${password}`;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(`admin-session-${TOKEN_VERSION}:${secret}`),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return toHex(new Uint8Array(mac));
+}
+
+/** A fresh session token, or null if admin access is unconfigured. */
+export async function issueSessionToken(now: number = Date.now()): Promise<string | null> {
+  const issuedAt = String(Math.floor(now / 1000));
+  const mac = await sign(`${TOKEN_VERSION}.${issuedAt}`);
+  return mac ? `${TOKEN_VERSION}.${issuedAt}.${mac}` : null;
+}
+
+/** True for a token this deployment signed that has not expired. */
+export async function verifySessionToken(
+  token: string | undefined,
+  now: number = Date.now()
+): Promise<boolean> {
+  if (!token) return false;
+  const [version, issuedAt, mac] = token.split(".");
+  if (version !== TOKEN_VERSION || !issuedAt || !mac || !/^\d+$/.test(issuedAt)) return false;
+  const age = Math.floor(now / 1000) - Number(issuedAt);
+  if (age < 0 || age > SESSION_MAX_AGE_S) return false;
+  const expected = await sign(`${version}.${issuedAt}`);
+  if (!expected) return false;
+  return constantTimeEquals(mac, expected);
 }
 
 /** True when the submitted password matches. Constant-time, fails closed. */
@@ -94,11 +138,7 @@ export async function verifyPassword(submitted: unknown): Promise<boolean> {
 
 /** True when the request carries a valid admin session cookie. */
 export async function isAdminRequest(request: NextRequest): Promise<boolean> {
-  const expected = await expectedSessionToken();
-  if (!expected) return false;
-  const presented = request.cookies.get(ADMIN_COOKIE)?.value;
-  if (!presented) return false;
-  return constantTimeEquals(presented, expected);
+  return verifySessionToken(request.cookies.get(ADMIN_COOKIE)?.value);
 }
 
 export const ADMIN_COOKIE_OPTIONS = {
@@ -106,7 +146,7 @@ export const ADMIN_COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
-  maxAge: 60 * 60 * 24 * 7,
+  maxAge: SESSION_MAX_AGE_S,
 };
 
 /**

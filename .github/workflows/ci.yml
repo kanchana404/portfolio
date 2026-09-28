@@ -13,18 +13,32 @@ concurrency:
 env:
   NEXT_TELEMETRY_DISABLED: "1"
 
+# Read-only token. Nothing here writes to the repo, and a job that runs repo
+# code must not hold a token that can.
+permissions:
+  contents: read
+
+# Actions are pinned to commit SHAs (the comment names the release): a tag can
+# be moved to different code, a SHA cannot. Runners are pinned too, so the
+# ubuntu-latest move to 26.04 cannot change the Playwright dependencies
+# underneath a green build.
+
 jobs:
   # Fast feedback. Fails in seconds on the most common mistakes, before anything
   # spends time on a build.
   static:
     name: Typecheck · Lint · Unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # First, before anything installs or loads a config: pnpm install, vitest,
+      # next lint and next build all execute repo code. Node on the runner is
+      # enough, since the script uses builtins only.
+      - run: node scripts/check-config-integrity.mjs
+      # The pnpm version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -42,9 +56,9 @@ jobs:
 
       # Enforce the connection-pool rule mechanically.
       #
-      # `minPoolSize: 5` in db/index.ts means a single warm lambda pins five
-      # Atlas connections, so a statically generated tool page must never touch
-      # the pool. Reviewers forget; grep does not.
+      # Every lambda that touches db/index.ts opens its own Atlas pool, so a
+      # statically generated tool page must never touch the database at all.
+      # Reviewers forget; grep does not.
       #
       # Deliberately wider than just the route directory: the widgets and the
       # registry live outside `src/app/(tools)/` and are imported *into* it, so
@@ -60,14 +74,18 @@ jobs:
 
   build:
     name: Build · Bundle budget
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: static
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # First, before anything installs or loads a config: pnpm install, vitest,
+      # next lint and next build all execute repo code. Node on the runner is
+      # enough, since the script uses builtins only.
+      - run: node scripts/check-config-integrity.mjs
+      # The pnpm version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -83,14 +101,18 @@ jobs:
 
   browser:
     name: Browser tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: static
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # First, before anything installs or loads a config: pnpm install, vitest,
+      # next lint and next build all execute repo code. Node on the runner is
+      # enough, since the script uses builtins only.
+      - run: node scripts/check-config-integrity.mjs
+      # The pnpm version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -104,7 +126,7 @@ jobs:
       # shift, and that an unknown slug 404s.
       - run: pnpm test:browser
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: playwright-report
@@ -113,14 +135,18 @@ jobs:
 
   lighthouse:
     name: Lighthouse
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: static
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10 }
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # First, before anything installs or loads a config: pnpm install, vitest,
+      # next lint and next build all execute repo code. Node on the runner is
+      # enough, since the script uses builtins only.
+      - run: node scripts/check-config-integrity.mjs
+      # The pnpm version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -135,13 +161,14 @@ jobs:
       # Lighthouse simulates a throttled connection, which is the only condition
       # under which the hydration-gap class of shift is visible at all. See
       # docs/adr/0003 for the regression this exists to catch.
-      # The URL list is generated from the registry rather than checked in, so
-      # retiring a tool cannot point the audit at a 404. See
-      # scripts/lighthouse-config.ts.
+      # The URL list is generated rather than checked in: the homepage, /blog
+      # and /privacy always, plus sampled tools only while that section is
+      # live, so a retired section cannot point the audit at a 410. See
+      # scripts/lighthouse-config.ts. The CLI version is exact.
       - run: pnpm lighthouse:config
-      - run: pnpm dlx @lhci/cli@0.14.x autorun --config=lighthouserc.generated.json
+      - run: pnpm dlx @lhci/cli@0.14.0 autorun --config=lighthouserc.generated.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: lighthouse-report

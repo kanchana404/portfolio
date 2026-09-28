@@ -5,7 +5,8 @@ import {
   ADMIN_COOKIE,
   ADMIN_COOKIE_OPTIONS,
   LEGACY_ADMIN_COOKIE,
-  expectedSessionToken,
+  isAdminConfigured,
+  issueSessionToken,
   verifyPassword,
 } from '@/lib/auth/admin';
 
@@ -16,8 +17,12 @@ import {
  *    ADMIN_PASSWORD unset in any environment, the admin area accepted a
  *    hardcoded password that is in this file's git history forever. Now an
  *    unconfigured deployment refuses every login instead.
- * 2. The cookie stored the password verbatim. It now stores a digest derived
- *    from it, so the secret is never written to a cookie jar or a proxy log.
+ * 2. The cookie stored the password verbatim. It now stores a signed token
+ *    that expires after seven days (see `@/lib/auth/admin`).
+ *
+ * There is no attempt limit in the handler: on serverless each instance would
+ * count separately. Rate-limit POST /api/admin/login in the Vercel firewall
+ * before setting ADMIN_PASSWORD, and use a long random password.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,8 +32,7 @@ export async function POST(request: NextRequest) {
         ? (body as { password?: unknown }).password
         : undefined;
 
-    const token = await expectedSessionToken();
-    if (!token) {
+    if (!isAdminConfigured()) {
       console.error('ADMIN_PASSWORD is not set — refusing all admin logins.');
       return NextResponse.json(
         { error: 'Admin access is not configured on this deployment.' },
@@ -40,6 +44,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
+    const token = await issueSessionToken();
+    if (!token) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     const cookieStore = await cookies();
     cookieStore.set(ADMIN_COOKIE, token, ADMIN_COOKIE_OPTIONS);
     // Retire any cookie left over from the version that stored the password.

@@ -16,12 +16,18 @@
  * `validateTools()` at module scope, so an invalid registry fails here too,
  * before a browser is started.
  *
+ * The site's own pages are audited always: the homepage, /blog and /privacy.
+ * Tool pages are added only while the tools section is live. While it is dark
+ * every /tools URL answers 410, Lighthouse cannot audit a 410, and the job used
+ * to fail on every run while never measuring the homepage at all.
+ *
  * Run: `tsx scripts/lighthouse-config.ts` → writes `lighthouserc.generated.json`.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { publicTools } from "../src/lib/tools/registry";
+import { TOOLS_SECTION_LIVE } from "../src/lib/tools/section-flag";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -45,25 +51,28 @@ const config = JSON.parse(readFileSync(join(root, BASE), "utf8")) as {
   ci: { collect: { url?: string[] } };
 };
 
-const tools = publicTools();
-if (tools.length === 0) {
-  throw new Error(
-    `${BASE}: the registry publishes no stable tools, so there is nothing to audit.`
-  );
-}
+// /blog renders its empty state in CI (no MONGODB_URI), which is still the
+// page's layout and scripts.
+const SITE_PAGES = ["/", "/blog", "/privacy"];
+
+const tools = TOOLS_SECTION_LIVE ? publicTools() : [];
 
 // Registry order, not recency: the list must be stable between runs or the
 // numbers are not comparable across commits.
 const sampled = tools.slice(0, Math.max(1, SAMPLE));
 
 config.ci.collect.url = [
-  `${origin}/tools`,
-  ...sampled.map((t) => `${origin}/tools/${t.slug}`),
+  ...SITE_PAGES.map((path) => `${origin}${path}`),
+  ...(tools.length > 0
+    ? [`${origin}/tools`, ...sampled.map((t) => `${origin}/tools/${t.slug}`)]
+    : []),
 ];
 
 writeFileSync(join(root, OUT), `${JSON.stringify(config, null, 2)}\n`, "utf8");
 
 console.log(
-  `${OUT}: auditing ${config.ci.collect.url.length} URLs — /tools plus ` +
-    `${sampled.map((t) => t.slug).join(", ")} (of ${tools.length} published).`
+  `${OUT}: auditing ${config.ci.collect.url.length} URLs: ${SITE_PAGES.join(", ")}` +
+    (tools.length > 0
+      ? `, /tools and ${sampled.map((t) => t.slug).join(", ")} (of ${tools.length} published).`
+      : ` (tools section dark, no tool pages).`)
 );
