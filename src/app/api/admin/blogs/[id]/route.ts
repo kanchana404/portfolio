@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
 import { requireAdmin } from '@/lib/auth/admin';
+import { revalidateBlog } from '@/lib/revalidate-blog';
+import { slugify } from '@/lib/slug';
 
 export async function GET(
   request: NextRequest,
@@ -80,12 +82,15 @@ export async function PUT(
       );
     }
 
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+    // A new slug only when the title actually changed, so an edit that keeps
+    // the title never moves a post's URL.
+    const slug = title === existingBlog.title ? existingBlog.slug : slugify(String(title));
+    if (!slug) {
+      return NextResponse.json(
+        { error: 'The title has no letters or digits to build a URL from' },
+        { status: 400 }
+      );
+    }
 
     // Check if new slug conflicts with other blogs
     if (slug !== existingBlog.slug) {
@@ -117,6 +122,8 @@ export async function PUT(
     }
 
     const blog = await Blog.findByIdAndUpdate(id, updateData, { new: true });
+    // Covers the old URL when the slug changed, and an unpublish.
+    revalidateBlog();
 
     return NextResponse.json({ 
       message: 'Blog updated successfully',
@@ -159,6 +166,7 @@ export async function DELETE(
         { status: 404 }
       );
     }
+    revalidateBlog();
 
     return NextResponse.json({ 
       message: 'Blog deleted successfully' 

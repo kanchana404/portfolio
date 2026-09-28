@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin';
+import { generateImage } from '@/lib/ideogram';
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,72 +8,28 @@ export async function POST(request: NextRequest) {
     if (denied) return denied;
 
     const { prompt, aspectRatio = "1x1" } = await request.json();
-    
-    console.log('Image generation request:', { prompt, aspectRatio });
 
     if (!prompt) {
+      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+    }
+
+    // Said plainly instead of answering with a placeholder URL that the
+    // editor would then save into the post.
+    if (!process.env.IDEOGRAM_API_KEY) {
       return NextResponse.json(
-        { error: 'Prompt is required' },
-        { status: 400 }
+        { error: 'Image generation is not configured (IDEOGRAM_API_KEY is not set).' },
+        { status: 503 }
       );
     }
 
-    const apiKey = process.env.IDEOGRAM_API_KEY;
-    if (!apiKey) {
-      console.error('IDEOGRAM_API_KEY environment variable is not set');
-      
-      // Return a mock response for both development and production
-      console.log('No API key: returning mock image URL');
-      return NextResponse.json({ 
-        imageUrl: 'https://via.placeholder.com/1200x800/2563eb/ffffff?text=AI+Generated+Image',
-        note: 'Mock image. Set IDEOGRAM_API_KEY for real image generation.'
-      });
-    }
-
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('aspect_ratio', aspectRatio);
-    formData.append('rendering_speed', 'DEFAULT');
-    formData.append('magic_prompt', 'ON');
-
-    const response = await fetch('https://api.ideogram.ai/v1/ideogram-v3/generate', {
-      method: 'POST',
-      headers: {
-        'Api-Key': apiKey,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Ideogram API error:', response.status, errorText);
-      return NextResponse.json(
-        { error: `Failed to generate image: ${response.status} - ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('Ideogram API response:', JSON.stringify(data, null, 2));
-    
-    // Extract the image URL from the response
-    // Based on the actual Ideogram API response structure
-    const imageUrl = data.data?.[0]?.url || data.data?.[0]?.image_url || data.image_url || data.url;
-
+    const imageUrl = await generateImage(prompt, aspectRatio);
     if (!imageUrl) {
-      return NextResponse.json(
-        { error: 'No image URL in response' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Image generation failed' }, { status: 502 });
     }
 
     return NextResponse.json({ imageUrl });
-
   } catch (error) {
     console.error('Image generation error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

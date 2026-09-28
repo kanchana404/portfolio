@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DATA } from "@/data/resume";
 import { ogImageUrl } from "@/lib/og";
 import { notFound } from "next/navigation";
@@ -8,6 +9,8 @@ import remarkGfm from "remark-gfm";
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
 import { jsonLdHtml } from "@/lib/json-ld";
+import { isDeadImageUrl } from "@/lib/ideogram";
+import { cache } from "react";
 
 // ISR: prebuild known posts, render new ones on demand, refresh hourly.
 export const revalidate = 3600;
@@ -26,14 +29,59 @@ interface PostDoc {
   updatedAt?: string;
 }
 
-async function getPost(slug: string): Promise<PostDoc | null> {
+/**
+ * The post, or null when no published post has this slug.
+ *
+ * A connection or query error is thrown, not turned into null. With ISR, null
+ * becomes notFound(), and Next stores that 404 in the cache for the whole
+ * revalidate window, so a passing database blip replaced live posts with
+ * cached 404s. A thrown error keeps the last good page instead.
+ *
+ * Wrapped in cache() so the page and its metadata share one query.
+ */
+const getPost = cache(async (slug: string): Promise<PostDoc | null> => {
+  await connectToDatabase();
+  const post = await Blog.findOne({ slug, isPublished: true }).lean();
+  return post ? JSON.parse(JSON.stringify(post)) : null;
+});
+
+/** The stored cover, unless it is missing or on a host that no longer answers. */
+function storedImage(post: PostDoc): string | undefined {
+  const img = post.generatedImageUrl || post.featuredImage;
+  return isDeadImageUrl(img) ? undefined : img;
+}
+
+interface Neighbour {
+  slug: string;
+  title: string;
+}
+
+/**
+ * The posts either side of this one in the index's order (newest first), for
+ * the template's Previous / Next cards. A failed lookup only hides the cards.
+ */
+async function getNeighbours(
+  slug: string
+): Promise<{ previous: Neighbour | null; next: Neighbour | null }> {
   try {
     await connectToDatabase();
-    const post = await Blog.findOne({ slug, isPublished: true }).lean();
-    return post ? JSON.parse(JSON.stringify(post)) : null;
+    const posts: Neighbour[] = JSON.parse(
+      JSON.stringify(
+        await Blog.find({ isPublished: true })
+          .sort({ publishedAt: -1 })
+          .select("slug title")
+          .lean()
+      )
+    );
+    const index = posts.findIndex((p) => p.slug === slug);
+    if (index === -1) return { previous: null, next: null };
+    return {
+      previous: index > 0 ? posts[index - 1] : null,
+      next: index < posts.length - 1 ? posts[index + 1] : null,
+    };
   } catch (error) {
-    console.error("getPost error", error);
-    return null;
+    console.error("getNeighbours error", error);
+    return { previous: null, next: null };
   }
 }
 
@@ -48,7 +96,7 @@ export async function generateStaticParams() {
 }
 
 function resolveImage(post: PostDoc): string {
-  const img = post.generatedImageUrl || post.featuredImage;
+  const img = storedImage(post);
   if (img) return img.startsWith("http") ? img : `${DATA.url}${img}`;
   // Built through the shared helper, never hand-assembled: `/og` now answers
   // with a one-year immutable cache, so the URL is the only invalidation
@@ -71,11 +119,15 @@ export async function generateMetadata({
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: url },
+    // Both objects replace the root layout's outright rather than merging, so
+    // the site name, locale and creator are restated, as /blog does.
     openGraph: {
       title: post.title,
       description: post.excerpt,
       url,
       type: "article",
+      siteName: `${DATA.name} Portfolio`,
+      locale: "en_US",
       publishedTime: post.publishedAt
         ? new Date(post.publishedAt).toISOString()
         : undefined,
@@ -83,14 +135,15 @@ export async function generateMetadata({
         ? new Date(post.updatedAt).toISOString()
         : undefined,
       authors: [DATA.name],
-      images: [{ url: ogImage }],
+      images: [{ url: ogImage, alt: post.title }],
       tags: post.tags,
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
-      images: [ogImage],
+      creator: "@kanchana404",
+      images: [{ url: ogImage, alt: post.title }],
     },
   };
 }
@@ -102,9 +155,10 @@ export default async function BlogPostPage({
 }) {
   const post = await getPost(params.slug);
   if (!post) notFound();
+  const { previous, next } = await getNeighbours(post.slug);
 
   const url = `${DATA.url}/blog/${post.slug}`;
-  const imageUrl = post.generatedImageUrl || post.featuredImage;
+  const imageUrl = storedImage(post);
   const absImage = resolveImage(post);
   const published = post.publishedAt
     ? new Date(post.publishedAt).toISOString()
@@ -158,53 +212,54 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
 
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
-        <a href="/" className="hover:underline">
-          Home
-        </a>{" "}
-        /{" "}
-        <a href="/blog" className="hover:underline">
-          Blog
+      {/*
+        Header after the Magic UI portfolio template's post page. Plain <a>
+        rather than next/link, on purpose: this route is the bundle budget's
+        canary and imports no router code (scripts/check-bundle-budget.mjs).
+      */}
+      <div className="flex items-center justify-start gap-4">
+        <a
+          href="/blog"
+          className="group mb-6 inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronLeft className="size-3 transition-transform group-hover:-translate-x-px" aria-hidden />
+          Back to Blog
         </a>
-      </nav>
+      </div>
+      <div className="flex flex-col gap-4">
+        <h1 className="title text-3xl font-semibold leading-tight tracking-tighter md:text-4xl">
+          {post.title}
+        </h1>
+        {post.publishedAt && (
+          <p className="text-sm text-muted-foreground">
+            <time dateTime={published}>{formatDate(post.publishedAt)}</time>
+          </p>
+        )}
+      </div>
+      <div className="my-6 flex w-full items-center" aria-hidden>
+        <div
+          className="h-px flex-1 bg-border"
+          style={{
+            maskImage:
+              "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+            WebkitMaskImage:
+              "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+          }}
+        />
+      </div>
 
       {imageUrl && (
-        <div className="relative h-64 mb-8 overflow-hidden rounded-lg">
+        <div className="relative mb-8 h-64 overflow-hidden rounded-xl border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
-            alt={`${post.title} — article cover`}
-            className="w-full h-full object-cover"
+            alt={`${post.title}, article cover`}
+            className="h-full w-full object-cover"
           />
         </div>
       )}
 
-      <h1 className="title font-medium text-2xl tracking-tighter max-w-[650px]">
-        {post.title}
-      </h1>
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 mb-8 text-sm max-w-[650px] space-y-2 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <p className="text-sm text-muted-foreground">
-            {post.publishedAt ? formatDate(post.publishedAt) : ""}
-          </p>
-          <span className="text-sm text-muted-foreground">
-            By {post.author || "Kavitha Kanchana"}
-          </span>
-        </div>
-        {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {post.tags.map((tag: string) => (
-              <span
-                key={tag}
-                className="inline-block bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 px-2 py-1 rounded text-xs"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <article className="prose dark:prose-invert max-w-none">
+      <article className="prose max-w-full text-pretty font-sans leading-relaxed text-muted-foreground dark:prose-invert">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -214,69 +269,70 @@ export default async function BlogPostPage({
                 props.src === imageUrl ||
                 props.src === post.featuredImage ||
                 props.src === post.generatedImageUrl;
-              if (isFeaturedImage) {
+              // Old posts carry via.placeholder.com images, which no longer load.
+              if (isFeaturedImage || isDeadImageUrl(props.src)) {
                 return null;
               }
-              // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
               return (
-                <img
-                  {...props}
-                  className="w-full h-auto rounded-lg my-8 shadow-lg"
-                  loading="lazy"
-                />
+                // Markdown supplies alt through props, which the rule cannot see.
+                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+                <img {...props} className="my-8 h-auto w-full rounded-xl border" loading="lazy" />
               );
             },
             // Keep exactly one <h1> on the page (the post title above). Markdown
             // '#' headings are demoted one level so they never emit extra H1s.
-            h1: ({ node, ...props }) => (
-              <h2
-                {...props}
-                className="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100"
-              />
-            ),
-            h2: ({ node, ...props }) => (
-              <h3
-                {...props}
-                className="text-2xl font-semibold mb-4 mt-8 text-gray-800 dark:text-gray-200"
-              />
-            ),
-            h3: ({ node, ...props }) => (
-              <h4
-                {...props}
-                className="text-xl font-semibold mb-3 mt-6 text-gray-800 dark:text-gray-200"
-              />
-            ),
-            p: ({ node, ...props }) => (
-              <p
-                {...props}
-                className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed"
-              />
-            ),
+            h1: ({ node, ...props }) => <h2 {...props} />,
+            h2: ({ node, ...props }) => <h3 {...props} />,
+            h3: ({ node, ...props }) => <h4 {...props} />,
             a: ({ node, ...props }) => (
-              <a
-                {...props}
-                className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-[#0070f3]"
-                target="_blank"
-                rel="noopener noreferrer"
-              />
+              <a {...props} target="_blank" rel="noopener noreferrer" />
             ),
-            strong: ({ node, ...props }) => (
-              <strong
-                {...props}
-                className="font-semibold text-gray-900 dark:text-gray-100"
-              />
-            ),
-            em: ({ node, ...props }) => (
-              <em {...props} className="italic text-gray-800 dark:text-gray-200" />
-            ),
-            hr: ({ node, ...props }) => (
-              <hr {...props} className="my-8 border-gray-300 dark:border-gray-600" />
-            ),
+            // Code blocks scroll sideways; keep Lenis off horizontal gestures there.
+            pre: ({ node, ...props }) => <pre data-lenis-prevent-horizontal {...props} />,
           }}
         >
           {post.content}
         </ReactMarkdown>
       </article>
+
+      {(previous || next) && (
+        <nav aria-label="More posts" className="mt-12 max-w-2xl pt-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row">
+            {previous ? (
+              <a
+                href={`/blog/${previous.slug}`}
+                className="group flex flex-1 flex-col gap-1 rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
+              >
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <ChevronLeft className="size-3" aria-hidden />
+                  Previous
+                </span>
+                <span className="whitespace-normal break-words text-sm font-medium transition-colors group-hover:text-foreground">
+                  {previous.title}
+                </span>
+              </a>
+            ) : (
+              <div className="hidden flex-1 sm:block" />
+            )}
+            {next ? (
+              <a
+                href={`/blog/${next.slug}`}
+                className="group flex flex-1 flex-col gap-1 rounded-lg border border-border p-4 text-right transition-colors hover:bg-accent/50"
+              >
+                <span className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                  Next
+                  <ChevronRight className="size-3" aria-hidden />
+                </span>
+                <span className="whitespace-normal break-words text-sm font-medium transition-colors group-hover:text-foreground">
+                  {next.title}
+                </span>
+              </a>
+            ) : (
+              <div className="hidden flex-1 sm:block" />
+            )}
+          </div>
+        </nav>
+      )}
     </section>
   );
 }

@@ -3,62 +3,10 @@ import type { NextRequest } from 'next/server';
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
 import { requireAdmin } from '@/lib/auth/admin';
+import { generateImage } from '@/lib/ideogram';
+import { revalidateBlog } from '@/lib/revalidate-blog';
+import { slugify } from '@/lib/slug';
 
-// Function to generate image using the existing image generation API
-async function generateImage(prompt: string): Promise<string> {
-  try {
-    // Get the base URL for the current environment
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                   'https://kavithakanchana.me' ||
-                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                   'http://localhost:3000';
-    
-    const response = await fetch(`${baseUrl}/api/admin/generate-image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        aspectRatio: '3x2' // Consistent 3:2 aspect ratio for blog cards
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Image generation failed: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return result.imageUrl || result.url || '';
-  } catch (error) {
-    console.error('Error generating image:', error);
-    // Return a placeholder image URL for production fallback
-    if (process.env.NODE_ENV === 'production') {
-      return 'https://via.placeholder.com/1200x800/2563eb/ffffff?text=AI+Generated+Image';
-    }
-    return '';
-  }
-}
-
-// Function to analyze content and determine optimal image count
-function analyzeContentForImages(content: string) {
-  const wordCount = content.split(' ').length;
-  const paragraphCount = content.split('.').filter((p: string) => p.trim().length > 10).length;
-  
-  // Determine optimal number of images based on content length
-  // Enhanced to support more images for comprehensive content
-  if (wordCount < 100 || paragraphCount < 3) {
-    return 0; // No additional images for very short content
-  } else if (wordCount < 300 || paragraphCount < 5) {
-    return 2; // Two images for short content (enhanced)
-  } else if (wordCount < 600 || paragraphCount < 8) {
-    return 3; // Three images for medium content (enhanced)
-  } else {
-    return 4; // Four images for long content (enhanced)
-  }
-}
-
-// Function to enhance content with better structure and writing
 // `enhanceContentStructure` used to live here. It spliced incoming feed text
 // into a fixed heading template and appended ~700 words of hardcoded prose,
 // including a first-person sentence claiming personal experience that was
@@ -67,93 +15,24 @@ function analyzeContentForImages(content: string) {
 //
 // Content now arrives finished from the caller. This route stores and
 // attributes it; it does not write it.
+//
+// It also no longer generates up to four extra in-body images one after
+// another. Nothing inserted them (the headings they keyed on came from the
+// removed template), and five sequential generations did not fit the 15 s
+// function limit. One featured image is generated; without one the post uses
+// its /og card.
 
-async function createBlogFromNews(newsData: any) {
+async function createBlogFromNews(newsData: any, slug: string) {
   const { title, link, content, date } = newsData;
-  
-  // Generate slug from title
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
 
-  // Analyze content to determine optimal image count
-  const optimalImageCount = analyzeContentForImages(content);
-  console.log(`Content analysis: ${content.split(' ').length} words, ${content.split('.').filter((p: string) => p.trim().length > 10).length} paragraphs, ${optimalImageCount} images needed`);
-  
-  // Generate main featured image
-  const featuredImage = await generateImage(`Professional news article image for: ${title}. High quality, modern, business style`);
-  
-  // Generate additional images only if needed
-  const additionalImages = [];
-  if (optimalImageCount > 0) {
-    const imagePrompts = [
-      `Illustration showing AI technology and economic growth for: ${title}`,
-      `Modern business and technology concept for: ${title}`,
-      `Professional corporate image representing: ${title}`,
-      `Data visualization and analytics concept for: ${title}`,
-      `Collaboration and partnership visualization for: ${title}`,
-      `Future technology and innovation concept for: ${title}`
-    ];
-    
-    // Only generate the number of images we actually need
-    for (let i = 0; i < optimalImageCount; i++) {
-      const imageUrl = await generateImage(imagePrompts[i]);
-      if (imageUrl) {
-        additionalImages.push(imageUrl);
-      }
-    }
-  }
-  
+  const featuredImage = await generateImage(
+    `Professional news article image for: ${title}. High quality, modern, business style`,
+    '3x2' // Consistent 3:2 aspect ratio for blog cards
+  );
+
   // Stored as supplied. The caller is responsible for the words.
   let enhancedContent = content;
-  
-  // Insert images at strategic points based on content length
-  if (additionalImages.length > 0) {
-    const paragraphs = content.split('. ').filter((p: string) => p.trim().length > 0);
-    const insertionPoints = [];
-    
-    // Calculate strategic insertion points
-    if (additionalImages.length === 1) {
-      insertionPoints.push(Math.floor(paragraphs.length / 2));
-    } else if (additionalImages.length === 2) {
-      insertionPoints.push(Math.floor(paragraphs.length / 3));
-      insertionPoints.push(Math.floor((paragraphs.length * 2) / 3));
-    } else if (additionalImages.length === 3) {
-      insertionPoints.push(Math.floor(paragraphs.length / 4));
-      insertionPoints.push(Math.floor(paragraphs.length / 2));
-      insertionPoints.push(Math.floor((paragraphs.length * 3) / 4));
-    }
-    
-    // Insert images at strategic points in the enhanced content
-    let currentImageIndex = 0;
-    const contentParts = enhancedContent.split('\n\n');
-    const newContentParts = [];
-    
-    for (let i = 0; i < contentParts.length; i++) {
-      newContentParts.push(contentParts[i]);
-      
-      // Insert images after specific sections
-      if (contentParts[i].startsWith('## Key Insights & Analysis') && additionalImages.length > 0) {
-        newContentParts.push(`![${title} - AI Technology Impact](${additionalImages[0]})\n`);
-        currentImageIndex++;
-      } else if (contentParts[i].startsWith('### Economic Impact') && additionalImages.length > 1) {
-        newContentParts.push(`![${title} - Economic Growth](${additionalImages[1]})\n`);
-        currentImageIndex++;
-      } else if (contentParts[i].startsWith('### Implementation Strategy') && additionalImages.length > 2) {
-        newContentParts.push(`![${title} - Collaboration & Partnership](${additionalImages[2]})\n`);
-        currentImageIndex++;
-      } else if (contentParts[i].startsWith('## Future Implications') && additionalImages.length > 3) {
-        newContentParts.push(`![${title} - Future Technology](${additionalImages[3]})\n`);
-        currentImageIndex++;
-      }
-    }
-    
-    enhancedContent = newContentParts.join('\n\n');
-  }
-  
+
   // Add featured image at the top
   if (featuredImage) {
     enhancedContent = `![${title} - Featured Image](${featuredImage})\n\n` + enhancedContent;
@@ -180,8 +59,8 @@ async function createBlogFromNews(newsData: any) {
     slug,
     content: enhancedContent,
     excerpt,
-    featuredImage,
-    generatedImageUrl: featuredImage,
+    featuredImage: featuredImage ?? undefined,
+    generatedImageUrl: featuredImage ?? undefined,
     tags: ['AI', 'Technology', 'News', 'OpenAI', 'Automation', 'Software Engineering'],
     author: 'Kavitha Kanchana',
     publishedAt: publishedDate,
@@ -216,23 +95,32 @@ export async function POST(request: NextRequest) {
       console.log('API: Detected news data, creating blog post...');
       
       try {
-        // Create blog from news data
-        const blogData = await createBlogFromNews(body);
-        
-        // Check if blog with same slug already exists
-        const existingBlog = await Blog.findOne({ slug: blogData.slug });
+        const slug = slugify(String(body.title));
+        if (!slug) {
+          return NextResponse.json({
+            success: false,
+            error: 'The title has no letters or digits to build a URL from',
+          }, { status: 400 });
+        }
+
+        // Checked before generating an image, so a duplicate costs nothing.
+        const existingBlog = await Blog.findOne({ slug });
         if (existingBlog) {
           return NextResponse.json({
             success: false,
             error: 'Blog with this title already exists',
-            slug: blogData.slug,
+            slug,
             receivedData: body
           }, { status: 409 });
         }
-        
+
+        const blogData = await createBlogFromNews(body, slug);
+
         // Create and save the blog
         const newBlog = new Blog(blogData);
         const savedBlog = await newBlog.save();
+
+        revalidateBlog();
         
         console.log('API: Blog created successfully:', savedBlog.title);
         
@@ -240,7 +128,7 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Blog created and published successfully',
           blog: {
-            id: savedBlog._id.toString(),
+            id: String(savedBlog._id),
             title: savedBlog.title,
             slug: savedBlog.slug,
             excerpt: savedBlog.excerpt,
@@ -298,7 +186,7 @@ export async function POST(request: NextRequest) {
             .skip(body.offset || 0);
 
           result = blogs.map(blog => ({
-            id: blog._id.toString(),
+            id: String(blog._id),
             title: blog.title,
             slug: blog.slug,
             excerpt: blog.excerpt,
@@ -333,7 +221,7 @@ export async function POST(request: NextRequest) {
             .limit(5);
           
           result = recentBlogs.map(blog => ({
-            id: blog._id.toString(),
+            id: String(blog._id),
             title: blog.title,
             slug: blog.slug,
             excerpt: blog.excerpt,

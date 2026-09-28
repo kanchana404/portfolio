@@ -20,9 +20,8 @@ import { validateTools } from "./validate";
  *   hub, both category pages and `sitemap.ts` import this module, so anything
  *   reachable from here is reachable from all of them. Widgets live in a
  *   separate slug-keyed map that only the tool page pulls in.
- * - **Never import from `@db`.** `minPoolSize: 5` means a single warm lambda
- *   pins five Atlas connections; statically generated pages must not touch the
- *   pool at all.
+ * - **Never import from `@db`.** Every lambda that connects opens its own
+ *   Atlas pool; statically generated pages must not touch the database at all.
  */
 export const TOOLS: readonly ToolDef[] = [
   ...CALCULATOR_TOOLS,

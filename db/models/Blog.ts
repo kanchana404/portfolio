@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { slugify } from '../../src/lib/slug';
 
 export interface IBlog extends Document {
   title: string;
@@ -90,12 +91,7 @@ BlogSchema.index({ tags: 1 });
 BlogSchema.pre('save', function(next) {
   const doc = this as any;
   if (!doc.slug && doc.title) {
-    doc.slug = doc.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+    doc.slug = slugify(doc.title) ?? undefined;
   }
   next();
 });
@@ -123,4 +119,10 @@ BlogSchema.statics.findBySlug = function(slug: string) {
   return this.findOne({ slug, isPublished: true });
 };
 
-export default mongoose.models.Blog || mongoose.model<IBlog>('Blog', BlogSchema);
+// Typed, so queries are too. `mongoose.models.Blog || mongoose.model(...)`
+// typed as Model<any>, which left every query untyped.
+const Blog =
+  (mongoose.models.Blog as mongoose.Model<IBlog> | undefined) ??
+  mongoose.model<IBlog>('Blog', BlogSchema);
+
+export default Blog;

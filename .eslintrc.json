@@ -27,7 +27,7 @@
             "patterns": [
               {
                 "group": ["@db", "@db/*", "**/db", "**/db/*", "mongoose"],
-                "message": "The tools platform must never touch the database. Every /tools route is statically generated at build time, and the shared Mongo pool uses minPoolSize: 5 — a single warm lambda pins five Atlas connections. Tool data lives in src/lib/tools/registry.ts, which is an in-memory array. If a tool genuinely needs persistence, it needs its own pool (minPoolSize: 0) and its own route outside (tools)."
+                "message": "The tools platform must never touch the database. Every /tools route is statically generated at build time, and every lambda that connects opens its own Atlas pool. Tool data lives in src/lib/tools/registry.ts, which is an in-memory array. If a tool genuinely needs persistence, it needs its own pool (minPoolSize: 0) and its own route outside (tools)."
               },
               {
                 "group": ["@/lib/utils"],

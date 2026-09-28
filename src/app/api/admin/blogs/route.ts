@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from "@db";
 import Blog from "@db/models/Blog";
 import { requireAdmin } from '@/lib/auth/admin';
+import { revalidateBlog } from '@/lib/revalidate-blog';
+import { slugify } from '@/lib/slug';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,12 +21,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const slug = slugify(String(title));
+    if (!slug) {
+      return NextResponse.json(
+        { error: 'The title has no letters or digits to build a URL from' },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
 
     // Check if blog with same slug already exists
-    const existingBlog = await Blog.findOne({ 
-      slug: title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim() 
-    });
+    const existingBlog = await Blog.findOne({ slug });
 
     if (existingBlog) {
       return NextResponse.json(
@@ -32,14 +40,6 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-
-    // Generate slug from title
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
 
     const blogData: any = {
       title,
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     const blog = new Blog(blogData);
 
     await blog.save();
+    revalidateBlog();
 
     return NextResponse.json({ 
       message: 'Blog created successfully',
