@@ -41,7 +41,7 @@
  *
  * They cost nothing to prerender and the middleware never lets a request reach
  * them. Keeping them in the build means `pnpm budget`, the registry validator
- * and the type-level widget map all keep running on every CI pass, so the
+ * and the widget slug checks all keep running on every CI pass, so the
  * platform cannot rot silently while the section is dark.
  */
 /**

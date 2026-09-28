@@ -1,270 +1,88 @@
-# Kavitha Kanchan - Portfolio & Blog
+# Kavitha Kanchana: portfolio and blog
 
-A modern, responsive portfolio website showcasing my work as a Software Engineer and Entrepreneur. Built with Next.js, TypeScript, and Tailwind CSS, featuring a blog section for sharing insights on software development, AI automation, and entrepreneurship.
+The source of [kavithakanchana.me](https://kavithakanchana.me): a single-column
+portfolio after the [Magic UI portfolio template](https://github.com/magicuidesign/portfolio),
+a MongoDB-backed blog with a small admin area, and a `/tools` section that is
+built but switched off in production.
 
-## 🚀 Features
+- **Design system:** [DESIGN.md](DESIGN.md) is binding for any UI change.
+- **Security:** [SECURITY.md](SECURITY.md) records past incidents and the checks
+  that exist because of them. Read it before changing a build config.
+- **Project cover images:** [docs/project-covers.md](docs/project-covers.md).
 
-### Portfolio Section
-- **Modern Design**: Clean, professional layout with smooth animations
-- **Responsive**: Optimized for desktop, tablet, and mobile devices
-- **Dark/Light Mode**: Toggle between themes with persistent preference
-- **Interactive Elements**: Hover effects, smooth transitions, and animated components
-- **SEO Optimized**: Meta tags, structured data, and performance optimized
+## Stack
 
-### Blog Section
-- **MDX Support**: Write blog posts using Markdown with React components
-- **Syntax Highlighting**: Code blocks with syntax highlighting
-- **Responsive Layout**: Card-based design for blog posts
-- **Topic Categories**: Organized content by technology areas
-- **Search & Filter**: Easy navigation through blog content
+Next.js 14 (app router), React 18, TypeScript, Tailwind CSS 3 with shadcn/ui
+and Magic UI components, motion, Lenis smooth scrolling, rough-notation
+highlights, Mongoose on MongoDB Atlas. Deployed on Vercel from `main`.
 
-### Content Areas
-- **Work Experience**: Detailed professional background with company logos
-- **Projects**: Showcase of technical projects with technologies used
-- **Skills**: Comprehensive list of technical skills and tools
-- **Education**: Academic background and certifications
-- **Hackathons**: Participation in innovation challenges
-- **Contact Information**: Professional social links and contact details
+## Getting started
 
-## 🛠️ Technologies Used
-
-### Frontend
-- **Next.js 14**: React framework with App Router
-- **TypeScript**: Type-safe JavaScript development
-- **Tailwind CSS**: Utility-first CSS framework
-- **Framer Motion**: Smooth animations and transitions
-- **React Markdown**: MDX rendering for blog posts
-
-### UI Components
-- **shadcn/ui**: Modern, accessible component library
-- **Lucide React**: Beautiful, customizable icons
-- **Magic UI**: Advanced animation components
-
-### Development Tools
-- **ESLint**: Code linting and formatting
-- **Prettier**: Code formatting
-- **PostCSS**: CSS processing
-- **Autoprefixer**: CSS vendor prefixing
-
-### Content Management
-- **MDX**: Markdown with JSX support
-- **Gray Matter**: Front matter parsing
-- **Rehype**: Markdown processing plugins
-- **Remark**: Markdown parsing and processing
-
-## 📁 Project Structure
-
-```
-dillionverma-portfolio-f1bdbdb/
-├── content/                    # Blog posts (MDX files)
-│   ├── hello-world.mdx
-│   ├── ai-automation-low-code.mdx
-│   ├── building-scalable-web-apps.mdx
-│   └── entrepreneurship-startup-journey.mdx
-├── public/                     # Static assets
-│   ├── me.png                  # Profile image
-│   ├── uni.png                 # University logo
-│   ├── xleron.jpg              # Company logo
-│   ├── ryzera.jpg              # Company logo
-│   └── ...                     # Other images
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── blog/               # Blog pages
-│   │   │   ├── [slug]/         # Individual blog post
-│   │   │   └── page.tsx        # Blog listing page
-│   │   ├── globals.css         # Global styles
-│   │   ├── layout.tsx          # Root layout
-│   │   └── page.tsx            # Home page
-│   ├── components/             # React components
-│   │   ├── magicui/            # Animation components
-│   │   ├── ui/                 # shadcn/ui components
-│   │   ├── hackathon-card.tsx
-│   │   ├── project-card.tsx
-│   │   ├── resume-card.tsx
-│   │   └── ...
-│   ├── data/                   # Data files
-│   │   ├── blog.ts             # Blog utilities
-│   │   └── resume.tsx          # Portfolio data
-│   └── lib/                    # Utility functions
-│       └── utils.ts
-├── components.json             # shadcn/ui configuration
-├── tailwind.config.ts          # Tailwind configuration
-├── tsconfig.json               # TypeScript configuration
-└── package.json                # Dependencies and scripts
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm, yarn, or pnpm
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/kanchana404/portfolio.git
-   cd portfolio
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Building for Production
+Node 22 (`.nvmrc`) and pnpm 10 (pinned in `package.json` as `packageManager`;
+`corepack enable` picks it up).
 
 ```bash
-npm run build
-npm start
+pnpm install
+pnpm dev
 ```
 
-## 📝 Adding Content
+The homepage works without any environment variables. The blog needs
+`MONGODB_URI`; without it `/blog` shows its empty state.
 
-### Adding Blog Posts
+## Scripts
 
-1. Create a new `.mdx` file in the `content/` directory
-2. Add front matter with metadata:
+| Script | What it does |
+|---|---|
+| `pnpm dev` | integrity check, then `next dev` |
+| `pnpm build` | integrity check, tools env check, unit tests, `next build` |
+| `pnpm verify` | everything CI's static and build jobs run |
+| `pnpm test` / `pnpm test:browser` | Vitest unit tests / Playwright browser tests |
+| `pnpm budget` | first-load JS budgets per route (after a build) |
+| `pnpm integrity` | the config and payload tripwires in `scripts/check-config-integrity.mjs` |
+| `pnpm lighthouse` | Lighthouse CI on `/`, `/blog`, `/privacy` (after a build) |
 
-```mdx
----
-title: "Your Blog Post Title"
-publishedAt: "2024-12-20"
-summary: "Brief description of your post"
----
+`scripts/check-config-integrity.mjs` runs first in every CI job and before
+`dev`, `lint` and `build`. If it fails, do not run the project: see
+SECURITY.md.
 
-# Your Blog Post Content
+## Environment variables
 
-Your markdown content here...
+Set them in Vercel as **Sensitive** and **Production** only.
+
+| Variable | Used by |
+|---|---|
+| `MONGODB_URI` | the blog, the admin area and `/api/data` |
+| `GITHUB_TOKEN` | the homepage's GitHub contributions calendar (a fine-grained token with public-repository read access is enough) |
+| `ADMIN_PASSWORD` | admin login; the admin area stays locked when unset |
+| `ADMIN_SESSION_SECRET` | signs admin sessions (optional; falls back to the password) |
+| `IDEOGRAM_API_KEY` | admin cover-image generation (optional) |
+| `OPENAI_API_KEY` | admin content optimisation (optional) |
+
+The tools section adds `NEXT_PUBLIC_TOOLS_LIVE`, `NEXT_PUBLIC_IMAGE_API`,
+`NEXT_PUBLIC_DOWNLOADER_API`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+`TURNSTILE_SECRET`, `TICKET_SECRET` and `IP_SALT`; it answers 410 while
+`TOOLS_SECTION_LIVE` is false (`src/lib/tools/section-flag.ts`). Keep
+`NEXT_PUBLIC_IMAGE_API`, `NEXT_PUBLIC_DOWNLOADER_API` and
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY` set in Vercel even while it is off:
+`scripts/check-server-tool-env.mjs` fails a production build without them.
+
+## Layout
+
+```
+src/app/(site)/      homepage, blog, privacy (Lenis, header grid, analytics)
+src/app/(tools)/     the dark /tools section, one generated route per tool
+src/app/admin/       blog admin (see ADMIN_SETUP.md)
+src/app/api/         GitHub contributions, admin and ingest endpoints, OG images
+src/components/      section/*, magicui/*, ui/* (shadcn), tools/*
+src/data/resume.tsx  all portfolio content
+db/                  Mongoose connection and the Blog model
+image-api/           the Python image and PDF service behind the tools section
+public/              logos, skill marks, project covers (WebP)
 ```
 
-3. The post will automatically appear on the blog page
+`public/googledebbf391340cc4a2.html` is the Google Search Console
+verification file; keep it.
 
-### Updating Portfolio Data
+## License
 
-Edit `src/data/resume.tsx` to update:
-- Personal information
-- Work experience
-- Projects
-- Skills
-- Education
-- Contact information
-
-### Adding Images
-
-1. Place images in the `public/` directory
-2. Reference them in your code as `/image-name.png`
-
-## 🎨 Customization
-
-### Styling
-- **Colors**: Modify `tailwind.config.ts` for theme colors
-- **Components**: Edit component files in `src/components/`
-- **Animations**: Customize animation parameters in Magic UI components
-
-### Layout
-- **Sections**: Add/remove sections in `src/app/page.tsx`
-- **Navigation**: Update navbar links in `src/data/resume.tsx`
-- **Blog**: Modify blog layout in `src/app/blog/page.tsx`
-
-### Content
-- **Portfolio**: Update all content in `src/data/resume.tsx`
-- **Blog**: Add new posts in `content/` directory
-- **Images**: Replace images in `public/` directory
-
-## 🔧 Configuration
-
-### Environment Variables
-Create a `.env.local` file for any environment-specific variables:
-
-```env
-NEXT_PUBLIC_SITE_URL=https://yourdomain.com
-NEXT_PUBLIC_GA_ID=your-google-analytics-id
-```
-
-### SEO Configuration
-Update metadata in:
-- `src/app/layout.tsx` - Global metadata
-- `src/app/page.tsx` - Home page metadata
-- `src/app/blog/page.tsx` - Blog page metadata
-- Individual blog posts - Post-specific metadata
-
-## 📊 Performance
-
-This portfolio is optimized for performance with:
-- **Next.js Image Optimization**: Automatic image optimization
-- **Code Splitting**: Automatic code splitting for better loading
-- **Static Generation**: Pre-rendered pages for fast loading
-- **CDN Ready**: Optimized for content delivery networks
-
-## 🌐 Deployment
-
-### Vercel (Recommended)
-1. Connect your GitHub repository to Vercel
-2. Vercel will automatically detect Next.js and deploy
-3. Custom domain can be added in Vercel dashboard
-
-### Netlify
-1. Build command: `npm run build`
-2. Publish directory: `out`
-3. Deploy from Git repository
-
-### Other Platforms
-The site can be deployed to any platform that supports static sites or Node.js applications.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👤 About Me
-
-**Kavitha Kanchan** is a Software Engineer and Entrepreneur based in Birmingham, UK. Currently working as an Associate Software Engineer at Xleron and co-founder of Rayzera INC. Specializing in:
-
-- **Web Development**: Next.js, React, TypeScript, Node.js
-- **AI Automation**: Make.com, n8n, low-code platforms
-- **Cloud Services**: AWS, Docker, PostgreSQL
-- **Open Source**: Active contributor to developer tools
-
-### Connect With Me
-- **Portfolio**: [kavitakanchan.com](https://kavitakanchan.com)
-- **GitHub**: [@kanchana404](https://github.com/kanchana404)
-- **LinkedIn**: [Kavitha Kanchana](https://www.linkedin.com/in/kavitha-kanchana)
-
-## 🙏 Acknowledgments
-
-- **shadcn/ui** for the beautiful component library
-- **Magic UI** for the amazing animation components
-- **Next.js** team for the excellent framework
-- **Tailwind CSS** for the utility-first styling approach
-- **Framer Motion** for smooth animations
-
----
-
-⭐ **Star this repository if you found it helpful!**
-#   p o r t f o l i o  
- #   p o r t f o l i o  
- 
+MIT. Based on the portfolio template by Dillion Verma (see `LICENSE`).

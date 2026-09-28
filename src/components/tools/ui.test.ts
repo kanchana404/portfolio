@@ -45,10 +45,9 @@ describe("nothing on the client side of the tool boundary may import the heavy U
   // someone is copying an existing widget and has not finished cleaning it up.
   const widgetDir = "src/components/tools/widgets";
 
-  // The client boundary itself. If tool-widget.tsx ever imports widget-frame.tsx
+  // Modules every widget shares. If one of them ever imports widget-frame.tsx
   // for its skeleton, tailwind-merge crosses into every tool page at once.
   const SHARED = [
-    "src/components/tools/tool-widget.tsx",
     "src/components/tools/ui.tsx",
     "src/components/tools/copy-button.tsx",
   ];
@@ -82,9 +81,9 @@ describe("nothing on the client side of the tool boundary may import the heavy U
   /**
    * Import specifiers only — static `from "x"` and dynamic `import("x")`.
    *
-   * A plain substring scan over the file flagged `ui.tsx` and `tool-widget.tsx`,
-   * both of which name the forbidden modules in comments explaining why they do
-   * not import them. Punishing a file for documenting the rule is the wrong
+   * A plain substring scan over the file flagged `ui.tsx` (and the retired
+   * `tool-widget.tsx`), which name the forbidden modules in comments explaining
+   * why they do not import them. Punishing a file for documenting the rule is the wrong
    * incentive, so the check reads what is actually imported.
    */
   const importsOf = (source: string): string[] => [

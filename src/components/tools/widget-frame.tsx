@@ -28,8 +28,8 @@ export function WidgetFrame({
   /**
    * Settled height in CSS pixels. Required only on the `ssr: false` path.
    *
-   * Omitted for a server-rendered widget, and that is the normal case: every
-   * widget in `tool-widget.tsx` is a static import, so the server markup is
+   * Omitted for a server-rendered widget, and that is the normal case: each
+   * generated tool page imports its widget statically, so the server markup is
    * never unmounted and the shift this guards against is structurally
    * impossible. A floor here would then be pure dead air, which is exactly what
    * it became when one hardcoded number was applied to all fifteen tools: the

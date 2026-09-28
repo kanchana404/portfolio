@@ -15,9 +15,9 @@ export default function robots(): MetadataRoute.Robots {
       // more-specific `allow` wins over a broader `disallow` in every major
       // crawler, so this is a guard rail rather than decoration.
       allow: TOOLS_SECTION_LIVE ? ["/", "/tools", "/og"] : ["/", "/og"],
-      // Only block private/admin surfaces. Public read endpoints under /api
-      // (github contributions/repos, blogs) stay crawlable so client islands
-      // and structured data referencing them aren't blocked.
+      // Only block private/admin surfaces. The public read endpoint under /api
+      // (github contributions, fetched by the homepage calendar) stays
+      // crawlable so the client island that renders it isn't blocked.
       //
       // `/api/debug` and `/publish-blog` were removed from this list when those
       // routes were deleted — they were unauthenticated, and naming a private

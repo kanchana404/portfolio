@@ -2,6 +2,8 @@
 
 Date: 2026-08-09
 Status: **Reversed on 2026-08-09 — see "Reversal" at the foot of this file.**
+Superseded: since 41c0c56 (2026-08-20) every tool has its own generated route,
+and `tool-widget.tsx` was deleted on 2026-09-28.
 Supersedes the widget-map guidance in ADR 0002.
 
 > **Read the reversal first.** The decision below was measured, shipped, and

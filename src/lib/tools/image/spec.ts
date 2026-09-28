@@ -242,10 +242,8 @@ export interface ConversionSpec {
 /**
  * Every route served by the shared converter widget.
  *
- * Declared `as const` so the slugs form a union: `tool-widget.tsx` subtracts
- * them from its exhaustive widget map, which is what lets one component answer
- * many slugs without losing the compile-time check that every *other* tool has
- * a widget.
+ * Declared `as const` so the slugs form a union, which lets one component
+ * answer many slugs while every *other* tool keeps its own widget.
  */
 export const CONVERSION_SLUGS = ["image-converter"] as const;
 
