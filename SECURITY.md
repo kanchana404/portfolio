@@ -14,8 +14,8 @@ person; expect a human reply rather than a triage queue.
 **Status (2026-09-28):** the working tree, `main` on this machine and
 `origin/main` (`edfc8e3`) are clean. **Not resolved:** whoever pushes the
 payload still had write access to the owner's GitHub account as of
-2026-09-19, credentials have not been rotated, and `origin/master` still
-carries the payload (see "Outstanding" below).
+2026-09-19 and credentials have not been rotated (see "Outstanding" below).
+`origin/master`, which carried the payload, was deleted on 2026-09-28.
 
 An obfuscated JavaScript loader is appended to a build configuration file,
 hidden by padding the real export with a few hundred spaces so the payload
@@ -29,7 +29,7 @@ Ethereum contract, and spawns `child_process`.
 | `postcss.config.mjs` | `6d8414b`, 2026-06-28 | `63cdcdb` guard 2026-08-20; clean since `8201ddd` |
 | `postcss.config.mjs` | `7db9982`, `204fbdb` (Aug 2026, force-pushed over the owner's own commits) | restored in `edfc8e3` |
 | `postcss.config.mjs` | `14a8d4e` (2026-09-03), `81bf464` + `25020c8` (2026-09-22), on `main` | `main` force-restored to `edfc8e3` |
-| `postcss.config.mjs`, `.vscode/tasks.json`, `public/fonts/fa-solid-400.woff2` | `abf31fe` on `master`, 2026-09-01 | **still on `origin/master`** |
+| `postcss.config.mjs`, `.vscode/tasks.json`, `public/fonts/fa-solid-400.woff2` | `abf31fe` on `master`, 2026-09-01 | `master` deleted from GitHub, 2026-09-28 |
 
 The config files are evaluated by `next build`, `next dev`, `next lint` and
 vitest, so until the guard landed the payload ran on every Vercel production
@@ -56,8 +56,9 @@ it. See §4 for the same campaign across the owner's other repositories.
 
 - `scripts/check-config-integrity.mjs` freezes `postcss.config.mjs`,
   `next.config.mjs`, `tailwind.config.ts`, `vitest.config.mts`,
-  `playwright.config.ts`, `.eslintrc.json` and `vercel.json` by SHA-256, and
-  fails on: any `*.config.*` over 8 kB or with a 200+ space run, a `.vscode`
+  `playwright.config.ts` and `.eslintrc.json` by SHA-256 (`vercel.json` only
+  by size, since the Vercel build container rewrites it), and fails on: any
+  `*.config.*` over 8 kB or with a 200+ space run, a `.vscode`
   task that runs on folder open, a file in `public/` whose bytes do not match
   its image or font extension, an SVG with script, and the loader's signature
   or heavy `_0x` obfuscation in any source file. It runs first in every CI job
@@ -76,8 +77,8 @@ it. See §4 for the same campaign across the owner's other repositories.
       log (`git.push`, `personal_access_token.*`) for 2026-08-20 to 2026-09-19.
 - [ ] GitHub: protect `main` (block force-push and deletion, require a PR with
       CI, require signed commits).
-- [ ] Then delete `origin/master` (`git push origin --delete master`) and ask
-      GitHub Support to purge the unreachable poisoned commits and
+- [x] Delete `origin/master` (done 2026-09-28).
+- [ ] Ask GitHub Support to purge the unreachable poisoned commits and the six
       `refs/pull/*` heads.
 - [ ] Rotate `MONGODB_URI` (Atlas user password; check access logs and users)
       and `OPENAI_API_KEY`; treat old `GITHUB_TOKEN`, `IDEOGRAM_API_KEY` and

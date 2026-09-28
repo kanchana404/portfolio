@@ -44,6 +44,10 @@ import { join, relative, sep } from "node:path";
  * If you legitimately change one of these, the build will fail and tell you the
  * new hash. Paste it in *in the same commit as the change*, so the update is
  * reviewable rather than a mystery.
+ *
+ * vercel.json is not in this list: the Vercel build container rewrites it
+ * before the build runs, so its bytes there never match the repo's. It gets
+ * the size and padding checks below instead.
  */
 const FROZEN = {
   "postcss.config.mjs":
@@ -58,8 +62,6 @@ const FROZEN = {
     "18ff40896778b2b94cb3b6614bca37be5add9293c787d7c12777cba0c5b55d68",
   ".eslintrc.json":
     "2cae87531b8fa38f9f9edafd3387c5ae2c98ce6e312eb97e9aa7fa033f5595c2",
-  "vercel.json":
-    "870cad2a53961ef2ace09e2d5b03404b8e413f4191901de260f820dd3cadfb97",
 };
 
 /** Padding this long in a config file is a hiding place, not formatting. */
@@ -93,11 +95,18 @@ const MAGIC = {
   otf: (b) => b.subarray(0, 4).toString("latin1") === "OTTO",
 };
 
-/** Not part of this repo, or generated. */
+/**
+ * Where the tripwires look: the repo's own top-level folders, plus every file
+ * in the root. An allowlist rather than a skip list, because a build machine
+ * adds folders of its own (the Vercel container held ~3,200 extra files) and
+ * a cache full of third-party code is not this repo's to judge. `.vscode` is
+ * included because the editor runs tasks from the root one.
+ */
+const SCAN_DIRS = ["src", "scripts", "db", "public", "tests", "docs", "image-api", ".github", ".claude", ".vscode"];
+
+/** Generated or third-party folders, never scanned even inside SCAN_DIRS. */
 const SKIP_DIRS = new Set([
-  "node_modules", ".next", ".git", ".vercel", "downloader-api", "design-md",
-  ".venv", "venv", "__pycache__", "test-results", "playwright-report",
-  "blob-report", ".lighthouseci", "coverage", "out", "build",
+  "node_modules", ".next", ".git", ".venv", "venv", "__pycache__",
 ]);
 
 let failed = false;
@@ -159,9 +168,27 @@ for (const [file, expected] of Object.entries(FROZEN)) {
   console.log(`integrity  ok       ${file}  (${body.length} bytes)`);
 }
 
-// 2. Tripwires across the tree.
+// vercel.json: not hashable (see FROZEN), but it must stay a small JSON file.
+try {
+  const body = readFileSync("vercel.json", "utf8");
+  JSON.parse(body);
+  if (body.length > 4096 || SUSPICIOUS_RUN.test(body)) {
+    fail("vercel.json", "is oversized or padded; it should be a few hundred bytes of JSON.");
+  }
+} catch (error) {
+  if (error && error.code !== "ENOENT") fail("vercel.json", "is not valid JSON.");
+}
+
+// 2. Tripwires across the repo's own files.
+function* repoFiles() {
+  for (const entry of readdirSync(".", { withFileTypes: true })) {
+    if (entry.isFile()) yield entry.name;
+  }
+  for (const dir of SCAN_DIRS) yield* walk(dir);
+}
+
 let scanned = 0;
-for (const path of walk(".")) {
+for (const path of repoFiles()) {
   const file = relative(".", path).split(sep).join("/");
   const name = file.split("/").pop();
   const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
