@@ -2,68 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Waving hand 👋 — real-time wave animation on the hero emoji. */
-@keyframes wave {
-  0% { transform: rotate(0deg); }
-  10% { transform: rotate(14deg); }
-  20% { transform: rotate(-8deg); }
-  30% { transform: rotate(14deg); }
-  40% { transform: rotate(-4deg); }
-  50% { transform: rotate(10deg); }
-  60% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
+/*
+  BlurFade in CSS (lib/css-blur-fade.ts), for content that should not
+  wait for JavaScript: the blog lists, and the homepage hero and About, which
+  are the first paint. Same entrance as components/magicui/blur-fade.tsx: 0.4s,
+  and a drop and blur of --blur-fade-y and --blur-fade-blur (6px each by
+  default). The delay comes from --blur-fade-delay, and `both` keeps the end
+  state. Under reduced motion it is a plain fade with no delay (see below).
 
-.animate-wave {
-  display: inline-block;
-  transform-origin: 70% 70%;
-  animation: wave 2.5s ease-in-out infinite;
-}
-
-/* Ripple (MagicUI) — concentric pulse behind the closing section. */
-@keyframes ripple {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(1);
+  Both keyframes start at opacity 0.01, not 0: Chrome does not count text
+  painted under an opacity animation that starts at 0 towards the largest
+  contentful paint, so with the font already cached (a repeat visit) LCP
+  waited for hydration instead of the first paint. 0.01 looks the same.
+*/
+@keyframes blur-fade-in {
+  from {
+    opacity: 0.01;
+    transform: translateY(calc(-1 * var(--blur-fade-y, 6px)));
+    filter: blur(var(--blur-fade-blur, 6px));
   }
-  50% {
-    transform: translate(-50%, -50%) scale(0.9);
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }
 
-.animate-ripple {
-  animation: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s) infinite;
-}
-
-/* Signature link interaction: left-origin underline wipe + accent on hover. */
-.link-underline {
-  position: relative;
-  transition: color 150ms ease;
-}
-
-.link-underline::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  height: 1px;
-  width: 100%;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 150ms ease;
-}
-
-@media (hover: hover) {
-  .link-underline:hover {
-    color: #0070f3;
-  }
-  .link-underline:hover::after {
-    transform: scaleX(1);
+@keyframes fade-in {
+  from {
+    opacity: 0.01;
   }
 }
 
-/* AnimatedThemeToggler (MagicUI) — scope the view-transition to theme toggles. */
+.animate-blur-fade {
+  animation: blur-fade-in 0.4s ease-out var(--blur-fade-delay, 0s) both;
+}
+
+/*
+  Highlighter marks (components/magicui/highlighter.tsx). A highlight is an
+  opaque shape on top of the line, so it would hide any glyph it overlaps
+  outside the marked word (the colon before "1st Place"). Blending the
+  whole SVG keeps every glyph readable: multiply lets dark text through on the
+  light theme, screen lets light text through on the dark one. The blend
+  applies to the flattened SVG, so its overlapping passes still cannot stack.
+*/
+.rough-annotation--highlight {
+  mix-blend-mode: multiply;
+}
+
+.dark .rough-annotation--highlight {
+  mix-blend-mode: screen;
+}
+
+/* AnimatedThemeToggler (MagicUI): scope the view-transition to theme toggles. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -72,6 +63,12 @@
 
 html[data-magicui-theme-vt="active"]::view-transition-group(root) {
   animation-duration: var(--magicui-theme-toggle-vt-duration);
+}
+
+/* The toggler sets this to the collapsed clip-path before the JS animation
+   starts, so Firefox never paints one frame of the new theme unclipped. */
+html[data-magicui-theme-vt="active"]::view-transition-new(root) {
+  clip-path: var(--magicui-theme-vt-clip-from);
 }
 
 /* Respect users who prefer reduced motion: disable the blur/transform fades. */
@@ -84,18 +81,34 @@ html[data-magicui-theme-vt="active"]::view-transition-group(root) {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* An opacity-only fade with no stagger. (BlurFade keeps its stagger under
+     reduced motion; only its movement and blur go.) Without this the rule
+     above keeps each element at its first keyframe (hidden and blurred)
+     until its delay ends, then jumps. The class outranks `*`. */
+  .animate-blur-fade {
+    animation: fade-in 0.3s ease-out both !important;
+  }
 }
 
 @layer base {
+    /*
+      Palette and radius follow the Magic UI portfolio template (shadcn
+      "neutral", which the template writes in oklch for Tailwind v4). These are
+      the same values converted to HSL channels for Tailwind v3's
+      hsl(var(--token) / <alpha>) pipeline. Dark --border and --input are the
+      template's 10% and 15% white composited over the dark canvas, stored
+      opaque so opacity modifiers like border-border/50 keep working.
+    */
     :root {
       --background: 0 0% 100%;
-      --foreground: 210 11.1% 3.53%;
+      --foreground: 0 0% 3.9%;
 
       --card: 0 0% 100%;
-      --card-foreground: 210 11.1% 3.53%;
+      --card-foreground: 0 0% 3.9%;
 
       --popover: 0 0% 100%;
-      --popover-foreground: 210 11.1% 3.53%;
+      --popover-foreground: 0 0% 3.9%;
 
       --primary: 0 0% 9%;
       --primary-foreground: 0 0% 98%;
@@ -107,36 +120,52 @@ html[data-magicui-theme-vt="active"]::view-transition-group(root) {
       --muted-foreground: 0 0% 45.1%;
 
       --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+      --accent-foreground: 0 0% 9%;
 
       --destructive: 0 84.2% 60.2%;
       --destructive-foreground: 0 0% 98%;
 
       --border: 0 0% 89.8%;
       --input: 0 0% 89.8%;
-      --ring: 0 0% 3.9%;
+      /* #737373, 4.7:1 on white: focus rings need 3:1 (WCAG 1.4.11). The
+         template's #a1a1a1 is only 2.6:1. */
+      --ring: 0 0% 45.1%;
 
-      --radius: 0.5rem;
+      /* Link blue, #0070f3: links only. The Highlighter's marker pair below
+         is the only other hue, and only ever appears as a hand-drawn mark. */
+      --link: 212.3 100% 47.6%;
+
+      /*
+        Highlighter ink, used only by components/magicui/highlighter.tsx: a
+        highlighter-pen yellow behind text (#fde68a, opaque, so black text
+        stays at full contrast) and a warmer amber for hand-drawn strokes
+        (#d97706, 3.2:1 on white, strong enough for a 2-3px line).
+      */
+      --marker: 48 96.6% 76.7%;
+      --marker-alpha: 1;
+      --marker-stroke: 32 94.6% 43.7%;
+
+      --radius: 0.625rem;
     }
 
     .dark {
-      --background: 210 11.1% 3.53%;
+      --background: 0 0% 6.9%;
       --foreground: 0 0% 98%;
 
-      --card: 210 11.1% 3.53%;
+      --card: 0 0% 9%;
       --card-foreground: 0 0% 98%;
 
-      --popover: 210 11.1% 3.53%;
+      --popover: 0 0% 9%;
       --popover-foreground: 0 0% 98%;
 
-      --primary: 0 0% 98%;
+      --primary: 0 0% 89.8%;
       --primary-foreground: 0 0% 9%;
 
       --secondary: 0 0% 14.9%;
       --secondary-foreground: 0 0% 98%;
 
       --muted: 0 0% 14.9%;
-      --muted-foreground: 0 0% 63.9%;
+      --muted-foreground: 0 0% 63%;
 
       --accent: 0 0% 14.9%;
       --accent-foreground: 0 0% 98%;
@@ -144,15 +173,41 @@ html[data-magicui-theme-vt="active"]::view-transition-group(root) {
       --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 0 0% 98%;
 
-      --border: 0 0% 14.9%;
-      --input: 0 0% 14.9%;
-      --ring: 0 0% 83.1%;
+      --border: 0 0% 16.2%;
+      --input: 0 0% 20.8%;
+      --ring: 0 0% 45.1%;
+
+      /* Same hue, lifted: #0070f3 is only about 4.1:1 on the dark canvas. */
+      --link: 212 100% 62%;
+
+      /*
+        Amber-400 at 35% over the dark canvas, pre-composited to an opaque
+        #644f18 (7.5:1 with #fafafa). A translucent fill would stack where
+        rough-notation's two passes overlap and turn two-tone. Strokes are
+        solid amber-400.
+      */
+      --marker: 43.4 61.3% 24.3%;
+      --marker-alpha: 1;
+      --marker-stroke: 43.3 96.4% 56.3%;
     }
   }
 
   @layer base {
     * {
       @apply border-border;
+    }
+    html {
+      /* The dock is fixed to the bottom (bottom-4 + h-14 = 72px). Keep
+         anything scrolled into view by focus clear of it (WCAG 2.4.11).
+         Top-aligned anchor jumps still use each section's scroll-mt-24. */
+      scroll-padding-bottom: 6rem;
+    }
+    /* Firefox ignores the html scroll-padding when it scrolls a focused
+       element into view; a margin on the element itself works everywhere. */
+    a,
+    button,
+    [tabindex] {
+      scroll-margin-bottom: 6rem;
     }
     body {
       @apply bg-background text-foreground;
@@ -167,63 +222,71 @@ html[data-magicui-theme-vt="active"]::view-transition-group(root) {
   pre {
     @apply !px-0 rounded-lg overflow-x-auto py-4
   }
-   
-  pre [data-line] {
-    @apply px-4
-  }
 
   code {
     @apply text-sm md:text-base !leading-loose;
   }
-  
-  pre > code {
-    counter-reset: line;
+
+/*
+  Blog prose, after the Magic UI portfolio template. The template writes these
+  with Tailwind v4's trailing `!`; v3 takes the important flag as a prefix.
+  Blockquotes use a neutral rule instead of the template's amber so link blue
+  stays the only accent in running content (see DESIGN.md, Color Rules).
+*/
+@layer components {
+  /* The template's code blocks are transparent because shiki colours them.
+     This site renders plain Markdown with no highlighter, so a block gets a
+     muted surface and foreground text instead of the typography plugin's
+     light-on-dark pair (which read 1.24:1 on white once the panel was gone). */
+  /* Size and leading go on the pre itself: the code inside is inline (no
+     shiki to make it a block), so it cannot shrink the pre's own 24px line
+     boxes. 13px on relaxed lines (about 21px), as the template renders. */
+  .prose pre {
+    @apply rounded-lg border border-border !bg-muted/50 !px-4 !py-3 !text-[13px] !leading-relaxed !text-foreground;
   }
-  
-  code[data-theme*=" "],
-  code[data-theme*=" "] span {
-    color: var(--shiki-light);
-    background-color: var(--shiki-light-bg);
+
+  /* The global `code` rule above is for inline code and would give 16px on
+     32px lines here. */
+  .prose pre code {
+    @apply !text-[13px] !leading-relaxed text-foreground;
   }
-   
-  @media (prefers-color-scheme: dark) {
-    code[data-theme*=" "],
-    code[data-theme*=" "] span {
-      color: var(--shiki-dark);
-      background-color: var(--shiki-dark-bg);
-    }
+
+  .prose :where(code):not(:where(pre code)) {
+    @apply !mx-1 rounded-md border bg-muted/60 px-1.5 py-0.5 font-mono !text-[13px] !leading-normal text-foreground/90 dark:bg-muted/40;
   }
-  
-  code[data-line-numbers] {
-    counter-reset: line;
+
+  .prose code::before,
+  .prose code::after {
+    @apply !content-none;
   }
-  
-  code[data-line-numbers] > [data-line]::before {
-    counter-increment: line;
-    content: counter(line);
-    @apply inline-block w-4 mr-4 text-right text-gray-500;
+
+  .prose h1 {
+    @apply !text-2xl !font-semibold !leading-tight !tracking-tight;
   }
- 
-  code {
-    counter-reset: line;
+
+  .prose h2 {
+    @apply !text-xl !font-semibold !leading-tight !tracking-tight;
   }
- 
-  code > [data-line]::before {
-  counter-increment: line;
-  content: counter(line);
- 
-  /* Other styling */
-  display: inline-block;
-  width: 1rem;
-  margin-right: 2rem;
-  text-align: right;
-  color: gray;
-}
- 
-code[data-line-numbers-max-digits="2"] > [data-line]::before {
-  width: 2rem;
-}
- 
-code[data-line-numbers-max-digits="3"] > [data-line]::before {
-  width: 3rem;
+
+  .prose h3 {
+    @apply !text-lg !font-semibold !leading-tight !tracking-tight;
+  }
+
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    @apply !text-base !font-medium !leading-tight !tracking-tight;
+  }
+
+  .prose a {
+    @apply text-primary underline underline-offset-4;
+  }
+
+  .prose blockquote {
+    @apply rounded-md rounded-l-none border-l-4 border-foreground/20 bg-muted/50 p-4 pl-4 italic;
+  }
+
+  .prose blockquote p {
+    @apply !m-0;
+  }
 }

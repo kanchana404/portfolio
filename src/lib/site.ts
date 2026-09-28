@@ -8,14 +8,14 @@
  *    `@/components/icons` and `lucide-react` into whatever module graph touched
  *    it. SEO plumbing (JSON-LD builders, the sitemap, OG URLs, the tools
  *    registry) only ever needs a handful of strings. Importing them from here
- *    keeps React out of graphs that have no business rendering anything — and
+ *    keeps React out of graphs that have no business rendering anything, and
  *    keeps the validator and its tests runnable in plain Node.
  *
  * 2. **It owns the schema.org `@id` strings.** The root layout publishes a
  *    Person and a WebSite node, and every tool page must reference those exact
  *    `@id` values or Google resolves the tools as unrelated entities and they do
- *    nothing for the personal brand — which is the entire reason the tools live
- *    on this domain rather than a separate one. Two hand-written
+ *    nothing for the personal brand. That brand link is the entire reason the
+ *    tools live on this domain rather than a separate one. Two hand-written
  *    `${DATA.url}/#person` templates in two files is a fracture waiting for a
  *    refactor. Exported constants cannot drift.
  *
@@ -30,6 +30,15 @@ export const SITE_NAME = "Kavitha Kanchana";
 
 /** Full-resolution headshot (896×1195, ~272 kB). Used for Person.image and OG. */
 export const SITE_AVATAR = "/kavitha-kanchana-software-engineer.jpg";
+
+/**
+ * The round portrait in the homepage hero: a 640×640 upper-body crop, centred
+ * on the figure (not the face, which is turned to one side)
+ * (~42 kB, re-encoded without EXIF). Kept separate from SITE_AVATAR so the
+ * hero can change without touching Person.image, the OG card or the tools
+ * author card, which all still use the studio headshot.
+ */
+export const SITE_PORTRAIT = "/kavitha-kanchana-portrait.jpg";
 
 /**
  * Pre-sized 96×96 crop of the headshot, ~6 kB.
@@ -56,7 +65,7 @@ export const SITE_CONTACT_EMAIL = "kanchanakavitha6@gmail.com";
  *
  * Emitted by `src/app/layout.tsx` and referenced by every tool, hub and
  * category page. Changing either string is a site-wide entity migration, not a
- * refactor — Google has to re-resolve every node that points at them.
+ * refactor: Google has to re-resolve every node that points at them.
  */
 export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;

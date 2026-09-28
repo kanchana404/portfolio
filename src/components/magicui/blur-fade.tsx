@@ -35,7 +35,9 @@ const BlurFade = ({
   duration = 0.4,
   delay = 0,
   yOffset = 6,
-  inView = false,
+  // On by default: each block waits until it scrolls into view, so a long
+  // page reveals section by section instead of all at once on load.
+  inView = true,
   inViewMargin = "-50px",
   blur = "6px",
 }: BlurFadeProps) => {
@@ -43,16 +45,20 @@ const BlurFade = ({
   const inViewResult = useInView(ref, { once: true, margin: inViewMargin });
   const isInView = !inView || inViewResult;
   const shouldReduceMotion = useReducedMotion();
-  // Reduced motion: fade opacity only (no translate/blur).
-  const defaultVariants: Variants = shouldReduceMotion
-    ? {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1 },
-      }
-    : {
-        hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` },
-        visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` },
-      };
+  // Drops in from above and settles at rest, as the Magic UI template does
+  // (and as .animate-blur-fade in globals.css does in CSS).
+  //
+  // One variant set for everyone. The server cannot know the visitor's motion
+  // preference, so it always renders the hidden state with the blur and the
+  // offset. If reduced motion swapped in variants without y and filter, the
+  // browser would never animate those keys and the server's inline blur and
+  // translate would stay on the page for good. Instead, reduced motion keeps
+  // the same keys and only makes y and filter instant: the text appears with
+  // a plain opacity fade.
+  const defaultVariants: Variants = {
+    hidden: { y: -yOffset, opacity: 0, filter: `blur(${blur})` },
+    visible: { y: 0, opacity: 1, filter: `blur(0px)` },
+  };
   const combinedVariants = variant || defaultVariants;
   return (
     <AnimatePresence>
@@ -66,6 +72,10 @@ const BlurFade = ({
           delay: 0.04 + delay,
           duration,
           ease: "easeOut",
+          ...(shouldReduceMotion && {
+            y: { duration: 0 },
+            filter: { duration: 0 },
+          }),
         }}
         className={className}
       >

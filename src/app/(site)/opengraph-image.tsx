@@ -2,9 +2,9 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// Route-level social share image — Next.js auto-wires this as og:image AND
+// Route-level social share image: Next.js auto-wires this as og:image AND
 // twitter:image at 1200x630. Personal-brand card: headshot + name + role.
-export const alt = "Kavitha Kanchana — Software Engineer at Cortana AI";
+export const alt = "Kavitha Kanchana, Software Engineer at Cortana AI";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

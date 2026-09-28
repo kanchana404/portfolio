@@ -26,6 +26,7 @@ const config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        link: "hsl(var(--link))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
@@ -58,6 +59,9 @@ const config = {
         },
       },
       borderRadius: {
+        // The template's shadcn theme derives xl from the radius as well, so
+        // pills and cards (rounded-xl) stay in step with --radius.
+        xl: "calc(var(--radius) + 4px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",

@@ -1,23 +1,28 @@
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
-import { PERSON_ID, WEBSITE_ID } from "@/lib/site";
+import { PERSON_ID, SITE_AVATAR, WEBSITE_ID } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { jsonLdHtml } from "@/lib/json-ld";
 
+// "optional", not "swap": the font is preloaded, so nearly every load has
+// Inter within the block period, and a late font no longer swaps in after the
+// first paint. With swap, a slow first visit on a phone reflowed the About
+// paragraph by a line when Inter arrived (CLS 0.118 at 390px). The cost: that
+// one slow page view shows the metric-matched fallback; later views have
+// Inter from cache.
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "swap",
+  display: "optional",
 });
 
 // Single source of truth for the site's SEO copy (current role: Software
-// Engineer @ Cortana AI — keep in sync with the Person JSON-LD below).
+// Engineer @ Cortana AI; keep in sync with the Person JSON-LD below).
 const SITE_TITLE = `${DATA.name} - Full-Stack & SaaS Software Engineer`;
 const SITE_DESCRIPTION =
   "Software Engineer at Cortana AI building SaaS products, from micro SaaS to enterprise scale, plus AI automation. Next.js, React, Node.js. Based in Sri Lanka.";
@@ -54,7 +59,7 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: OG_DESCRIPTION,
     url: DATA.url,
-    siteName: `${DATA.name} — Portfolio`,
+    siteName: `${DATA.name} Portfolio`,
     locale: "en_US",
     type: "website",
   },
@@ -84,10 +89,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  // The default (light) theme. ThemeColorSync in theme-provider.tsx switches
+  // it with the site's theme; the OS setting does not choose the theme here.
+  themeColor: "#ffffff",
   colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
@@ -98,10 +102,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const personImage = new URL(DATA.avatarUrl, DATA.url).toString();
+  const personImage = new URL(SITE_AVATAR, DATA.url).toString();
 
-  // Unified structured-data graph: WebSite + Person + ProfilePage, cross-linked
-  // by @id so search engines resolve one consistent entity for the site owner.
+  // Site-wide structured data: WebSite + Person, cross-linked by @id so search
+  // engines resolve one consistent entity for the site owner. Pages add their
+  // own nodes (the homepage its ProfilePage) that point back at these @ids.
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -109,8 +114,8 @@ export default function RootLayout({
         "@type": "WebSite",
         "@id": WEBSITE_ID,
         url: DATA.url,
-        name: `${DATA.name} — Portfolio`,
-        alternateName: `${DATA.name} Portfolio`,
+        name: `${DATA.name} Portfolio`,
+        alternateName: DATA.name,
         description:
           "Portfolio of Kavitha Kanchana, a software engineer specializing in full-stack development, building SaaS products from micro SaaS to enterprise-level platforms, plus AI automation.",
         inLanguage: "en-US",
@@ -123,7 +128,7 @@ export default function RootLayout({
         givenName: "Kavitha",
         familyName: "Kanchana",
         alternateName: "kanchana404",
-        // Explicit gender signal — the name is often misread as female online.
+        // Explicit gender signal: the name is often misread as female online.
         gender: "https://schema.org/Male",
         pronouns: "he/him",
         url: DATA.url,
@@ -133,7 +138,7 @@ export default function RootLayout({
         },
         jobTitle: "Software Engineer",
         description:
-          "Kavitha Kanchana is a software engineer at Cortana AI and the co-founder of Ryzera Technologies and PulseOpes Ai. He builds SaaS products ranging from micro SaaS tools to enterprise-level platforms, and also develops AI automation. He specializes in full-stack development with React, Next.js, Node.js and TypeScript.",
+          "Kavitha Kanchana is a software engineer at Cortana AI and the co-founder of Ryzera Technologies. He builds SaaS products ranging from micro SaaS tools to enterprise-level platforms, and also develops AI automation. He specializes in full-stack development with React, Next.js, Node.js and TypeScript.",
         worksFor: {
           "@type": "Organization",
           name: "Cortana AI",
@@ -146,7 +151,10 @@ export default function RootLayout({
         },
         address: { "@type": "PostalAddress", addressCountry: "LK" },
         nationality: { "@type": "Country", name: "Sri Lanka" },
-        memberOf: { "@type": "Organization", name: "Generation ALPHA" },
+        award: [
+          "1st Place, Master of Agents (AI Mastery Award for Best AI Integration), IDEALIZE 2026",
+          "1st Runner-Up, Open Category, IDEALIZE 2026",
+        ],
         sameAs: [
           DATA.contact.social.GitHub.url,
           DATA.contact.social.LinkedIn.url,
@@ -170,19 +178,8 @@ export default function RootLayout({
           "Cloud Deployment",
         ],
       },
-      {
-        "@type": "ProfilePage",
-        "@id": `${DATA.url}/#profilepage`,
-        url: DATA.url,
-        name: `${DATA.name} - Software Engineer & Founder`,
-        dateCreated: "2025-08-01T00:00:00+05:30",
-        dateModified: "2026-06-18T00:00:00+05:30",
-        isPartOf: { "@id": WEBSITE_ID },
-        about: { "@id": PERSON_ID },
-        mainEntity: { "@id": PERSON_ID },
-        primaryImageOfPage: { "@type": "ImageObject", url: personImage },
-        inLanguage: "en-US",
-      },
+      // The ProfilePage node lives on the homepage itself (app/(site)/page.tsx):
+      // emitted here it described every route, /blog and /privacy included.
     ],
   };
 
@@ -197,14 +194,11 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {/* Structured data: WebSite + Person + ProfilePage (one cross-linked graph) */}
+        {/* Structured data: WebSite + Person (the homepage adds its ProfilePage) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
         />
-        {/* Scroll progress bar (top of every page) */}
-        <ScrollProgress />
-
         <ThemeProvider attribute="class" defaultTheme="light">
           <TooltipProvider delayDuration={0}>
             {children}

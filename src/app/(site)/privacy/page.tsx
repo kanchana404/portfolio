@@ -1,14 +1,48 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_CONTACT_EMAIL, SITE_URL } from "@/lib/site";
+import { SITE_CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site";
 import { buildableTools } from "@/lib/tools/registry";
+import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
+
+/**
+ * While the tools section is dark, every /tools URL answers 410, so this page
+ * names the tools as plain text instead of linking to them (the same rule the
+ * dock and the homepage follow).
+ */
+function ToolLink({ href, children }: { href: string; children: React.ReactNode }) {
+  if (!TOOLS_SECTION_LIVE) return <>{children}</>;
+  return (
+    <Link href={href} className="underline underline-offset-2">
+      {children}
+    </Link>
+  );
+}
+
+const DESCRIPTION =
+  "What this site collects, what it does not, and who else receives data when you visit. Almost every tool runs entirely in your browser; the few that do not are named.";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description:
-    "What this site collects, what it does not, and who else receives data when you visit. Almost every tool runs entirely in your browser; the few that do not are named.",
+  description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/privacy` },
   robots: { index: true, follow: true },
+  // Its own share metadata; without it the page announces itself with the
+  // homepage's title and URL. The card image still comes from
+  // (site)/opengraph-image.
+  openGraph: {
+    title: `Privacy | ${SITE_NAME}`,
+    description: DESCRIPTION,
+    url: `${SITE_URL}/privacy`,
+    type: "website",
+    siteName: `${SITE_NAME} Portfolio`,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Privacy | ${SITE_NAME}`,
+    description: DESCRIPTION,
+    creator: "@kanchana404",
+  },
 };
 
 /**
@@ -23,13 +57,13 @@ export const metadata: Metadata = {
  * ## The list of server-backed tools is read from the registry
  *
  * This page used to open with "Every tool under /tools runs entirely in your
- * browser." That sentence was already false — pdf-to-text and pdf-to-images had
+ * browser." That sentence was already false: pdf-to-text and pdf-to-images had
  * shipped, and both upload. A privacy page is the one page on a site where a
  * stale sentence is not a typo, so the exception list is now derived from
  * `compute` rather than typed, exactly like the line under each tool's title.
  * Ship a tool that uses a server and it names itself here.
  *
- * Statically rendered, no data access — a privacy page that phones home would be
+ * Statically rendered, no data access: a privacy page that phones home would be
  * its own punchline.
  */
 export const dynamic = "force-static";
@@ -79,13 +113,10 @@ export default function PrivacyPage() {
 
       <Section title="Almost every tool collects nothing">
         <p>
-          Nearly every tool under{" "}
-          <Link href="/tools" className="underline underline-offset-2">
-            /tools
-          </Link>{" "}
-          runs entirely in your browser. What you type into a word counter, a
+          Nearly every tool under <ToolLink href="/tools">/tools</ToolLink> runs
+          entirely in your browser. What you type into a word counter, a
           JSON formatter, a JWT decoder or a password generator is never sent
-          anywhere — there is no server request to send it to. You can confirm
+          anywhere: there is no server request to send it to. You can confirm
           this by opening your browser&rsquo;s network tab while you type, or by
           disconnecting from the internet and using the tool offline. Nothing you
           enter is stored, and nothing survives a page reload; passwords and
@@ -107,12 +138,7 @@ export default function PrivacyPage() {
           <ul className="ml-5 list-disc space-y-1">
             {serverTools.map((tool) => (
               <li key={tool.slug}>
-                <Link
-                  href={`/tools/${tool.slug}`}
-                  className="underline underline-offset-2"
-                >
-                  {tool.title}
-                </Link>
+                <ToolLink href={`/tools/${tool.slug}`}>{tool.title}</ToolLink>
               </li>
             ))}
           </ul>
@@ -123,7 +149,7 @@ export default function PrivacyPage() {
           than typed by hand. The video downloader is the furthest from &ldquo;runs
           in your browser&rdquo;: for most sites it has to fetch the video onto my
           server, combine the separate video and audio streams, and hand you a
-          link — so the file itself passes through my storage and is deleted six
+          link. So the file itself passes through my storage and is deleted six
           hours later. The link you paste is processed to find the media and is
           not kept.
         </p>
@@ -132,9 +158,10 @@ export default function PrivacyPage() {
 
       <Section title="The rest of the site">
         <p>
-          Every page outside the tools section — the home page, the blog, and
-          this page — loads one third-party analytics script, from{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">
+          Every page outside the tools section (the home page, the blog, and
+          this page) loads one third-party analytics script, from <code
+            className="rounded bg-muted px-1 py-0.5 text-xs text-foreground"
+          >
             app.usecortana.ai
           </code>
           , which records page views and interaction events so I know which
@@ -146,8 +173,8 @@ export default function PrivacyPage() {
           supplies the &ldquo;are you human&rdquo; check, which is what keeps the
           tool from being drained by scripts, and it receives your IP address and
           browser details. When a download can be served directly, your browser
-          fetches the file from the originating platform&rsquo;s own network —
-          TikTok&rsquo;s, X&rsquo;s, and so on — which means that platform sees
+          fetches the file from the originating platform&rsquo;s own network
+          (TikTok&rsquo;s, X&rsquo;s, and so on), which means that platform sees
           the request, though the referrer is stripped so it does not learn that
           you came from here.
         </p>
@@ -170,7 +197,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           Blog content is stored in a database I control. It holds articles, not
-          readers — there are no user records because there are no users.
+          readers: there are no user records because there are no users.
         </p>
       </Section>
 
@@ -185,8 +212,8 @@ export default function PrivacyPage() {
           The video downloader sets one cookie, and only once you use it. It
           records that the &ldquo;are you human&rdquo; check has been passed, so a
           single download does not ask you to pass it again for every step. It
-          holds no identifier for you — only a one-way hash of your address and
-          two timestamps — cannot be read by any script, is not sent to any other
+          holds no identifier for you (only a one-way hash of your address and
+          two timestamps), cannot be read by any script, is not sent to any other
           site, and expires within fifteen minutes of you stopping.
         </p>
       </Section>
@@ -202,15 +229,14 @@ export default function PrivacyPage() {
         <p>
           These tools are provided free and as-is, with no guarantee of uptime,
           accuracy or fitness for any particular purpose. Check anything
-          important — a loan figure, a tax calculation, a contrast ratio in an
-          accessibility audit — against a second source before relying on it.
+          important, such as a loan figure, a tax calculation or a contrast ratio
+          in an accessibility audit, against a second source before relying on it.
         </p>
       </Section>
 
       <Section title="Contact">
         <p>
-          Questions, corrections, or a request to remove something: email{" "}
-          <a
+          Questions, corrections, or a request to remove something: email <a
             href={`mailto:${SITE_CONTACT_EMAIL}`}
             className="underline underline-offset-2"
           >
