@@ -5,6 +5,7 @@ import {
   publicTools,
 } from "@/lib/tools/registry";
 import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
+import { escapeXml } from "@/lib/xml";
 
 /**
  * A sitemap containing *only* the tools cohort.
@@ -29,22 +30,6 @@ interface Entry {
   lastmod: string;
   changefreq: string;
   priority: string;
-}
-
-/**
- * Escape the five XML predefined entities.
- *
- * Slugs are kebab-case so today nothing here needs escaping — which is exactly
- * why it would be forgotten on the day a URL first contains an ampersand and the
- * whole sitemap becomes unparseable.
- */
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
 
 function toXml(entries: Entry[]): string {

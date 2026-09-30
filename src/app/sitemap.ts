@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { DATA } from "@/data/resume";
+import { getAllPosts } from "@/lib/blog/posts";
 import {
   activeCategories,
   isCategoryIndexable,
@@ -8,18 +9,26 @@ import {
 import { TOOLS_SECTION_LIVE } from "@/lib/tools/section-flag";
 
 // Generated once per deploy. Publishing a post is a deploy, so there is
-// nothing to revalidate between them.
+// nothing to revalidate between them. A post that fails the publish gate
+// throws here and fails the build, rather than being logged and skipped.
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = DATA.url.replace(/\/$/, "");
   const now = new Date();
+  const posts = getAllPosts();
+  const postDate = (post: (typeof posts)[number]) =>
+    new Date(`${post.updatedAt ?? post.publishedAt}T00:00:00Z`);
+  // The blog last changed when its newest post was published or updated.
+  const blogModified = posts.length > 0
+    ? new Date(Math.max(...posts.map((post) => postDate(post).getTime())))
+    : now;
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: base, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
     {
       url: `${base}/blog`,
-      lastModified: now,
+      lastModified: blogModified,
       changeFrequency: "weekly",
       priority: 0.8,
     },
@@ -68,5 +77,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
           priority: 0.5,
         }));
 
-  return [...staticRoutes, ...toolRoutes, ...categoryRoutes];
+  const postRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${base}/blog/${post.slug}`,
+    lastModified: postDate(post),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...postRoutes];
 }

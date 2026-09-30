@@ -46,6 +46,11 @@ environment variables either.
 `dev`, `lint` and `build`. If it fails, do not run the project: see
 SECURITY.md.
 
+`pnpm test` and `pnpm build` refuse any post that still contains TODO or
+template placeholders, a broken link or image, or bad frontmatter: that is the
+publish gate (`src/lib/blog/validate.ts`). There are no drafts, so the gate
+is what stands between a half-written post and production.
+
 ## Environment variables
 
 Set them in Vercel as **Sensitive** and **Production** only.
@@ -71,6 +76,9 @@ src/app/api/         GitHub contributions and the tools download ticket
 src/app/og/          OG images
 src/components/      section/*, magicui/*, ui/* (shadcn), tools/*
 src/data/resume.tsx  all portfolio content
+src/lib/blog/        the post loader, publish gate, renderer and RSS feed
+content/blog/        posts, one <slug>.md each (no drafts: whatever is on main is live)
+public/blog/<slug>/  post images (WebP)
 image-api/           the Python image and PDF service behind the tools section
 public/              logos, skill marks, project covers (WebP)
 ```

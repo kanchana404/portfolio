@@ -14,6 +14,7 @@ const APP = join(process.cwd(), "src/app");
 
 /** Every route handler under src/app. Adding or removing one fails test (1). */
 const EXPECTED_ROUTES = [
+  "(site)/blog/rss.xml/route.ts",
   "api/github-contributions/route.ts",
   "api/tools/download-ticket/route.ts",
   "og/route.tsx",
