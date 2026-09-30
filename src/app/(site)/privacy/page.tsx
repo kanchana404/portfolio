@@ -68,7 +68,7 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-static";
 
-const LAST_UPDATED = "21 August 2026";
+const LAST_UPDATED = "28 September 2026";
 
 /**
  * Tools that send anything to a server, straight from the registry.
@@ -196,17 +196,16 @@ export default function PrivacyPage() {
           service. I do not add my own logging beyond that.
         </p>
         <p>
-          Blog content is stored in a database I control. It holds articles, not
-          readers: there are no user records because there are no users.
+          Blog posts are files in this site&rsquo;s source code, built into
+          static pages. There is no database and there are no reader records.
         </p>
       </Section>
 
       <Section title="Cookies">
         <p>
-          The site sets no cookies for ordinary browsing. There is one cookie
-          used by the private admin area, which only exists after logging in and
-          only applies to me. The analytics script described above may set
-          storage of its own on the pages where it loads.
+          The site sets no cookies for ordinary browsing. The analytics script
+          described above may set storage of its own on the pages where it
+          loads.
         </p>
         <p>
           The video downloader sets one cookie, and only once you use it. It

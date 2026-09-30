@@ -54,24 +54,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
 
-      # Enforce the connection-pool rule mechanically.
-      #
-      # Every lambda that touches db/index.ts opens its own Atlas pool, so a
-      # statically generated tool page must never touch the database at all.
-      # Reviewers forget; grep does not.
-      #
-      # Deliberately wider than just the route directory: the widgets and the
-      # registry live outside `src/app/(tools)/` and are imported *into* it, so
-      # scanning only the routes would miss the realistic version of this bug.
-      - name: No database imports in tool code
-        run: |
-          if grep -rnE "from ['\"]@db(/|['\"])" \
-               "src/app/(tools)/" src/lib/tools/ src/components/tools/ ; then
-            echo "::error::Tool code must never import from @db. Use a route handler."
-            exit 1
-          fi
-          echo "ok — no @db import in tool code"
-
   build:
     name: Build · Bundle budget
     runs-on: ubuntu-24.04
@@ -92,9 +74,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # No MONGODB_URI on purpose. sitemap.ts and the blog routes must survive
-      # without it — their try/catch fallbacks are load-bearing, and this is what
-      # proves they work rather than assuming so.
+      # The build needs no secrets: the blog reads nothing but the repository.
       - run: pnpm build
 
       - run: pnpm budget

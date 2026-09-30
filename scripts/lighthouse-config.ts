@@ -51,8 +51,8 @@ const config = JSON.parse(readFileSync(join(root, BASE), "utf8")) as {
   ci: { collect: { url?: string[] } };
 };
 
-// /blog renders its empty state in CI (no MONGODB_URI), which is still the
-// page's layout and scripts.
+// /blog is statically generated and shows its empty state until the first post
+// is committed.
 const SITE_PAGES = ["/", "/blog", "/privacy"];
 
 const tools = TOOLS_SECTION_LIVE ? publicTools() : [];

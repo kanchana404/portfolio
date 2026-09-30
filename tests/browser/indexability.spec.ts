@@ -33,10 +33,10 @@ test.describe("robots.txt", () => {
     }
   });
 
-  test("blocks the private surfaces and only those", async ({ request }) => {
+  test("advertises no private or deleted path", async ({ request }) => {
     const body = await (await request.get("/robots.txt")).text();
-    expect(body).toContain("Disallow: /admin");
-    expect(body).toContain("Disallow: /api/admin");
+    expect(body).not.toContain("/admin");
+    expect(body).not.toContain("/api/data");
 
     // Deleted routes must not be advertised. Naming a private path in
     // robots.txt tells anyone reading it exactly where to look.

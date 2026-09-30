@@ -2,8 +2,9 @@
 
 The source of [kavithakanchana.me](https://kavithakanchana.me): a single-column
 portfolio after the [Magic UI portfolio template](https://github.com/magicuidesign/portfolio),
-a MongoDB-backed blog with a small admin area, and a `/tools` section that is
-built but switched off in production.
+a blog built only from files in this repository, so a post goes live by being
+pushed to `main`, and a `/tools` section that is built but switched off in
+production.
 
 - **Design system:** [DESIGN.md](DESIGN.md) is binding for any UI change.
 - **Security:** [SECURITY.md](SECURITY.md) records past incidents and the checks
@@ -14,7 +15,7 @@ built but switched off in production.
 
 Next.js 14 (app router), React 18, TypeScript, Tailwind CSS 3 with shadcn/ui
 and Magic UI components, motion, Lenis smooth scrolling, rough-notation
-highlights, Mongoose on MongoDB Atlas. Deployed on Vercel from `main`.
+highlights. Deployed on Vercel from `main`.
 
 ## Getting started
 
@@ -26,8 +27,8 @@ pnpm install
 pnpm dev
 ```
 
-The homepage works without any environment variables. The blog needs
-`MONGODB_URI`; without it `/blog` shows its empty state.
+The homepage works without any environment variables. The blog needs no
+environment variables either.
 
 ## Scripts
 
@@ -51,12 +52,7 @@ Set them in Vercel as **Sensitive** and **Production** only.
 
 | Variable | Used by |
 |---|---|
-| `MONGODB_URI` | the blog, the admin area and `/api/data` |
 | `GITHUB_TOKEN` | the homepage's GitHub contributions calendar (a fine-grained token with public-repository read access is enough) |
-| `ADMIN_PASSWORD` | admin login; the admin area stays locked when unset |
-| `ADMIN_SESSION_SECRET` | signs admin sessions (optional; falls back to the password) |
-| `IDEOGRAM_API_KEY` | admin cover-image generation (optional) |
-| `OPENAI_API_KEY` | admin content optimisation (optional) |
 
 The tools section adds `NEXT_PUBLIC_TOOLS_LIVE`, `NEXT_PUBLIC_IMAGE_API`,
 `NEXT_PUBLIC_DOWNLOADER_API`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
@@ -71,11 +67,10 @@ The tools section adds `NEXT_PUBLIC_TOOLS_LIVE`, `NEXT_PUBLIC_IMAGE_API`,
 ```
 src/app/(site)/      homepage, blog, privacy (Lenis, header grid, analytics)
 src/app/(tools)/     the dark /tools section, one generated route per tool
-src/app/admin/       blog admin (see ADMIN_SETUP.md)
-src/app/api/         GitHub contributions, admin and ingest endpoints, OG images
+src/app/api/         GitHub contributions and the tools download ticket
+src/app/og/          OG images
 src/components/      section/*, magicui/*, ui/* (shadcn), tools/*
 src/data/resume.tsx  all portfolio content
-db/                  Mongoose connection and the Blog model
 image-api/           the Python image and PDF service behind the tools section
 public/              logos, skill marks, project covers (WebP)
 ```

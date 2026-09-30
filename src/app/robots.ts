@@ -15,14 +15,10 @@ export default function robots(): MetadataRoute.Robots {
       // more-specific `allow` wins over a broader `disallow` in every major
       // crawler, so this is a guard rail rather than decoration.
       allow: TOOLS_SECTION_LIVE ? ["/", "/tools", "/og"] : ["/", "/og"],
-      // Only block private/admin surfaces. The public read endpoint under /api
-      // (github contributions, fetched by the homepage calendar) stays
-      // crawlable so the client island that renders it isn't blocked.
-      //
-      // `/api/debug` and `/publish-blog` were removed from this list when those
-      // routes were deleted — they were unauthenticated, and naming a private
-      // path here advertises it to anyone reading robots.txt. This list is
-      // crawler etiquette, never an access control; `requireAdmin()` is.
+      // No `disallow`: there are no private surfaces left. Paths that were
+      // deleted are deliberately not named here either, because naming a
+      // private path advertises it to anyone reading robots.txt. This file is
+      // crawler etiquette, never an access control.
       //
       // `/tools` is deliberately NOT disallowed while the section is retired,
       // even though nothing there is worth crawling. The 410 *is* the removal
@@ -30,7 +26,6 @@ export default function robots(): MetadataRoute.Robots {
       // pages would sit in the index as "Indexed, though blocked by robots.txt"
       // indefinitely. Blocking is the slower way to disappear. Let Google fetch
       // the 410 once and drop them.
-      disallow: ["/admin", "/api/admin"],
     },
     // Both are declared. The tools segment duplicates URLs that are already in
     // the main sitemap on purpose: Search Console reports indexation per

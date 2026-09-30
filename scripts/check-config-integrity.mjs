@@ -102,7 +102,7 @@ const MAGIC = {
  * a cache full of third-party code is not this repo's to judge. `.vscode` is
  * included because the editor runs tasks from the root one.
  */
-const SCAN_DIRS = ["src", "scripts", "db", "public", "tests", "docs", "image-api", ".github", ".claude", ".vscode"];
+const SCAN_DIRS = ["src", "scripts", "public", "tests", "docs", "image-api", ".github", ".claude", ".vscode"];
 
 /** Generated or third-party folders, never scanned even inside SCAN_DIRS. */
 const SKIP_DIRS = new Set([
