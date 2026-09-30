@@ -1,215 +1,97 @@
-import { formatDate } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DATA } from "@/data/resume";
-import { ogImageUrl } from "@/lib/og";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { connectToDatabase } from "@db";
-import Blog from "@db/models/Blog";
+import { notFound } from "next/navigation";
+import { MetaPill } from "@/components/meta-pill";
+import { formatPostDate, ymdToIso } from "@/lib/blog/dates";
+import { BLOG_FEED_TYPES, OG_USES_COVER, postUrl } from "@/lib/blog/meta";
+import { getNeighbours, getPost, getPostSlugs } from "@/lib/blog/posts";
+import { POST_MAIN_ID, renderPostBody } from "@/lib/blog/render";
+import { blogPostingJsonLd } from "@/lib/blog/structured-data";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { isDeadImageUrl } from "@/lib/ideogram";
-import { cache } from "react";
+import { ogImageUrl } from "@/lib/og";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-// ISR: prebuild known posts, render new ones on demand, refresh hourly.
-export const revalidate = 3600;
-export const dynamicParams = true;
+// Every post is generated at build from content/blog, and nothing else is
+// served: an unknown slug is a 404 without rendering (dynamicParams = false),
+// and reading the request fails the build (dynamic = "error"). No revalidate:
+// publishing is a deploy. An empty blog builds with no params.
+export const dynamic = "error";
+export const dynamicParams = false;
 
-interface PostDoc {
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  featuredImage?: string;
-  generatedImageUrl?: string;
-  tags?: string[];
-  author?: string;
-  publishedAt?: string;
-  updatedAt?: string;
+export function generateStaticParams(): Array<{ slug: string }> {
+  return getPostSlugs().map((slug) => ({ slug }));
 }
 
-/**
- * The post, or null when no published post has this slug.
- *
- * A connection or query error is thrown, not turned into null. With ISR, null
- * becomes notFound(), and Next stores that 404 in the cache for the whole
- * revalidate window, so a passing database blip replaced live posts with
- * cached 404s. A thrown error keeps the last good page instead.
- *
- * Wrapped in cache() so the page and its metadata share one query.
- */
-const getPost = cache(async (slug: string): Promise<PostDoc | null> => {
-  await connectToDatabase();
-  const post = await Blog.findOne({ slug, isPublished: true }).lean();
-  return post ? JSON.parse(JSON.stringify(post)) : null;
-});
-
-/** The stored cover, unless it is missing or on a host that no longer answers. */
-function storedImage(post: PostDoc): string | undefined {
-  const img = post.generatedImageUrl || post.featuredImage;
-  return isDeadImageUrl(img) ? undefined : img;
-}
-
-interface Neighbour {
-  slug: string;
-  title: string;
-}
-
-/**
- * The posts either side of this one in the index's order (newest first), for
- * the template's Previous / Next cards. A failed lookup only hides the cards.
- */
-async function getNeighbours(
-  slug: string
-): Promise<{ previous: Neighbour | null; next: Neighbour | null }> {
-  try {
-    await connectToDatabase();
-    const posts: Neighbour[] = JSON.parse(
-      JSON.stringify(
-        await Blog.find({ isPublished: true })
-          .sort({ publishedAt: -1 })
-          .select("slug title")
-          .lean()
-      )
-    );
-    const index = posts.findIndex((p) => p.slug === slug);
-    if (index === -1) return { previous: null, next: null };
-    return {
-      previous: index > 0 ? posts[index - 1] : null,
-      next: index < posts.length - 1 ? posts[index + 1] : null,
-    };
-  } catch (error) {
-    console.error("getNeighbours error", error);
-    return { previous: null, next: null };
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    await connectToDatabase();
-    const posts = await Blog.find({ isPublished: true }).select("slug").lean();
-    return posts.map((p: any) => ({ slug: p.slug }));
-  } catch {
-    return [];
-  }
-}
-
-function resolveImage(post: PostDoc): string {
-  const img = storedImage(post);
-  if (img) return img.startsWith("http") ? img : `${DATA.url}${img}`;
-  // Built through the shared helper, never hand-assembled: `/og` now answers
-  // with a one-year immutable cache, so the URL is the only invalidation
-  // mechanism the card has. See `@/lib/og`.
-  return ogImageUrl("blog", post.title);
-}
-
-export async function generateMetadata({
+export function generateMetadata({
   params,
 }: {
   params: { slug: string };
-}): Promise<Metadata> {
-  const post = await getPost(params.slug);
+}): Metadata {
+  const post = getPost(params.slug);
   if (!post) {
-    return { title: "Blog Post Not Found", robots: { index: false } };
+    return { title: "Post not found", robots: { index: false } };
   }
-  const url = `${DATA.url}/blog/${post.slug}`;
-  const ogImage = resolveImage(post);
+  const url = postUrl(post.slug);
+  const cover = post.cover ? post.images[post.cover] : undefined;
+  // The /og PNG card unless OG_USES_COVER says a WebP cover has been checked
+  // on the networks that matter (src/lib/blog/meta.ts).
+  const og =
+    OG_USES_COVER && cover
+      ? {
+          url: `${SITE_URL}${cover.src}`,
+          width: cover.width,
+          height: cover.height,
+          alt: post.coverAlt ?? post.title,
+          type: "image/webp",
+        }
+      : { url: ogImageUrl("blog", post.title), width: 1200, height: 630, alt: post.title };
+
   return {
     title: post.title,
-    description: post.excerpt,
-    alternates: { canonical: url },
+    description: post.summary,
+    alternates: { canonical: url, types: BLOG_FEED_TYPES },
     // Both objects replace the root layout's outright rather than merging, so
     // the site name, locale and creator are restated, as /blog does.
     openGraph: {
       title: post.title,
-      description: post.excerpt,
+      description: post.summary,
       url,
       type: "article",
-      siteName: `${DATA.name} Portfolio`,
+      siteName: `${SITE_NAME} Portfolio`,
       locale: "en_US",
-      publishedTime: post.publishedAt
-        ? new Date(post.publishedAt).toISOString()
-        : undefined,
-      modifiedTime: post.updatedAt
-        ? new Date(post.updatedAt).toISOString()
-        : undefined,
-      authors: [DATA.name],
-      images: [{ url: ogImage, alt: post.title }],
+      publishedTime: ymdToIso(post.publishedAt),
+      modifiedTime: ymdToIso(post.updatedAt ?? post.publishedAt),
+      authors: [SITE_NAME],
       tags: post.tags,
+      images: [og],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
-      description: post.excerpt,
+      description: post.summary,
       creator: "@kanchana404",
-      images: [{ url: ogImage, alt: post.title }],
+      images: [{ url: og.url, alt: og.alt }],
     },
   };
 }
 
-export default async function BlogPostPage({
+export default function BlogPostPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const post = await getPost(params.slug);
+  const post = getPost(params.slug);
   if (!post) notFound();
-  const { previous, next } = await getNeighbours(post.slug);
+  const { previous, next } = getNeighbours(post.slug);
+  const knownSlugs = new Set(getPostSlugs());
+  const cover = post.cover ? post.images[post.cover] : undefined;
 
-  const url = `${DATA.url}/blog/${post.slug}`;
-  const imageUrl = storedImage(post);
-  const absImage = resolveImage(post);
-  const published = post.publishedAt
-    ? new Date(post.publishedAt).toISOString()
-    : undefined;
-  const modified = post.updatedAt
-    ? new Date(post.updatedAt).toISOString()
-    : published;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BlogPosting",
-        "@id": `${url}#post`,
-        headline: post.title,
-        description: post.excerpt,
-        image: absImage,
-        url,
-        mainEntityOfPage: url,
-        datePublished: published,
-        dateModified: modified,
-        author: { "@id": `${DATA.url}/#person` },
-        publisher: { "@id": `${DATA.url}/#person` },
-        keywords: post.tags?.join(", "),
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: DATA.url },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: "Blog",
-            item: `${DATA.url}/blog`,
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: post.title,
-            item: url,
-          },
-        ],
-      },
-    ],
-  };
-
+  // The one landmark the post sits in; the heading ids stay clear of its id.
   return (
-    <section id="blog">
+    <main id={POST_MAIN_ID}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(blogPostingJsonLd(post)) }}
       />
 
       {/*
@@ -230,11 +112,18 @@ export default async function BlogPostPage({
         <h1 className="title text-3xl font-semibold leading-tight tracking-tighter md:text-4xl">
           {post.title}
         </h1>
-        {post.publishedAt && (
-          <p className="text-sm text-muted-foreground">
-            <time dateTime={published}>{formatDate(post.publishedAt)}</time>
-          </p>
-        )}
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <time dateTime={post.publishedAt} className="tabular-nums">
+            {formatPostDate(post.publishedAt)}
+          </time>
+          {post.updatedAt && (
+            <span className="tabular-nums">
+              {"· Updated "}
+              <time dateTime={post.updatedAt}>{formatPostDate(post.updatedAt)}</time>
+            </span>
+          )}
+          {post.kind === "digest" && <MetaPill>Weekly digest</MetaPill>}
+        </p>
       </div>
       <div className="my-6 flex w-full items-center" aria-hidden>
         <div
@@ -248,51 +137,25 @@ export default async function BlogPostPage({
         />
       </div>
 
-      {imageUrl && (
-        <div className="relative mb-8 h-64 overflow-hidden rounded-xl border">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={`${post.title}, article cover`}
-            className="h-full w-full object-cover"
-          />
-        </div>
+      {cover && (
+        // A plain <img>: next/image would add its client runtime to this
+        // budgeted route. The file's own width and height reserve the box,
+        // and it is the likely LCP element, so it loads eagerly.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cover.src}
+          alt={post.coverAlt ?? ""}
+          width={cover.width}
+          height={cover.height}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="mb-8 h-auto w-full rounded-xl border border-border bg-muted"
+        />
       )}
 
       <article className="prose max-w-full text-pretty font-sans leading-relaxed text-muted-foreground dark:prose-invert">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            img: ({ node, ...props }) => {
-              const isFeaturedImage =
-                props.alt?.includes("Featured Image") ||
-                props.src === imageUrl ||
-                props.src === post.featuredImage ||
-                props.src === post.generatedImageUrl;
-              // Old posts carry via.placeholder.com images, which no longer load.
-              if (isFeaturedImage || isDeadImageUrl(props.src)) {
-                return null;
-              }
-              return (
-                // Markdown supplies alt through props, which the rule cannot see.
-                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-                <img {...props} className="my-8 h-auto w-full rounded-xl border" loading="lazy" />
-              );
-            },
-            // Keep exactly one <h1> on the page (the post title above). Markdown
-            // '#' headings are demoted one level so they never emit extra H1s.
-            h1: ({ node, ...props }) => <h2 {...props} />,
-            h2: ({ node, ...props }) => <h3 {...props} />,
-            h3: ({ node, ...props }) => <h4 {...props} />,
-            a: ({ node, ...props }) => (
-              <a {...props} target="_blank" rel="noopener noreferrer" />
-            ),
-            // Code blocks scroll sideways; keep Lenis off horizontal gestures there.
-            pre: ({ node, ...props }) => <pre data-lenis-prevent-horizontal {...props} />,
-          }}
-        >
-          {post.content}
-        </ReactMarkdown>
+        {renderPostBody(post, knownSlugs)}
       </article>
 
       {(previous || next) && (
@@ -333,6 +196,6 @@ export default async function BlogPostPage({
           </div>
         </nav>
       )}
-    </section>
+    </main>
   );
 }

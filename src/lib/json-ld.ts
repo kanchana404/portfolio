@@ -19,13 +19,11 @@
  * attacker JavaScript on this origin — with the page then cached by ISR and
  * served to every subsequent visitor.
  *
- * This is not hypothetical for this codebase. Blog documents are read from Mongo
- * and, until the authorisation fixes in this change, `POST /api/data`,
- * `POST /api/admin/blogs` and `POST /api/debug/publish-blog` all accepted an
- * arbitrary `title` from an unauthenticated caller. Closing those endpoints
- * removes today's path to it; it does not make the sink safe. `/api/data` exists
- * to ingest third-party news items, so a hostile upstream headline reaches the
- * same place through a fully authenticated call.
+ * This is not hypothetical for this codebase. Posts now come only from the
+ * repository, but a post can still quote text a stranger wrote, such as a
+ * third-party feed headline, and that text reaches this sink. Deleting the
+ * endpoints that once accepted an arbitrary `title` from anyone removed one
+ * path to it; it did not make the sink safe. Escaping stays unconditional.
  *
  * ## The fix
  *

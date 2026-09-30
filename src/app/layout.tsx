@@ -2,6 +2,7 @@ import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
+import { BLOG_FEED_TYPES } from "@/lib/blog/meta";
 import { PERSON_ID, SITE_AVATAR, WEBSITE_ID } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
@@ -83,8 +84,11 @@ export const metadata: Metadata = {
   verification: {
     google: "ruMST9fSdT__2l747yzmAhzGJX4xsyYYKYX9EwymwVc",
   },
+  // The homepage advertises the blog's feed too. Routes that set their own
+  // alternates replace this object outright, so the blog pages restate it.
   alternates: {
     canonical: DATA.url,
+    types: BLOG_FEED_TYPES,
   },
 };
 

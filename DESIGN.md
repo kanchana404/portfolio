@@ -193,6 +193,28 @@ motion:
   fading down (the top 80px on phones, so it ends above the paragraph), a
   `Contact` pill straddling the top edge. Its links are link blue and
   underlined at rest; hover thickens the line.
+- **Blog index** (`app/(site)/blog/page.tsx`): the template's numbered list,
+  generated statically from `content/blog` with plain `<a>` rows (no
+  next/link). The post-count pill beside the title is hidden at zero. Each row
+  is the number, the title with its hover chevron, and a meta line: the date
+  in `tabular-nums` and, for digests, a Meta pill reading `Digest`. The CSS
+  entrance plays on the first 8 rows only. The empty state is a hairline
+  `rounded-xl` card with muted copy and an underlined link-blue "RSS feed"
+  link, as in Contact.
+- **Blog figure** (`lib/blog/render.ts`): a Markdown image on a line of its
+  own becomes `<figure class="not-prose my-8">`. The WebP comes from
+  `public/blog/<slug>/`, with width and height read from the file, so nothing
+  shifts as it loads. It spans the full column in a `rounded-xl border` frame
+  on `bg-muted` while it loads, and loads lazily. The image's Markdown title
+  becomes a 14px `ink-muted` figcaption. An optional cover uses the same frame
+  above the article and loads eagerly. No next/image on the post route.
+- **Blog table and code block** (`lib/blog/render.ts`): both scroll sideways
+  inside the column and take keyboard focus (`tabindex="0"`, the `ring` token
+  on `focus-visible`, as on the blog rows), because Safari does not focus a
+  scroller on its own. A table sits in a `role="region"` wrapper named after
+  its header cells. The wrapper is a new formatting context, so it carries the
+  table's prose margin (`my-7`, 2em at the table's 14px) and the table has
+  none; otherwise the gap above and below a table would be 48px, not 28px.
 - **Dock** (`navbar.tsx`): fixed 16px above the bottom edge, `h-14`,
   `bg-card/90` with a heavy backdrop blur and a faint primary glow. Icons are
   bordered 40px circles on `bg-background`; tooltips are `bg-primary` with an
@@ -260,6 +282,8 @@ motion:
 - Headings tighten (`tracking-tighter`) from 30px up; nothing below 16px gets
   negative tracking.
 - Dates and ranges are `tabular-nums` so rows line up.
+- Posts start headings at `##` and go down one level at a time; the page
+  title is the only H1. The publish gate and the renderer both enforce it.
 - `code` and `pre` in blog posts are styled by the `.prose` rules at the end of
   `globals.css`. Inline code follows the template. Code blocks do not: the
   template's are transparent because shiki colours them, and this site has no

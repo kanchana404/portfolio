@@ -15,7 +15,9 @@ person; expect a human reply rather than a triage queue.
 `origin/main` (`edfc8e3`) are clean. **Not resolved:** whoever pushes the
 payload still had write access to the owner's GitHub account as of
 2026-09-19 and credentials have not been rotated (see "Outstanding" below).
-`origin/master`, which carried the payload, was deleted on 2026-09-28.
+The owner's development Mac is infected and awaiting a reinstall (see
+"Fingerprints"). `origin/master`, which carried the payload, was deleted on
+2026-09-28.
 
 An obfuscated JavaScript loader is appended to a build configuration file,
 hidden by padding the real export with a few hundred spaces so the payload
@@ -44,7 +46,13 @@ postcss.config.mjs`.
 timestamp but show committer `Kavitha <146015143+kanchana404@users.noreply.github.com>`
 (the owner commits as "Kavitha Kanchana", +0530) with a -0700 or +0000
 timezone, or committer `GitHub` (web-flow). They are pushed from another
-machine with the owner's credentials; nothing on this laptop injects them.
+machine with the owner's credentials, and no hook, script or dependency in this
+repository injects them. The laptop itself is not clean, though: on 2026-09-28
+the owner's development Mac was confirmed infected by an information stealer,
+whose second stage was installed on 2026-08-17 by a VS Code folder-open task in
+a clone of another repository. Every credential and key that Mac held is
+treated as exposed. A reinstall is pending; until it is done, credential
+changes are made from another device and nothing is pushed from the Mac.
 
 **Second vector.** `abf31fe` adds a hidden VS Code task (`runOn: folderOpen`)
 that runs `node ./public/fonts/fa-solid-400.woff2`, a 30 kB JavaScript file
@@ -66,6 +74,9 @@ it. See §4 for the same campaign across the owner's other repositories.
 - The owner's global git hooks (`~/.git-hooks`): `pre-commit` refuses the
   signature and whitespace padding; `post-merge` and `post-checkout` rerun the
   integrity check after every pull and branch switch.
+- No workflow may push: CI's token is `contents: read`. Any feed fetching runs
+  on the owner's laptop, no agent (Codex included) gets a cloud GitHub grant,
+  and posts go live only through the owner's own push.
 - These are tripwires, not locks. Anyone who can push can edit them. Revoking
   that access is the fix.
 
@@ -80,13 +91,21 @@ it. See §4 for the same campaign across the owner's other repositories.
 - [x] Delete `origin/master` (done 2026-09-28).
 - [ ] Ask GitHub Support to purge the unreachable poisoned commits and the six
       `refs/pull/*` heads.
-- [ ] Rotate `MONGODB_URI` (Atlas user password; check access logs and users)
-      and `OPENAI_API_KEY`; treat old `GITHUB_TOKEN`, `IDEOGRAM_API_KEY` and
-      `ADMIN_PASSWORD` values as burned. Re-add them in Vercel as Sensitive,
-      Production only, so preview builds of other branches never receive them.
+- [ ] Atlas: export the `blogs` collection and the Atlas access and activity
+      logs to a location outside the repo, next to the git bundle. Then delete
+      the Atlas database user, and the cluster or project.
+- [ ] Revoke the OpenAI and Ideogram API keys at the providers.
+- [ ] Vercel: delete `MONGODB_URI`, `OPENAI_API_KEY`, `IDEOGRAM_API_KEY`,
+      `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` from every environment, and
+      from the stale second project. Nothing reads them any more, and a stored
+      secret still reaches every build container.
+- [ ] Rotate `GITHUB_TOKEN`; re-add it in Vercel as Sensitive, Production only,
+      so preview builds of other branches never receive it.
 - [ ] Vercel: delete the stale second project linked to this repo; build the
       next release once without the build cache.
-- [ ] Review the blog collection for documents the owner did not write.
+- [ ] Review the exported collection for documents the owner did not write.
+- [ ] Erase and reinstall the development Mac. Until then, make every
+      credential change above from another device.
 
 **History.** `7db9982` (in `main`'s history) still contains a payload blob.
 Checking it out runs nothing, but running `next dev` at that commit would.
@@ -100,6 +119,11 @@ refs is kept outside the repo as a git bundle.
 ### 2. Unauthenticated admin API
 
 **Status:** fixed and deployed (`edfc8e3`).
+
+**Superseded 2026-09-28** by "security: remove MongoDB, the admin area,
+/api/data, Ideogram and the OpenAI route". The admin area, `/api/admin/*`,
+`/api/data`, `requireAdmin`, admin sessions and the database were removed; the
+only write path into the site is git.
 
 `src/middleware.ts` guarded `pathname.startsWith('/admin')` with the matcher
 `['/admin', '/admin/((?!login|api).*)']`. The admin API is served from
@@ -145,10 +169,15 @@ Two further fail-open defects on the same surface:
   `admin-password` cookie is deleted on both login and logout.
 - `/api/debug/*` and the public `/publish-blog` page are **deleted** rather than
   guarded: they were production scaffolding.
-- `src/lib/auth/route-guards.test.ts` fails the build if any mutating handler
-  under `/api` lacks a guard, if a hardcoded credential reappears, or if a
-  fail-open pattern returns. Mutation-tested by removing a guard and confirming
-  the suite goes red.
+- `src/lib/security/route-surface.test.ts` (which replaced
+  `src/lib/auth/route-guards.test.ts` when the admin area was removed) fails the
+  build unless the route handlers under `src/app` (`.ts`, `.tsx`, `.js` or
+  `.jsx`) are exactly the listed set and no `pages` directory or root `app`
+  exists. It reads each route's exports from the TypeScript syntax tree, so a
+  re-export or export list counts, and lets no mutating handler through without
+  a written reason. It rejects Server Actions, catches a hardcoded credential,
+  and keeps tombstones for the removed paths, the removed secrets and database
+  imports.
 
 **Not verified against production.** These are code-level findings. Whether the
 open endpoints were exploited can only be answered from database contents and

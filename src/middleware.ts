@@ -1,32 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isAdminRequest } from '@/lib/auth/admin';
 import { TOOLS_SECTION_LIVE } from '@/lib/tools/section-flag';
 
 /**
- * Two unrelated jobs share this file because Next.js allows exactly one
- * middleware per app. They are kept in separate branches and the matcher below
- * is the union of their paths.
+ * ## The retired /tools section
  *
- * ## 1. The retired /tools section
- *
- * Answered first, and deliberately before any auth work: it is a static
- * decision that must not depend on a cookie read. See
+ * A static decision that must not depend on a cookie read. See
  * `@/lib/tools/section-flag` for why the section is dark and why the response
  * is 410 rather than a 404 or a redirect.
  *
- * ## 2. The admin gate
- *
- * This is **defence in depth, not the authorisation boundary**. The real guard
- * is `requireAdmin()` inside each privileged route handler, because this
- * middleware's matcher cannot protect the admin API: those routes live under
- * `/api/admin/*`, which does not start with `/admin`, so the previous version of
- * this file never ran on them at all. Every mutating admin endpoint was open to
- * the internet as a result.
- *
- * Keep both. If a future route is added under `/admin` and someone forgets the
- * handler guard, this still redirects; if the matcher is wrong again, the
- * handler guard still denies.
+ * The admin gate that used to share this file was removed together with the
+ * admin area, so nothing is left to protect.
  */
 
 const GONE_PAGE = `<!doctype html>
@@ -58,14 +42,11 @@ const GONE_PAGE = `<!doctype html>
 </html>
 `;
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Note the early `return` on the live path as well as the retired one. Both
-  // branches must terminate: the matcher covers /tools *and* /admin, so falling
-  // through here sends every tool request into the admin gate below and
-  // redirects the visitor to a login page. That is exactly what happened the
-  // first time this ran with the flag on.
+  // branches must terminate.
   if (pathname === '/tools' || pathname.startsWith('/tools/')) {
     if (TOOLS_SECTION_LIVE) return NextResponse.next();
 
@@ -81,22 +62,11 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  if (await isAdminRequest(request)) return NextResponse.next();
-
-  // Fails closed. The previous version returned `NextResponse.next()` when
-  // ADMIN_PASSWORD was unset — commented "for development", but middleware runs
-  // in production too, so a missing environment variable silently unlocked the
-  // admin area rather than locking it.
-  const loginUrl = new URL('/admin/login', request.url);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/admin',
-    // Everything under /admin except the login page itself, which must stay
-    // reachable while logged out.
-    '/admin/((?!login).*)',
     // The retired section: the hub itself and every tool and category beneath
     // it. Harmless to match while the flag is on — the branch above no-ops.
     '/tools',
