@@ -12,7 +12,9 @@ import {
 /**
  * The blog's only filesystem access: posts are `content/blog/<slug>.md` and
  * their images `public/blog/<slug>/*.webp`, read when the build runs, as
- * src/app/(site)/opengraph-image.tsx reads the headshot.
+ * src/app/(site)/opengraph-image.tsx reads the headshot. `content/inbox` is
+ * listed too, so an image upload the blog-images Action has not converted yet
+ * fails the gate instead of reaching main.
  *
  * Call it only from build-time paths: generateStaticParams and
  * generateMetadata on routes with `dynamicParams = false`, static page bodies,
@@ -34,6 +36,31 @@ function sortedEntries(dir: string): Dirent[] {
   );
 }
 
+/**
+ * Every file under `dir` as a path inside it, folders walked three levels
+ * deep; a deeper folder is named `name/`, anything else as `ls -F` shows it.
+ * An empty folder is left out: git cannot store one, so it never reaches
+ * main, and the blog-images Action leaves one behind when it deletes the
+ * uploads in content/inbox/<slug>/. A missing folder is empty: content/inbox
+ * is optional.
+ */
+function listTree(dir: string, prefix = "", depth = 0): string[] {
+  let entries: Dirent[];
+  try {
+    entries = sortedEntries(dir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const out: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) out.push(`${prefix}${describe(entry)}`);
+    else if (depth >= 3) out.push(`${prefix}${entry.name}/`);
+    else out.push(...listTree(join(dir, entry.name), `${prefix}${entry.name}/`, depth + 1));
+  }
+  return out;
+}
+
 export function readContentSnapshot(root: string = process.cwd()): ContentSnapshot {
   const contentDir = join(root, "content/blog");
   let contentEntries: Dirent[];
@@ -51,6 +78,7 @@ export function readContentSnapshot(root: string = process.cwd()): ContentSnapsh
     otherContentEntries: [],
     imageDirs: [],
     otherPublicBlogEntries: [],
+    inboxEntries: listTree(join(root, "content/inbox")),
   };
 
   for (const entry of contentEntries) {

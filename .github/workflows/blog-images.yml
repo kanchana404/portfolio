@@ -1,0 +1,418 @@
+name: Blog images
+
+# Converts the PNG or JPEG files the owner uploads to content/inbox/ on a pull
+# request branch into WebP in public/blog/<slug>/, and deletes the uploads.
+# An upload in content/inbox/<slug>/ belongs to that post; one directly in
+# content/inbox/ belongs to the one post the pull request adds or changes.
+# docs/weekly-digest.md explains the routine; content/inbox/README.md the
+# naming (1-agents.png becomes /blog/<slug>/1-agents.webp). The post must
+# already use each upload under that name, or nothing is converted and the
+# run summary lists the lines to add: the publish gate refuses an image
+# nothing uses.
+#
+# Two jobs, so that no job both runs repository code and holds a token that
+# can write:
+#
+# 1. convert: read-only token. Runs the integrity check, converts with cwebp
+#    (from apt), removes the folders the uploads leave empty, runs the unit
+#    suite on the converted tree (the publish gate included), and hands the
+#    WebP files on as an artifact.
+# 2. commit: write token, and no repository code at all: no install, no node,
+#    no script from the checkout. It checks every file in the artifact by path,
+#    size and magic bytes, deletes the uploads, adds the WebP files, checks
+#    that the commit holds nothing else, and pushes it to the PR branch.
+#
+# A push made with GITHUB_TOKEN starts no new workflow runs, so CI does not run
+# on the commit this pushes. That is why job 1 tests the converted state before
+# job 2 commits it. To get CI's required checks on the new head, close and
+# reopen the pull request.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "content/inbox/**"
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: blog-images-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+# Actions are pinned to commit SHAs (the comment names the release), as in
+# ci.yml: a tag can be moved to different code, a SHA cannot.
+
+jobs:
+  convert:
+    name: Convert uploads to WebP
+    # Branches of this repository only. A fork's pull request must never reach
+    # the job that pushes.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # To list the pull request's files, for uploads made straight into
+      # content/inbox/.
+      pull-requests: read
+    outputs:
+      count: ${{ steps.convert.outputs.count }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      # First, before anything installs or loads a config. It also checks that
+      # every upload's bytes really are PNG or JPEG.
+      - run: node scripts/check-config-integrity.mjs
+
+      - name: Install cwebp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends webp
+          cwebp -version
+
+      - name: Convert
+        id: convert
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/blog-images"
+          mkdir -p "$out"
+          slug_re='^[a-z0-9]+(-[a-z0-9]+)*$'
+          # Letters, digits, space, and . _ , ( ) - /: enough for a phone's
+          # file names, and no newline or colon, so a file name can never
+          # become a workflow command in this log.
+          path_re='^[A-Za-z0-9._,() /-]+$'
+          count=0
+          declare -A taken=()
+          missing=()
+          pr_slug=""
+
+          # The one post this pull request adds or changes, for uploads made
+          # straight into content/inbox/.
+          post_of_pr() {
+            if [ -z "$pr_slug" ]; then
+              mapfile -t posts < <(gh api "repos/$REPO/pulls/$PR/files" --paginate \
+                --jq '.[] | select(.status != "removed") | .filename' < /dev/null \
+                | sed -nE 's#^content/blog/([a-z0-9]+(-[a-z0-9]+)*)\.md$#\1#p' | sort -u)
+              if [ "${#posts[@]}" -ne 1 ]; then
+                echo "::error::uploads straight into content/inbox/ need a pull request that changes exactly one post (this one changes ${#posts[@]}); put them in content/inbox/<slug>/ instead"
+                exit 1
+              fi
+              pr_slug="${posts[0]}"
+            fi
+          }
+
+          # A JPEG's EXIF orientation: 1 when upright or absent, 0 when the
+          # EXIF cannot be read. cwebp ignores it and -metadata none drops it,
+          # so a photo stored turned would come out sideways.
+          jpeg_orientation() {
+            python3 - "$1" <<'PY'
+          import struct, sys
+          data = open(sys.argv[1], "rb").read(1 << 20)
+          orientation = 1
+          i = 2
+          try:
+              while i + 4 <= len(data) and data[i] == 0xFF:
+                  marker = data[i + 1]
+                  if marker in (0xD9, 0xDA):
+                      break
+                  size = struct.unpack(">H", data[i + 2:i + 4])[0]
+                  if marker == 0xE1 and data[i + 4:i + 10] == b"Exif\0\0":
+                      tiff = data[i + 10:i + 2 + size]
+                      order = "<" if tiff[:2] == b"II" else ">"
+                      ifd = struct.unpack(order + "I", tiff[4:8])[0]
+                      for k in range(struct.unpack(order + "H", tiff[ifd:ifd + 2])[0]):
+                          entry = tiff[ifd + 2 + 12 * k:ifd + 14 + 12 * k]
+                          if struct.unpack(order + "H", entry[:2])[0] == 0x0112:
+                              orientation = struct.unpack(order + "H", entry[8:10])[0]
+                      break
+                  i += 2 + size
+          except Exception:
+              orientation = 0
+          print(orientation)
+          PY
+          }
+
+          {
+            echo "## Blog images"
+            echo
+            echo "| Upload | WebP | Size |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          while IFS= read -r -d '' src; do
+            rel="${src#content/inbox/}"
+            [ "$rel" = "README.md" ] && continue
+            if ! [[ "$rel" =~ $path_re ]]; then
+              echo "::error::an upload's name has characters other than letters, digits, space and . _ , ( ) -; rename it"
+              exit 1
+            fi
+            if [ -L "$src" ] || [ ! -f "$src" ]; then
+              echo "::error file=$src::not a regular file"
+              exit 1
+            fi
+            # GitHub's web editor can make a folder only by making a file in
+            # it: a .gitkeep or .keep is deleted with the uploads.
+            case "${rel##*/}" in
+              .gitkeep|.keep) rm -- "$src"; continue ;;
+            esac
+            case "$rel" in
+              */*/*)
+                echo "::error file=$src::put uploads in content/inbox/ or content/inbox/<slug>/, not deeper"
+                exit 1 ;;
+              */*)
+                slug="${rel%%/*}"
+                file="${rel#*/}" ;;
+              *)
+                post_of_pr
+                slug="$pr_slug"
+                file="$rel" ;;
+            esac
+            if ! [[ "$slug" =~ $slug_re ]] || [ ! -f "content/blog/$slug.md" ]; then
+              echo "::error file=$src::content/inbox/$slug/ must be named after a post in content/blog"
+              exit 1
+            fi
+            ext="$(printf '%s' "${file##*.}" | tr '[:upper:]' '[:lower:]')"
+            case "$ext" in
+              png|jpg|jpeg) ;;
+              *) echo "::error file=$src::only PNG or JPEG uploads"; exit 1 ;;
+            esac
+            name="$(printf '%s' "${file%.*}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+            if [ -z "$name" ]; then
+              echo "::error file=$src::the file name has no letters or digits"
+              exit 1
+            fi
+            if [ -n "${taken[$slug/$name]:-}" ]; then
+              echo "::error file=$src::two uploads would both become $slug/$name.webp"
+              exit 1
+            fi
+            taken[$slug/$name]=1
+
+            # The post must already use the image, in the body or as the
+            # cover, under exactly this name: the publish gate refuses an
+            # image nothing uses. Checked before converting, with the line
+            # to add, so the run summary says what to paste.
+            if ! grep -qF -- "/blog/$slug/$name.webp" "content/blog/$slug.md"; then
+              echo "::error file=$src::content/blog/$slug.md does not use /blog/$slug/$name.webp yet"
+              missing+=("![Describe the image in one sentence](/blog/$slug/$name.webp)")
+              continue
+            fi
+            cover=""
+            grep -qE "^cover: \"/blog/$slug/$name\.webp\"" "content/blog/$slug.md" && cover=1
+
+            if [ "$ext" != "png" ]; then
+              orientation="$(jpeg_orientation "$src")"
+              if [ "$orientation" = "0" ]; then
+                echo "::error file=$src::its EXIF data cannot be read, so its orientation is unknown; upload the PNG from the ChatGPT app instead"
+                exit 1
+              elif [ "$orientation" != "1" ]; then
+                echo "::error file=$src::this JPEG is stored turned (EXIF orientation $orientation) and would come out sideways; upload the PNG from the ChatGPT app, or a screenshot of the picture, instead"
+                exit 1
+              fi
+            fi
+
+            # The upload's size, from a throwaway fast encode.
+            w=""
+            h=""
+            read -r w h < <(cwebp -v -q 1 -m 0 -metadata none "$src" -o "$RUNNER_TEMP/probe.webp" 2>&1 \
+              | awk '/^Dimension:/ { print $2, $4 }') || true
+            if ! [[ "$w" =~ ^[0-9]+$ && "$h" =~ ^[0-9]+$ ]]; then
+              echo "::error file=$src::cwebp could not read this image"
+              exit 1
+            fi
+            # At most 1600 px wide and 2400 px tall, never enlarged. The
+            # width checks below use the size after that, which is what the
+            # publish gate sees.
+            resize=()
+            fw="$w"
+            if [ "$w" -gt 1600 ]; then
+              if [ $(( h * 1600 / w )) -gt 2400 ]; then
+                resize=(-resize 0 2400)
+                fw=$(( w * 2400 / h ))
+              else
+                resize=(-resize 1600 0)
+                fw=1600
+              fi
+            elif [ "$h" -gt 2400 ]; then
+              resize=(-resize 0 2400)
+              fw=$(( w * 2400 / h ))
+            fi
+            if [ "$fw" -lt 320 ]; then
+              echo "::error file=$src::${w}x${h} px would be ${fw} px wide once it is at most 2400 px tall; the blog needs at least 320. Crop it wider"
+              exit 1
+            fi
+            if [ -n "$cover" ] && [ "$fw" -lt 1200 ]; then
+              echo "::error file=$src::the post's cover would be ${fw} px wide; a cover needs at least 1200"
+              exit 1
+            fi
+
+            mkdir -p "public/blog/$slug"
+            dest="public/blog/$slug/$name.webp"
+            # Quality 82, stepping down only if the file is over the gate's
+            # 400 KiB limit.
+            q=82
+            while :; do
+              cwebp -quiet -q "$q" -m 6 -metadata none "${resize[@]}" "$src" -o "$dest"
+              size="$(stat -c %s "$dest")"
+              [ "$size" -le 409600 ] && break
+              if [ "$q" -le 52 ]; then
+                echo "::error file=$src::still $(( size / 1024 )) KiB at quality $q; the blog allows 400 KiB"
+                exit 1
+              fi
+              q=$(( q - 10 ))
+            done
+
+            mkdir -p "$out/$slug"
+            cp -- "$dest" "$out/$slug/$name.webp"
+            rm -- "$src"
+            count=$(( count + 1 ))
+            echo "| \`$rel\` | \`$dest\` | $(( size / 1024 )) KiB, quality $q |" >> "$GITHUB_STEP_SUMMARY"
+          done < <(find content/inbox -mindepth 1 \( -type f -o -type l \) -print0 | sort -z)
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            {
+              echo
+              echo "**Nothing was converted.** The post does not use these images yet. Add each line to"
+              echo "the post where the picture belongs, on its own line with a blank line above and below,"
+              echo "and write the alt text. Commit that to this branch: this Action runs again, and the"
+              echo "uploads are still waiting. The name after the last / must match the upload's name."
+              echo
+              echo '```markdown'
+              printf '%s\n' "${missing[@]}"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          # Git keeps no empty folder, and the publish gate must see the tree
+          # as git will: the deleted uploads leave content/inbox/<slug>/ empty.
+          find content/inbox -mindepth 1 -type d -empty -delete
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      # The converted tree must pass the unit suite, publish gate included,
+      # before job 2 commits it: CI will not run on that commit by itself.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        if: steps.convert.outputs.count != '0'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: steps.convert.outputs.count != '0'
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.convert.outputs.count != '0'
+      - run: pnpm test
+        if: steps.convert.outputs.count != '0'
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: steps.convert.outputs.count != '0'
+        with:
+          name: blog-images
+          path: ${{ runner.temp }}/blog-images/
+          if-no-files-found: error
+          retention-days: 1
+
+  commit:
+    name: Commit the WebP files
+    needs: convert
+    if: needs.convert.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # No repository code runs in this job: only git, coreutils and the
+      # checks written out below. The checkout keeps its token to push.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: blog-images
+          path: ${{ runner.temp }}/blog-images
+
+      - name: Check, apply and push
+        env:
+          # Branch names are text someone typed: only ever used quoted.
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          ARTIFACT: ${{ runner.temp }}/blog-images
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          slug_re='^[a-z0-9]+(-[a-z0-9]+)*$'
+          name_re='^[a-z0-9]+(-[a-z0-9]+)*\.webp$'
+
+          [[ "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]] || fail "unexpected characters in the branch name"
+          case "$HEAD_REF" in
+            main|-*) fail "refusing to push to this branch" ;;
+          esac
+
+          # 1. Every entry in the artifact: <slug>/ folders and
+          #    <slug>/<name>.webp files, nothing else.
+          mapfile -d '' entries < <(cd "$ARTIFACT" && find . -mindepth 1 -print0 | sort -z)
+          files=()
+          for entry in "${entries[@]}"; do
+            p="${entry#./}"
+            [ -L "$ARTIFACT/$p" ] && fail "a symlink in the artifact"
+            if [ -d "$ARTIFACT/$p" ]; then
+              [[ "$p" =~ $slug_re ]] || fail "an unexpected folder in the artifact"
+              continue
+            fi
+            [ -f "$ARTIFACT/$p" ] || fail "an entry in the artifact that is not a file"
+            slug="${p%%/*}"
+            name="${p#*/}"
+            [[ "$slug" =~ $slug_re && "$name" =~ $name_re ]] || fail "an unexpected path in the artifact"
+            [ -f "content/blog/$slug.md" ] || fail "$p: no post content/blog/$slug.md"
+            size="$(stat -c %s "$ARTIFACT/$p")"
+            [ "$size" -le 409600 ] || fail "$p is $size bytes; at most 409600"
+            [ "$(head -c 4 "$ARTIFACT/$p")" = "RIFF" ] || fail "$p is not a WebP file"
+            [ "$(tail -c +9 "$ARTIFACT/$p" | head -c 4)" = "WEBP" ] || fail "$p is not a WebP file"
+            files+=("$p")
+          done
+          [ "${#files[@]}" -gt 0 ] || fail "the artifact is empty"
+          [ -n "$(git ls-files -- content/inbox | grep -vx 'content/inbox/README.md' || true)" ] \
+            || fail "no uploads in content/inbox to replace"
+
+          # 2. Delete every upload, add every WebP file.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          while IFS= read -r -d '' f; do
+            [ "$f" = "content/inbox/README.md" ] || git rm -q -- "$f"
+          done < <(git ls-files -z -- content/inbox)
+          for p in "${files[@]}"; do
+            mkdir -p "public/blog/${p%%/*}"
+            cp -- "$ARTIFACT/$p" "public/blog/$p"
+            git add -- "public/blog/$p"
+          done
+
+          # 3. The commit holds only those two kinds of change.
+          while IFS= read -r -d '' status && IFS= read -r -d '' path; do
+            case "$status" in
+              D) [[ "$path" == content/inbox/* && "$path" != content/inbox/README.md ]] || fail "unexpected deletion: $path" ;;
+              A|M) [[ "$path" =~ ^public/blog/[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*\.webp$ ]] || fail "unexpected change: $path" ;;
+              *) fail "unexpected change ($status): $path" ;;
+            esac
+          done < <(git diff --cached --name-status --no-renames -z)
+          [ -z "$(git status --porcelain --untracked-files=all | grep -v '^[ADM] ' || true)" ] \
+            || fail "files changed outside the commit"
+
+          git commit -q -m "blog: convert uploaded images to WebP" \
+            -m "Made by the blog-images workflow (run $GITHUB_RUN_ID) from the uploads in content/inbox/."
+          # Not a force push: if the branch moved since this run started, the
+          # push is refused and the newer run converts the newer uploads.
+          git push origin "HEAD:refs/heads/$HEAD_REF"
+
+          {
+            echo "## Committed to \`$HEAD_REF\`"
+            echo
+            for p in "${files[@]}"; do echo "- \`public/blog/$p\`"; done
+            echo
+            echo "CI does not run on this commit by itself. Close and reopen the pull request to run it."
+          } >> "$GITHUB_STEP_SUMMARY"

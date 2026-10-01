@@ -10,6 +10,10 @@ production.
 - **Security:** [SECURITY.md](SECURITY.md) records past incidents and the checks
   that exist because of them. Read it before changing a build config.
 - **Project cover images:** [docs/project-covers.md](docs/project-covers.md).
+- **Weekly digest:** drafted by Codex Cloud from official feeds, takes by the
+  owner. The routine is in [docs/weekly-digest.md](docs/weekly-digest.md);
+  the agent rules in [AGENTS.md](AGENTS.md) (Claude Code reads them through
+  [CLAUDE.md](CLAUDE.md)).
 
 ## Stack
 
@@ -39,7 +43,9 @@ environment variables either.
 | `pnpm verify` | everything CI's static and build jobs run |
 | `pnpm test` / `pnpm test:browser` | Vitest unit tests / Playwright browser tests |
 | `pnpm budget` | first-load JS budgets per route (after a build) |
-| `pnpm integrity` | the config and payload tripwires in `scripts/check-config-integrity.mjs` |
+| `pnpm integrity` | the config, payload and agent tripwires in `scripts/check-config-integrity.mjs` |
+| `pnpm digest:fetch` | fetches the weekly digest's sources into `.digest/candidates.json` (gitignored; needs network) |
+| `pnpm digest:check` | the publish gate as a list; `--allow-todo` while the takes are still TODO |
 | `pnpm lighthouse` | Lighthouse CI on `/`, `/blog`, `/privacy` (after a build) |
 
 `scripts/check-config-integrity.mjs` runs first in every CI job and before
@@ -47,8 +53,9 @@ environment variables either.
 SECURITY.md.
 
 `pnpm test` and `pnpm build` refuse any post that still contains TODO or
-template placeholders, a broken link or image, or bad frontmatter: that is the
-publish gate (`src/lib/blog/validate.ts`). There are no drafts, so the gate
+template placeholders, a broken link or image, or bad frontmatter, and any
+image upload left unconverted in `content/inbox/`: that is the publish gate
+(`src/lib/blog/validate.ts`). There are no drafts, so the gate
 is what stands between a half-written post and production.
 
 ## Environment variables
@@ -78,7 +85,10 @@ src/components/      section/*, magicui/*, ui/* (shadcn), tools/*
 src/data/resume.tsx  all portfolio content
 src/lib/blog/        the post loader, publish gate, renderer and RSS feed
 content/blog/        posts, one <slug>.md each (no drafts: whatever is on main is live)
+content/inbox/       image uploads on a PR branch, converted by .github/workflows/blog-images.yml
 public/blog/<slug>/  post images (WebP)
+src/lib/feeds/       the digest's feed fetcher logic; scripts/digest/ has its CLIs
+.agents/skills/      the weekly-digest skill Codex follows (AGENTS.md is the rulebook)
 image-api/           the Python image and PDF service behind the tools section
 public/              logos, skill marks, project covers (WebP)
 ```

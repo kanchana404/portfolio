@@ -1,3 +1,4 @@
+import { SOURCES } from "../feeds/sources";
 import { slugify } from "../slug";
 import { DIGEST_SLUG_RE, addDays, digestSlug, isYmd } from "./dates";
 import { FrontmatterError, parseFrontmatter, type FrontmatterValue } from "./frontmatter";
@@ -71,7 +72,8 @@ export interface Issue {
     | "code"
     | "image"
     | "link"
-    | "orphan";
+    | "orphan"
+    | "inbox";
   message: string;
 }
 
@@ -94,10 +96,21 @@ export interface ContentSnapshot {
   }[];
   /** Entries in public/blog that are not folders. */
   otherPublicBlogEntries: string[];
+  /**
+   * Everything in content/inbox, README.md included, as paths inside it:
+   * `ai-dev-news-2026-w40/1-agents.png`, an empty folder as `name/`, a
+   * symlink as `name@`. Uploads wait there for the blog-images Action.
+   */
+  inboxEntries: string[];
 }
 
 const CONTENT_DIR = "content/blog";
 const PUBLIC_DIR = "public/blog";
+const INBOX_DIR = "content/inbox";
+/** The one file content/inbox keeps on main. */
+export const INBOX_KEEP = "README.md";
+/** The end of the message for an image a post names that is not in its folder (digest:check matches it). */
+export const MISSING_IMAGE = "is missing or not a valid WebP";
 
 /** Equal to OG_TITLE_MAX in src/lib/og.ts (a test holds them together), and Google's headline limit. */
 export const TITLE_MAX = 110;
@@ -124,6 +137,15 @@ export const IMAGE_MAX_BYTES = 400 * 1024;
 export const IMAGE_MIN_WIDTH = 320;
 export const IMAGE_MAX_DIM = 2400;
 export const COVER_MIN_WIDTH = 1200;
+
+/**
+ * Where a digest may link: the pages of the sources `pnpm digest:fetch` reads
+ * (src/lib/feeds/sources.ts, a pure list). A digest is written from fetched
+ * text, and a link is the one way that text could reach a reader as
+ * something to click, so nothing else passes: not another site, not coverage
+ * of the story.
+ */
+export const DIGEST_LINK_PREFIXES: readonly string[] = [...new Set(SOURCES.flatMap((source) => source.include))];
 
 const ALLOWED_KEYS = [
   "title",
@@ -284,6 +306,55 @@ function placeholderIn(text: string, isTitle: boolean): string | undefined {
     if (pattern.test(text)) return message;
   }
   if (isTitle && TITLE_NN.test(text)) return "placeholder NN in the title";
+  return undefined;
+}
+
+/** `](target`, a reference definition's target, and bare http(s) text, which GFM turns into a link. */
+const INLINE_TARGET = /\]\([ \t]*([^\s)]*)/g;
+const REFERENCE_TARGET = /^ {0,3}\[[^\]\n]+\]:[ \t]*(\S*)/;
+const BARE_URL = /\bhttps?:[^\s<>]*/gi;
+/** A character that would change the address once Markdown decodes the link. */
+const LINK_ESCAPE = /\\|&(?:#[0-9]+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i;
+
+/** Every link target on one line of code-stripped Markdown, in order, without repeats. */
+function linkTargets(line: string): string[] {
+  const found = [...line.matchAll(INLINE_TARGET)].map((m) => m[1]);
+  const reference = REFERENCE_TARGET.exec(line)?.[1];
+  if (reference !== undefined) found.push(reference);
+  // GFM leaves trailing punctuation out of a bare link. A loop, not /[…]+$/,
+  // which would rescan a long run of punctuation from every position.
+  for (const [url] of line.matchAll(BARE_URL)) {
+    let end = url.length;
+    while (end > 0 && ".,:;!?*_~)'\"".includes(url[end - 1])) end--;
+    found.push(url.slice(0, end));
+  }
+  return [...new Set(found)];
+}
+
+/**
+ * Every link target in a post's body with its file line, code excluded:
+ * `bodyLine` is the file line of the body's first line.
+ */
+export function bodyLinks(body: string, bodyLine: number): { line: number; target: string }[] {
+  const { stripped } = stripCode(body.split("\n"));
+  return stripped.flatMap((line, i) => linkTargets(line).map((target) => ({ line: bodyLine + i, target })));
+}
+
+/**
+ * Why a digest may not use this link target, or undefined. `#anchor` and
+ * `/path` targets are left to the other link rules.
+ */
+export function digestLinkProblem(target: string): string | undefined {
+  if (target.startsWith("#") || (target.startsWith("/") && !target.startsWith("//") && !target.startsWith("/\\"))) {
+    return undefined;
+  }
+  const only = "a digest links only the sources' own pages, with the item's url from .digest/candidates.json exactly";
+  if (LINK_ESCAPE.test(target)) {
+    return `${target}: a backslash or an HTML entity in a link can turn it into another address; ${only}`;
+  }
+  if (!DIGEST_LINK_PREFIXES.some((prefix) => target.startsWith(prefix))) {
+    return `${target} is not a source's page (${DIGEST_LINK_PREFIXES.join(", ")}); ${only}`;
+  }
   return undefined;
 }
 
@@ -538,7 +609,7 @@ function checkPost(
     if (!src.startsWith(folder) || !IMAGE_FILE_RE.test(src.slice(folder.length))) {
       report(file, "image", `images come from public${folder} as lowercase .webp files`, at(i));
     } else if (!Object.hasOwn(images, src)) {
-      report(file, "image", `public${src} is missing or not a valid WebP`, at(i));
+      report(file, "image", `public${src} ${MISSING_IMAGE}`, at(i));
     }
     const name = src.slice(src.lastIndexOf("/") + 1);
     const altText = alt.trim();
@@ -580,6 +651,12 @@ function checkPost(
         report(file, "take", "every digest item needs a source link: [Source](https://…)", at(start));
       }
     });
+    stripped.forEach((line, i) => {
+      for (const target of linkTargets(line)) {
+        const problem = digestLinkProblem(target);
+        if (problem) report(file, "link", problem, at(i));
+      }
+    });
   }
 
   const bodyChars = body.replace(/\s/g, "").length;
@@ -591,7 +668,7 @@ function checkPost(
     if (!cover.startsWith(folder) || !IMAGE_FILE_RE.test(cover.slice(folder.length))) {
       field(`cover is a file in public${folder}, written ${folder}<name>.webp`, "cover");
     } else if (!Object.hasOwn(images, cover)) {
-      report(file, "image", `public${cover} is missing or not a valid WebP`, keyLine("cover"));
+      report(file, "image", `public${cover} ${MISSING_IMAGE}`, keyLine("cover"));
     } else if (images[cover].width < COVER_MIN_WIDTH) {
       report(
         file,
@@ -736,6 +813,15 @@ export function validateCollection(
   }
   for (const entry of s.otherPublicBlogEntries) {
     report(`${PUBLIC_DIR}/${entry}`, "image", "public/blog holds only one folder per post, named after its slug");
+  }
+  for (const entry of s.inboxEntries) {
+    if (entry === INBOX_KEEP) continue;
+    report(
+      `${INBOX_DIR}/${entry}`,
+      "inbox",
+      "an upload not yet converted to WebP. On a pull request the blog-images Action converts content/inbox/<slug>/ " +
+        "into public/blog/<slug>/ and deletes the upload; nothing but README.md in content/inbox may reach main"
+    );
   }
 
   posts.sort((a, b) =>

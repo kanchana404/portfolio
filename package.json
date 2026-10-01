@@ -28,7 +28,9 @@
     "validate:registry": "vitest run src/lib/tools/validate.test.ts src/lib/tools/registry.test.ts",
     "test:browser": "playwright test",
     "integrity": "node scripts/check-config-integrity.mjs",
-    "routes": "tsx scripts/generate-tool-routes.ts"
+    "routes": "tsx scripts/generate-tool-routes.ts",
+    "digest:fetch": "node scripts/check-config-integrity.mjs && NODE_USE_ENV_PROXY=1 tsx scripts/digest/fetch.ts",
+    "digest:check": "tsx scripts/digest/check.ts"
   },
   "dependencies": {
     "@jsquash/avif": "2.1.1",

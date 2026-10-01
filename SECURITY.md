@@ -74,9 +74,37 @@ it. See §4 for the same campaign across the owner's other repositories.
 - The owner's global git hooks (`~/.git-hooks`): `pre-commit` refuses the
   signature and whitespace padding; `post-merge` and `post-checkout` rerun the
   integrity check after every pull and branch switch.
-- No workflow may push: CI's token is `contents: read`. Any feed fetching runs
-  on the owner's laptop, no agent (Codex included) gets a cloud GitHub grant,
-  and posts go live only through the owner's own push.
+- CI's token is `contents: read`. The one workflow that writes,
+  `blog-images.yml`, splits its work: the job that runs repository code holds
+  a read-only token, and the job that pushes runs no repository code, pushes
+  only WebP files and upload deletions, and only to a pull request branch of
+  this repository.
+- The weekly digest runs in Codex Cloud (docs/weekly-digest.md): the ChatGPT
+  Codex Connector is limited to this one repository, the environment holds no
+  secrets and reaches only the npm registry and the seven feed hosts, and
+  Codex opens a pull request that the owner merges. It never pushes to
+  `main`.
+- `AGENTS.md`, `CLAUDE.md` and `.agents/skills/weekly-digest/SKILL.md` are
+  hash-frozen like the configs, and the integrity check also fails, in any
+  file git tracks or would add, on an agent instruction file outside the
+  root, `AGENTS.override.md` or `CLAUDE.local.md`, any other file under
+  `.agents/`, an `.agents/` or `.claude/` folder below the root, a `.codex/`
+  folder and a `.mcp.json`; and on `.claude/settings.json`, a
+  `.claude/settings.local.json` holding anything but permission rules (read
+  as JSON: hooks, statusLine, apiKeyHelper and env all run commands), and
+  project skills, commands, subagents or hooks under `.claude/`: an attacker
+  who can push must not be able to turn the owner's own agents against
+  them. A symlink at the root or in a scanned folder fails too, since a link
+  could pass one of these off as something else. It also checks that every
+  upload in `content/inbox/` really is the image its extension says.
+- `pnpm digest:fetch` runs the integrity check first. Every request stays on
+  its source's own host, redirects included. Everything it fetches is
+  treated as untrusted: HTML and invisible characters are stripped,
+  instruction-like text is flagged, and it is written only to the
+  gitignored `.digest/`. The publish gate lets a digest link only to the
+  sources' own pages, and `pnpm digest:check` only to the fetched items'
+  exact urls, so fetched text cannot put another address in front of
+  readers.
 - These are tripwires, not locks. Anyone who can push can edit them. Revoking
   that access is the fix.
 

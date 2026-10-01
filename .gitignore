@@ -71,3 +71,8 @@ __pycache__/
 /*.jpg
 /*.jpeg
 /*.JPG
+
+# Weekly digest working files: third-party feed text fetched by
+# `pnpm digest:fetch` (in Codex Cloud or on a laptop). Untrusted, and never
+# committed or deployed.
+/.digest/
