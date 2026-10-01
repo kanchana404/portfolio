@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { todayUtc } from "./dates";
 import { readContentSnapshot } from "./posts";
 import { renderPostBody } from "./render";
-import { classifyHref, formatIssue, validateCollection, type ContentSnapshot } from "./validate";
+import { classifyHref, digestLinkProblem, formatIssue, validateCollection, type ContentSnapshot } from "./validate";
 
 /**
  * THE PUBLISH GATE over the real content/blog and public/blog.
@@ -60,6 +60,10 @@ describe("content/blog: the publish gate", () => {
       for (const [, raw] of html.matchAll(/<a\s[^>]*?href="([^"]*)"/g)) {
         const link = classifyHref(decode(raw), slugs);
         if (link.kind === "invalid") problems.push(`${post.file}: link ${raw}: ${link.reason}`);
+        // The address as the reader gets it, after Markdown has decoded
+        // escapes and entities: the gate's text check sees the source.
+        const digestProblem = post.kind === "digest" ? digestLinkProblem(decode(raw)) : undefined;
+        if (digestProblem) problems.push(`${post.file}: ${digestProblem}`);
       }
 
       for (const [tag] of html.matchAll(/<img\s[^>]*>/g)) {

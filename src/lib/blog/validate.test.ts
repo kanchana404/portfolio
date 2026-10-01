@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { OG_TITLE_MAX } from "../og";
 import {
+  DIGEST_LINK_PREFIXES,
   TITLE_MAX,
   classifyHref,
+  digestLinkProblem,
   formatIssue,
   validateCollection,
   type ContentSnapshot,
@@ -48,7 +50,7 @@ function item(n: number, { take = TAKE, source = true } = {}): string {
     "",
     `What happened in item ${n}, in two plain sentences. It is a short summary of the source.`,
     "",
-    ...(source ? [`Source: [Example: Story ${n}](https://example.com/${n})`, ""] : []),
+    ...(source ? [`Source: [OpenAI: Story ${n}](https://openai.com/index/story-${n}/)`, ""] : []),
     `**My take:** ${take}`,
   ].join("\n");
 }
@@ -114,6 +116,7 @@ function snapshot(
     otherContentEntries: [".gitkeep"],
     imageDirs: [],
     otherPublicBlogEntries: [],
+    inboxEntries: ["README.md"],
     ...extra,
   };
 }
@@ -141,9 +144,9 @@ const FILE = "content/blog/static-blog.md";
 describe("validateCollection: what passes", () => {
   it("an empty blog", () => {
     expect(check(snapshot({}))).toEqual({ posts: [], issues: [] });
-    expect(check({ postFiles: [], otherContentEntries: [], imageDirs: [], otherPublicBlogEntries: [] }).issues).toEqual(
-      []
-    );
+    expect(
+      check({ postFiles: [], otherContentEntries: [], imageDirs: [], otherPublicBlogEntries: [], inboxEntries: [] }).issues
+    ).toEqual([]);
   });
 
   it("a minimal post", () => {
@@ -331,6 +334,41 @@ describe("validateCollection: take", () => {
   it("an item with no https source link", () => {
     const source = digest(items(item(3, { source: false })));
     expect(where(issuesFor(source, NAME))).toEqual([`${DIGEST}:${lineOf(source, "## 3.")} take`]);
+  });
+
+  it("an item whose source link is not on a source's own site", () => {
+    const source = digest(items(item(3).replace("https://openai.com/index/story-3/", "https://evil.example.net/phish")));
+    expect(where(issuesFor(source, NAME))).toEqual([`${DIGEST}:${lineOf(source, "evil.example.net")} link`]);
+  });
+
+  it("any other link in a digest to a page that is not a source's, however it is written", () => {
+    const extra = [
+      "Read [the coverage](https://news.example.com/story) too.",
+      "Or the bare https://huggingface.co.evil.example/x, or HTTPS://example.org/y.",
+      "[ref]: https://example.org/ref",
+      "[escaped](https://openai.com\\.evil.example/) and [entity](https://openai.com&#46;evil.example/)",
+      "An address in code is not a link: `https://example.org/code`.",
+    ];
+    const source = digest([item(1), [...extra, "", item(2)].join("\n"), item(3), item(4), item(5)]);
+    const lines = extra.slice(0, 4).map((text) => lineOf(source, text));
+    expect(where(issuesFor(source, NAME))).toEqual([
+      `${DIGEST}:${lines[0]} link`,
+      `${DIGEST}:${lines[1]} link`,
+      `${DIGEST}:${lines[1]} link`,
+      `${DIGEST}:${lines[2]} link`,
+      `${DIGEST}:${lines[3]} link`,
+      `${DIGEST}:${lines[3]} link`,
+    ]);
+  });
+
+  it("leaves links in an ordinary post, and a digest's own images and anchors, alone", () => {
+    expect(issuesFor(post({}, [BODY, "", "More at [the site](https://example.org/a) and [below](#b)."].join("\n")))).toEqual([]);
+    expect(digestLinkProblem("/blog/other-post")).toBeUndefined();
+    expect(digestLinkProblem("#section")).toBeUndefined();
+    for (const bad of ["//evil.example/x", "/\\evil.example/x", "https://openai.com.evil.example/", "http://openai.com/x"]) {
+      expect(digestLinkProblem(bad), bad).toBeDefined();
+    }
+    for (const prefix of DIGEST_LINK_PREFIXES) expect(digestLinkProblem(`${prefix}post`)).toBeUndefined();
   });
 
   it("a digest with no numbered items", () => {
@@ -656,6 +694,40 @@ describe("validateCollection: file", () => {
       "content/blog/notes.mdx file",
       "content/blog/old/ file",
     ]);
+  });
+});
+
+describe("validateCollection: inbox", () => {
+  it("keeps only README.md in content/inbox: an upload never ships unconverted", () => {
+    const found = where(
+      check(
+        snapshot(
+          {},
+          {
+            inboxEntries: [
+              "README.md",
+              "ai-dev-news-2026-w40/1-agents.png",
+              "ai-dev-news-2026-w40/Cover.JPG",
+              "notes.txt",
+              "empty/",
+              "linked@",
+            ],
+          }
+        )
+      ).issues
+    );
+    expect(found).toEqual([
+      "content/inbox/ai-dev-news-2026-w40/1-agents.png inbox",
+      "content/inbox/ai-dev-news-2026-w40/Cover.JPG inbox",
+      "content/inbox/empty/ inbox",
+      "content/inbox/linked@ inbox",
+      "content/inbox/notes.txt inbox",
+    ]);
+  });
+
+  it("passes with the README alone, or with no inbox at all", () => {
+    expect(check(snapshot({}, { inboxEntries: ["README.md"] })).issues).toEqual([]);
+    expect(check(snapshot({}, { inboxEntries: [] })).issues).toEqual([]);
   });
 });
 
